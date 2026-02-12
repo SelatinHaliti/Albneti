@@ -1,0 +1,29 @@
+services:
+  - type: web
+    runtime: node
+    name: albneti-api
+    repo: https://github.com/SelatinHaliti/Albneti
+    rootDir: backend
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRE
+        value: 7d
+      - key: FRONTEND_URL
+        value: https://frontend-kohl-delta-60.vercel.app
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
