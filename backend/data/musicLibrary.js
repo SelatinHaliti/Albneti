@@ -1,0 +1,78 @@
+/**
+ * Biblioteka muzikore – si Instagram.
+ * URL direkte (MP3) – royalty-free. Për muzikë nga YouTube duhet ta shkarkoni dhe ta ngarkoni në Cloudinary.
+ */
+export const CATEGORIES = [
+  { id: 'all', label: 'Të gjitha' },
+  { id: 'pop', label: 'Pop' },
+  { id: 'hiphop', label: 'Hip-Hop' },
+  { id: 'rock', label: 'Rock' },
+  { id: 'elektro', label: 'Elektro' },
+  { id: 'rnb', label: 'R&B' },
+  { id: 'folk', label: 'Folk' },
+  { id: 'ambient', label: 'Ambient' },
+  { id: 'dance', label: 'Dance' },
+  { id: 'chill', label: 'Chill' },
+  { id: 'latin', label: 'Latin' },
+  { id: 'jazz', label: 'Jazz' },
+  { id: 'summer', label: 'Verë' },
+  { id: 'trending', label: 'Trending' },
+];
+
+// Vetëm këto dy URL funksionojnë (SoundHelix ofron 1 dhe 2). Të gjitha këngët përdorin njërën prej tyre.
+const URL1 = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+const URL2 = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3';
+
+/** Lista e këngëve – titull/artist të ndryshëm, por vetëm 2 burime audio që luajnë */
+export const TRACKS = [
+  { id: '1', title: 'Dritë e re', artist: 'AlbNet Sounds', url: URL1, category: 'pop', duration: 180 },
+  { id: '2', title: 'Natë qyteti', artist: 'AlbNet Sounds', url: URL2, category: 'elektro', duration: 200 },
+  { id: '3', title: 'Vera', artist: 'AlbNet Sounds', url: URL1, category: 'folk', duration: 190 },
+  { id: '4', title: 'Puls', artist: 'AlbNet Sounds', url: URL2, category: 'rock', duration: 210 },
+  { id: '5', title: 'Horizon', artist: 'AlbNet Sounds', url: URL1, category: 'ambient', duration: 185 },
+  { id: '6', title: 'Breeze', artist: 'AlbNet Sounds', url: URL2, category: 'pop', duration: 195 },
+  { id: '7', title: 'Metropolis', artist: 'AlbNet Sounds', url: URL1, category: 'hiphop', duration: 205 },
+  { id: '8', title: 'Midnight', artist: 'AlbNet Sounds', url: URL2, category: 'rnb', duration: 175 },
+  { id: '9', title: 'Sunset Drive', artist: 'AlbNet Sounds', url: URL1, category: 'elektro', duration: 220 },
+  { id: '10', title: 'Mountain Echo', artist: 'AlbNet Sounds', url: URL2, category: 'folk', duration: 198 },
+  { id: '11', title: 'Neon', artist: 'AlbNet Sounds', url: URL1, category: 'pop', duration: 188 },
+  { id: '12', title: 'Storm', artist: 'AlbNet Sounds', url: URL2, category: 'rock', duration: 192 },
+  { id: '13', title: 'Calm', artist: 'AlbNet Sounds', url: URL1, category: 'ambient', duration: 210 },
+  { id: '14', title: 'Street Vibes', artist: 'AlbNet Sounds', url: URL2, category: 'hiphop', duration: 185 },
+  { id: '15', title: 'Smooth', artist: 'AlbNet Sounds', url: URL1, category: 'rnb', duration: 200 },
+  { id: '16', title: 'Blinding Nights', artist: 'Electric Dreams', url: URL2, category: 'trending', duration: 195 },
+  { id: '17', title: 'Dance Tonight', artist: 'Summer Beats', url: URL1, category: 'dance', duration: 205 },
+  { id: '18', title: 'Viral Beat', artist: 'TikTok Sounds', url: URL2, category: 'trending', duration: 178 },
+  { id: '19', title: 'Shqiperia ime', artist: 'Folk Studio', url: URL1, category: 'folk', duration: 220 },
+  { id: '20', title: 'Ocean View', artist: 'Chill Waves', url: URL2, category: 'chill', duration: 190 },
+  { id: '21', title: 'Baila conmigo', artist: 'Latin Fire', url: URL1, category: 'latin', duration: 200 },
+  { id: '22', title: 'Jazz Café', artist: 'Smooth Keys', url: URL2, category: 'jazz', duration: 185 },
+  { id: '23', title: 'Summer Hit', artist: 'Sunny Vibes', url: URL1, category: 'summer', duration: 192 },
+  { id: '24', title: 'After Hours', artist: 'Night Drive', url: URL2, category: 'rnb', duration: 210 },
+  { id: '25', title: 'Rooftop', artist: 'City Lights', url: URL1, category: 'pop', duration: 188 },
+  { id: '26', title: 'Bass Drop', artist: 'EDM Nation', url: URL2, category: 'elektro', duration: 198 },
+  { id: '27', title: 'Guitar Hero', artist: 'Rock Arena', url: URL1, category: 'rock', duration: 205 },
+  { id: '28', title: 'Flow', artist: 'Hip-Hop Central', url: URL2, category: 'hiphop', duration: 175 },
+  { id: '29', title: 'Meditation', artist: 'Ambient Zone', url: URL1, category: 'ambient', duration: 240 },
+  { id: '30', title: 'Weekend', artist: 'Party Mode', url: URL2, category: 'dance', duration: 195 },
+  { id: '31', title: 'Mëngjesi', artist: 'AlbNet Sounds', url: URL1, category: 'chill', duration: 182 },
+  { id: '32', title: 'Fiesta', artist: 'Latin Beats', url: URL2, category: 'latin', duration: 200 },
+  { id: '33', title: 'Blue Note', artist: 'Jazz Collective', url: URL1, category: 'jazz', duration: 210 },
+  { id: '34', title: 'Plazhi', artist: 'Verë 2024', url: URL2, category: 'summer', duration: 185 },
+  { id: '35', title: 'Trending Now', artist: 'Viral Hits', url: URL1, category: 'trending', duration: 168 },
+  { id: '36', title: 'Dritë në errësirë', artist: 'Era Istrefi Style', url: URL2, category: 'pop', duration: 195 },
+  { id: '37', title: 'Tirana Night', artist: 'Capital Beats', url: URL1, category: 'elektro', duration: 205 },
+  { id: '38', title: 'Malet', artist: 'Folk Roots', url: URL2, category: 'folk', duration: 220 },
+  { id: '39', title: 'Sunrise', artist: 'Morning Sounds', url: URL1, category: 'ambient', duration: 190 },
+  { id: '40', title: 'Crush', artist: 'Pop Star', url: URL2, category: 'pop', duration: 178 },
+  { id: '41', title: 'No Sleep', artist: 'R&B Nights', url: URL1, category: 'rnb', duration: 200 },
+  { id: '42', title: 'Fire', artist: 'Rock Fusion', url: URL2, category: 'rock', duration: 192 },
+  { id: '43', title: 'Flex', artist: 'Hip-Hop King', url: URL1, category: 'hiphop', duration: 185 },
+  { id: '44', title: 'Rave', artist: 'Club Sound', url: URL2, category: 'dance', duration: 210 },
+  { id: '45', title: 'Lazy Sunday', artist: 'Chill Only', url: URL1, category: 'chill', duration: 240 },
+  { id: '46', title: 'Salsa', artist: 'Latin Groove', url: URL2, category: 'latin', duration: 198 },
+  { id: '47', title: 'Saxophone', artist: 'Jazz Night', url: URL1, category: 'jazz', duration: 215 },
+  { id: '48', title: 'Beach', artist: 'Summer Time', url: URL2, category: 'summer', duration: 188 },
+  { id: '49', title: 'Reel Sound', artist: 'Trending', url: URL1, category: 'trending', duration: 165 },
+  { id: '50', title: 'Shpresa', artist: 'AlbNet Hits', url: URL2, category: 'pop', duration: 195 },
+];
