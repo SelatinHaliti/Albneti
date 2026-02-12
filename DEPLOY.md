@@ -46,13 +46,15 @@ Ky dokument përshkruan hapat për të vendosur AlbNet në production (Vercel + 
 
 ## 2. Frontend (Vercel)
 
-1. Regjistrohu në [Vercel](https://vercel.com) dhe lidhe repozitorin GitHub.
-2. **Root Directory:** `frontend` (ose lër bosh nëse projekti është vetëm frontend).
-3. **Framework Preset:** Next.js (zbulohet automatikisht).
+1. Regjistrohu në [Vercel](https://vercel.com) dhe lidhe repozitorin GitHub (p.sh. `SelatinHaliti/Albnet`).
+2. **Root Directory (shumë i rëndësishëm):** duhet të jetë **`frontend`**.  
+   - Nëse e lini bosh, Vercel ndërton nga rrënja e repozitorit dhe merrni **404: NOT_FOUND**.  
+   - Vercel Dashboard → Projektin → **Settings** → **General** → **Root Directory** → **Edit** → shkruani `frontend` → **Save**.
+3. **Framework Preset:** Next.js (zbulohet automatikisht kur root është `frontend`).
 4. **Environment Variables:**
    - `NEXT_PUBLIC_API_URL` = URL e backend-it (p.sh. `https://albnet-api.onrender.com`)
 
-5. Kliko **Deploy**. Vercel do të ndërtojë dhe të publikojë faqen.
+5. Kliko **Deploy**. Nëse keni pasur 404, bëni **Redeploy** pasi të keni vendosur Root Directory në `frontend`.
 
 ---
 

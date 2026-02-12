@@ -102,6 +102,17 @@ Të gjitha rrugët e mbrojtura kërkojnë header: `Authorization: Bearer <token>
 
 Shiko **DEPLOY.md** për hapa të hollësishëm për Vercel (frontend) dhe Render ose Railway (backend).
 
+### Nëse merrni 404 në Vercel (albnet.vercel.app)
+
+Projekti ka **frontend** në nëndosje `frontend/`. Duhet të thuash Vercel-it të ndërtojë nga ajo dosje:
+
+1. Hyni në [Vercel Dashboard](https://vercel.com/dashboard) → zgjidhni projektin **Albnet**.
+2. **Settings** → **General**.
+3. Tek **Root Directory** klikoni **Edit**, vendosni `frontend` dhe ruani.
+4. **Redeploy**: **Deployments** → tre pika te deploy-i i fundit → **Redeploy**.
+
+Pas kësaj, faqja kryesore duhet të ngarkojë normalisht.
+
 ## Licensa
 
 Projekt edukativ / portfolio.
