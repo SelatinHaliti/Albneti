@@ -6,7 +6,7 @@
 export function AppLogo({ size = 40 }: { size?: number }) {
   return (
     <span
-      className="inline-flex flex-shrink-0 items-center justify-center rounded-[12px] bg-white dark:bg-[#0a0a0a] shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+      className="inline-flex flex-shrink-0 items-center justify-center rounded-[14px] bg-white dark:bg-[#111111] shadow-[var(--shadow-sm)] ring-1 ring-black/5 dark:ring-white/10"
       style={{ width: size, height: size }}
     >
       <svg

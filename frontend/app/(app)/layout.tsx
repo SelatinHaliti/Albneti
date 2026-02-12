@@ -92,196 +92,207 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SocketProvider>
       <div className="min-h-screen flex flex-col md:flex-row bg-[var(--bg)]">
-        {/* Mobile: top bar – si Instagram: logo majtas me dropdown Për ty / Ndiqet */}
-        <header className="md:hidden fixed top-0 left-0 right-0 h-[44px] px-4 grid grid-cols-3 items-center border-b border-[var(--border)] bg-[var(--bg-card)] z-50 safe-area-pt shadow-[0_1px_0_0_var(--border)]">
-          <div className="flex items-center justify-start min-h-[44px] relative" ref={feedDropdownRefMobile}>
+        {/* ── Mobile top bar ── */}
+        <header className="md:hidden fixed top-0 left-0 right-0 h-[52px] px-4 grid grid-cols-3 items-center bg-[var(--bg-card)]/95 backdrop-blur-xl border-b border-[var(--border)] z-50 safe-area-pt">
+          <div className="flex items-center justify-start min-h-[52px] relative" ref={feedDropdownRefMobile}>
             {pathname === '/feed' ? (
               <>
                 <button
                   type="button"
                   onClick={() => setFeedDropdownOpen((o) => !o)}
-                  className="flex items-center gap-2 ig-touch text-[var(--text)] rounded p-1 -m-1"
+                  className="flex items-center gap-2 ig-touch text-[var(--text)] rounded-lg p-1 -m-1"
                   aria-expanded={feedDropdownOpen}
                   aria-haspopup="true"
                   aria-label="Zgjidh feed"
                 >
-                  <AppLogo size={28} />
+                  <AppLogo size={30} />
                   <span className="font-bold text-[17px] tracking-tight text-[var(--text)]">ALBNET</span>
-                  <svg className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                  <svg className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform duration-200 ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                   </svg>
                 </button>
                 {feedDropdownOpen && (
-                  <div className="absolute left-0 top-full mt-1 w-[200px] py-1 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-lg z-[60]">
+                  <div className="absolute left-0 top-full mt-2 w-[200px] py-1.5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)] z-[60] overflow-hidden">
                     <Link
                       href="/feed"
                       onClick={() => setFeedDropdownOpen(false)}
-                      className={`flex items-center gap-2 px-4 py-2.5 text-[14px] ${feedMode === 'for_you' ? 'font-semibold text-[var(--text)]' : 'text-[var(--text-muted)]'}`}
+                      className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'for_you' ? 'font-semibold text-[var(--text)] bg-[var(--primary-soft)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}
                     >
-                      <span className="w-5 h-5 rounded-full bg-[var(--ig-gradient)] flex items-center justify-center text-white text-[10px] font-bold">P</span>
+                      <span className="w-6 h-6 rounded-full bg-[var(--ig-gradient)] flex items-center justify-center text-white text-[11px] font-bold">P</span>
                       Për ty
                     </Link>
                     <Link
                       href="/feed?feed=following"
                       onClick={() => setFeedDropdownOpen(false)}
-                      className={`flex items-center gap-2 px-4 py-2.5 text-[14px] ${feedMode === 'following' ? 'font-semibold text-[var(--text)]' : 'text-[var(--text-muted)]'}`}
+                      className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'following' ? 'font-semibold text-[var(--text)] bg-[var(--primary-soft)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}
                     >
-                      <span className="w-5 h-5 rounded-full border-2 border-[var(--text)] flex items-center justify-center text-[10px] font-bold">N</span>
+                      <span className="w-6 h-6 rounded-full border-2 border-[var(--text)] flex items-center justify-center text-[11px] font-bold">N</span>
                       Ndiqet
                     </Link>
                   </div>
                 )}
               </>
             ) : (
-              <Link href="/feed" className="ig-touch flex items-center gap-2 min-h-[44px] -m-2 px-2">
-                <AppLogo size={28} />
+              <Link href="/feed" className="ig-touch flex items-center gap-2 min-h-[52px] -m-2 px-2">
+                <AppLogo size={30} />
                 <span className="font-bold text-[17px] tracking-tight text-[var(--text)]">ALBNET</span>
               </Link>
             )}
           </div>
-          <div className="flex justify-center items-center min-h-[44px] text-[15px] font-semibold text-[var(--text)]">
+          <div className="flex justify-center items-center min-h-[52px] text-[14px] font-semibold text-[var(--text)]">
             {pathname === '/feed' && feedMode === 'following' ? 'Ndiqet' : ''}
           </div>
-          <div className="flex items-center justify-end gap-1">
-            <Link href="/chat-global" className="ig-touch text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label="Chat Global">
+          <div className="flex items-center justify-end gap-0.5">
+            <Link href="/chat-global" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--bg)] transition-colors" aria-label="Chat Global">
               <IconGlobe />
             </Link>
-            <Link href="/njoftime" className="ig-touch text-[var(--text)] rounded-full hover:opacity-70 transition-opacity relative" aria-label="Njoftime">
+            <Link href="/njoftime" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--bg)] transition-colors relative" aria-label="Njoftime">
               <IconHeart />
               {unreadNotifications > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[var(--danger)]" />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)]" />
               )}
             </Link>
-            <Link href="/mesazhe" className="ig-touch text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label="Mesazhe">
+            <Link href="/mesazhe" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--bg)] transition-colors" aria-label="Mesazhe">
               <IconMessage />
             </Link>
           </div>
         </header>
 
-        {/* Desktop: left sidebar – logo me dropdown si Instagram */}
-        <aside className="hidden md:flex md:w-[72px] lg:w-[244px] flex-col fixed left-0 top-0 h-full border-r border-[var(--border)] bg-[var(--bg-card)] z-30">
-          <div className="p-4 lg:pl-6 lg:pt-6 flex items-center relative" ref={feedDropdownRefDesktop}>
+        {/* ── Desktop sidebar ── */}
+        <aside className="hidden md:flex md:w-[72px] lg:w-[260px] flex-col fixed left-0 top-0 h-full border-r border-[var(--border)] bg-[var(--bg-card)] z-30">
+          {/* Logo */}
+          <div className="px-4 lg:px-6 pt-6 pb-4 flex items-center relative" ref={feedDropdownRefDesktop}>
             {pathname === '/feed' ? (
               <>
                 <button
                   type="button"
                   onClick={() => setFeedDropdownOpen((o) => !o)}
-                  className="flex items-center gap-2 text-[var(--text)] rounded-lg hover:opacity-90"
+                  className="flex items-center gap-3 text-[var(--text)] rounded-xl hover:opacity-90 transition-opacity"
                   aria-expanded={feedDropdownOpen}
                   aria-label="Zgjidh feed"
                 >
-                  <AppLogo size={36} />
-                  <span className="hidden lg:inline font-bold text-[18px] tracking-tight text-[var(--text)]">ALBNET</span>
-                  <svg className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                  <AppLogo size={38} />
+                  <span className="hidden lg:inline font-bold text-[20px] tracking-tight text-[var(--text)]">ALBNET</span>
+                  <svg className={`hidden lg:block w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                   </svg>
                 </button>
                 {feedDropdownOpen && (
-                  <div className="absolute left-4 lg:left-6 top-full mt-1 w-[200px] py-1 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-lg z-[60]">
-                    <Link href="/feed" onClick={() => setFeedDropdownOpen(false)} className={`flex items-center gap-2 px-4 py-2.5 text-[14px] ${feedMode === 'for_you' ? 'font-semibold text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>
-                      <span className="w-5 h-5 rounded-full bg-[var(--ig-gradient)] flex items-center justify-center text-white text-[10px] font-bold">P</span>
+                  <div className="absolute left-4 lg:left-6 top-full mt-2 w-[210px] py-1.5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)] z-[60] overflow-hidden">
+                    <Link href="/feed" onClick={() => setFeedDropdownOpen(false)} className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'for_you' ? 'font-semibold text-[var(--text)] bg-[var(--primary-soft)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}>
+                      <span className="w-6 h-6 rounded-full bg-[var(--ig-gradient)] flex items-center justify-center text-white text-[11px] font-bold">P</span>
                       Për ty
                     </Link>
-                    <Link href="/feed?feed=following" onClick={() => setFeedDropdownOpen(false)} className={`flex items-center gap-2 px-4 py-2.5 text-[14px] ${feedMode === 'following' ? 'font-semibold text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>
-                      <span className="w-5 h-5 rounded-full border-2 border-[var(--text)] flex items-center justify-center text-[10px] font-bold">N</span>
+                    <Link href="/feed?feed=following" onClick={() => setFeedDropdownOpen(false)} className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'following' ? 'font-semibold text-[var(--text)] bg-[var(--primary-soft)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}>
+                      <span className="w-6 h-6 rounded-full border-2 border-[var(--text)] flex items-center justify-center text-[11px] font-bold">N</span>
                       Ndiqet
                     </Link>
                   </div>
                 )}
               </>
             ) : (
-              <Link href="/feed" className="flex items-center gap-2">
-                <AppLogo size={36} />
-                <span className="hidden lg:inline font-bold text-[18px] tracking-tight text-[var(--text)]">ALBNET</span>
+              <Link href="/feed" className="flex items-center gap-3">
+                <AppLogo size={38} />
+                <span className="hidden lg:inline font-bold text-[20px] tracking-tight text-[var(--text)]">ALBNET</span>
               </Link>
             )}
           </div>
-          <nav className="flex-1 px-2 lg:px-3 pt-2 space-y-1">
-            {navItems.map((item) => {
-              const isActive = item.href === '/feed' ? pathname === '/feed' : pathname === item.href;
-              const Icon = item.Icon;
+
+          {/* Nav items */}
+          <nav className="flex-1 px-3 lg:px-4 pt-1 space-y-0.5 overflow-y-auto">
+            {navItems.map((navItem) => {
+              const isActive = navItem.href === '/feed' ? pathname === '/feed' : pathname === navItem.href;
+              const Icon = navItem.Icon;
               return (
                 <Link
-                  key={item.href}
-                  href={item.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : item.href}
+                  key={navItem.href}
+                  href={navItem.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : navItem.href}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
-                    isActive ? 'font-semibold text-[var(--text)]' : 'text-[var(--text)] hover:bg-[var(--bg)]'
+                  className={`group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-150 ${
+                    isActive
+                      ? 'bg-[var(--primary-soft)] text-[var(--text)] font-semibold'
+                      : 'text-[var(--text-muted)] hover:bg-[var(--bg)] hover:text-[var(--text)]'
                   }`}
                 >
-                  <span className="flex-shrink-0 relative">
+                  <span className={`flex-shrink-0 relative transition-transform duration-150 group-hover:scale-110 ${isActive ? 'text-[var(--primary)]' : ''}`}>
                     {Icon === IconHome && <IconHome active={isActive} />}
                     {Icon === IconSearch && <IconSearch />}
                     {Icon === IconAdd && <IconAdd />}
                     {Icon === IconGlobe && <IconGlobe />}
                     {Icon === IconMessage && <IconMessage />}
-                    {item.href === '/njoftime' ? (
+                    {navItem.href === '/njoftime' ? (
                       <>
                         <IconHeart />
                         {unreadNotifications > 0 && (
-                          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--danger)]" />
+                          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[var(--danger)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--bg-card)]">
+                            {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                          </span>
                         )}
                       </>
                     ) : (
                       Icon === IconHeart && <IconHeart />
                     )}
                   </span>
-                  <span className="hidden lg:inline text-sm">{item.label}</span>
+                  <span className="hidden lg:inline text-[14px]">{navItem.label}</span>
                 </Link>
               );
             })}
           </nav>
-          <div className="p-2 lg:p-3 border-t border-[var(--border)] space-y-1">
+
+          {/* Bottom section */}
+          <div className="p-3 lg:p-4 border-t border-[var(--border)] space-y-0.5">
             <button
               type="button"
               onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[var(--text)] hover:bg-[var(--bg)]"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg)] hover:text-[var(--text)] transition-colors"
             >
               <span className="flex-shrink-0">{theme === 'dark' ? <IconSun /> : <IconMoon />}</span>
-              <span className="hidden lg:inline text-sm">{theme === 'dark' ? 'Ndriço' : 'Errëso'}</span>
+              <span className="hidden lg:inline text-[14px]">{theme === 'dark' ? 'Ndriço' : 'Errëso'}</span>
             </button>
             {(user.role === 'admin' || user.role === 'moderator') && (
               <Link
                 href="/admin"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[var(--text)] hover:bg-[var(--bg)]"
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg)] hover:text-[var(--text)] transition-colors"
               >
                 <span className="flex-shrink-0"><IconSettings /></span>
-                <span className="hidden lg:inline text-sm">Admin</span>
+                <span className="hidden lg:inline text-[14px]">Admin</span>
               </Link>
             )}
             <Link
               href={`/profili/${user.username}`}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--bg)] ${
-                pathname.startsWith('/profili') ? 'font-semibold text-[var(--text)]' : 'text-[var(--text)]'
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
+                pathname.startsWith('/profili')
+                  ? 'bg-[var(--primary-soft)] font-semibold text-[var(--text)]'
+                  : 'text-[var(--text-muted)] hover:bg-[var(--bg)] hover:text-[var(--text)]'
               }`}
             >
               <img
                 src={user.avatar || ''}
                 alt=""
-                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                className={`w-7 h-7 rounded-full object-cover flex-shrink-0 ${pathname.startsWith('/profili') ? 'ring-2 ring-[var(--primary)]' : 'ring-1 ring-[var(--border)]'}`}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username;
                 }}
               />
-              <span className="hidden lg:inline text-sm font-medium truncate">{user.username}</span>
+              <span className="hidden lg:inline text-[14px] font-medium truncate">{user.username}</span>
             </Link>
             <button
               type="button"
               onClick={() => { logout(); router.push('/'); }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[var(--text)] hover:bg-[var(--bg)]"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg)] hover:text-[var(--danger)] transition-colors"
             >
               <span className="flex-shrink-0"><IconLogout /></span>
-              <span className="hidden lg:inline text-sm">Dil</span>
+              <span className="hidden lg:inline text-[14px]">Dil</span>
             </button>
           </div>
         </aside>
 
-        <main className="flex-1 md:ml-[72px] lg:ml-[244px] pt-[44px] md:pt-0 pb-[60px] md:pb-0 min-h-screen">
+        <main className="flex-1 md:ml-[72px] lg:ml-[260px] pt-[52px] md:pt-0 pb-[64px] md:pb-0 min-h-screen">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
 
-        {/* Mobile: bottom nav – 5 ikona identike me Instagram (49px) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[49px] bg-[var(--bg-card)] border-t border-[var(--border)] flex items-center justify-around z-40 safe-area-pb shadow-[0_-1px_0_0_var(--border)]">
+        {/* ── Mobile bottom nav ── */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[56px] bg-[var(--bg-card)]/95 backdrop-blur-xl border-t border-[var(--border)] flex items-center justify-around z-40 safe-area-pb">
           {bottomNavItems.map((item) => {
             const isActive = item.icon === 'avatar' ? pathname.startsWith('/profili') : pathname === item.href;
             return (
@@ -289,21 +300,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center flex-1 h-[49px] min-w-0 gap-0.5 ${
-                  isActive ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'
+                className={`relative flex flex-col items-center justify-center flex-1 h-[56px] min-w-0 gap-0.5 transition-colors ${
+                  isActive ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'
                 }`}
               >
+                {/* Active indicator dot */}
+                {isActive && (
+                  <span className="absolute top-1 w-1 h-1 rounded-full bg-[var(--primary)]" />
+                )}
                 {item.icon === 'avatar' ? (
                   <img
                     src={user.avatar || ''}
                     alt=""
-                    className={`w-6 h-6 rounded-full object-cover flex-shrink-0 ${isActive ? 'ring-2 ring-[var(--text)] ring-offset-2 ring-offset-[var(--bg-card)]' : ''}`}
+                    className={`w-7 h-7 rounded-full object-cover flex-shrink-0 transition-all ${isActive ? 'ring-2 ring-[var(--primary)] ring-offset-1 ring-offset-[var(--bg-card)]' : ''}`}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username;
                     }}
                   />
                 ) : (
-                  <span className="flex items-center justify-center w-6 h-6">
+                  <span className={`flex items-center justify-center w-7 h-7 transition-transform ${isActive ? 'scale-110' : ''}`}>
                     {item.Icon === IconHome && <IconHome active={isActive} />}
                     {item.Icon === IconSearch && <IconSearch />}
                     {item.Icon === IconAdd && <IconAdd />}

@@ -22,6 +22,17 @@ type Post = {
   music?: { url: string; title?: string; artist?: string };
 };
 
+function timeAgo(date: string): string {
+  const d = new Date(date);
+  const now = new Date();
+  const sec = Math.floor((now.getTime() - d.getTime()) / 1000);
+  if (sec < 60) return 'tani';
+  if (sec < 3600) return `${Math.floor(sec / 60)} min`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} orë`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)} ditë`;
+  return d.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' });
+}
+
 export function PostCard(props: {
   post: Post;
   onLike?: () => void;
@@ -137,60 +148,66 @@ export function PostCard(props: {
   const handleMusicEnded = () => setMusicPlaying(false);
 
   return (
-    <article className="post-block overflow-hidden relative bg-[var(--bg-card)] rounded-xl border border-[var(--border)] shadow-sm">
-      <header className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
+    <article className="post-block overflow-hidden relative">
+      {/* Header */}
+      <header className="flex items-center gap-3 px-4 py-3">
         <Link href={`/profili/${post.user?.username}`} className="flex-shrink-0">
           <img
             src={post.user?.avatar || ''}
             alt=""
-            className="w-8 h-8 rounded-full object-cover ring-1 ring-[var(--border)]"
+            className="w-9 h-9 rounded-full object-cover ring-1 ring-[var(--border)]"
             onError={setAvatarError}
           />
         </Link>
-        <Link
-          href={`/profili/${post.user?.username}`}
-          className="font-semibold text-[14px] text-[var(--text)] truncate flex-1 min-w-0"
-        >
-          {post.user?.username}
-        </Link>
+        <div className="flex-1 min-w-0">
+          <Link
+            href={`/profili/${post.user?.username}`}
+            className="font-semibold text-[14px] text-[var(--text)] truncate block hover:opacity-80 transition-opacity"
+          >
+            {post.user?.username}
+          </Link>
+          {post.createdAt && (
+            <span className="text-[12px] text-[var(--text-secondary)]">{timeAgo(post.createdAt)}</span>
+          )}
+        </div>
         <div className="relative ml-auto" ref={optionsRef}>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setShowOptionsMenu((v) => !v); }}
-            className="p-2 -mr-2 text-[var(--text)] rounded-full hover:bg-[var(--bg)] transition-colors"
+            className="p-2 -mr-2 text-[var(--text-muted)] rounded-full hover:bg-[var(--bg)] transition-colors"
             aria-label="Më shumë"
           >
             <IconMore />
           </button>
           {showOptionsMenu && (
-            <div className="absolute right-0 top-full mt-1 py-1 min-w-[180px] bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] shadow-lg z-50">
+            <div className="absolute right-0 top-full mt-1 py-1.5 min-w-[200px] bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-lg)] z-50 overflow-hidden">
               {isOwner && (
                 <>
-                  <button type="button" onClick={() => { setShowOptionsMenu(false); onEdit?.(); }} className="w-full text-left px-4 py-2.5 text-[14px] text-[var(--text)] hover:bg-[var(--bg)]">
+                  <button type="button" onClick={() => { setShowOptionsMenu(false); onEdit?.(); }} className="w-full text-left px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors">
                     Redakto
                   </button>
-                  <button type="button" onClick={() => { setShowOptionsMenu(false); onArchive?.(); }} className="w-full text-left px-4 py-2.5 text-[14px] text-[var(--text)] hover:bg-[var(--bg)]">
+                  <button type="button" onClick={() => { setShowOptionsMenu(false); onArchive?.(); }} className="w-full text-left px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors">
                     Arkivo
                   </button>
-                  <button type="button" onClick={() => { setShowOptionsMenu(false); onDelete?.(); }} className="w-full text-left px-4 py-2.5 text-[14px] text-[var(--danger)] hover:bg-[var(--bg)]">
+                  <button type="button" onClick={() => { setShowOptionsMenu(false); onDelete?.(); }} className="w-full text-left px-4 py-3 text-[14px] text-[var(--danger)] hover:bg-[var(--bg)] transition-colors">
                     Fshi postimin
                   </button>
-                  <div className="border-t border-[var(--border)] my-1" />
+                  <div className="border-t border-[var(--border)] my-0.5" />
                 </>
               )}
-              <Link href={`/post/${post._id}`} className="block px-4 py-2.5 text-[14px] text-[var(--text)] hover:bg-[var(--bg)]" onClick={() => setShowOptionsMenu(false)}>
+              <Link href={`/post/${post._id}`} className="block px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors" onClick={() => setShowOptionsMenu(false)}>
                 Shko te postimi
               </Link>
-              <button type="button" onClick={() => { copyLink(); setShowOptionsMenu(false); }} className="w-full text-left px-4 py-2.5 text-[14px] text-[var(--text)] hover:bg-[var(--bg)]">
+              <button type="button" onClick={() => { copyLink(); setShowOptionsMenu(false); }} className="w-full text-left px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors">
                 Kopjo linkun
               </button>
-              <Link href={`/profili/${post.user?.username}`} className="block px-4 py-2.5 text-[14px] text-[var(--text)] hover:bg-[var(--bg)]" onClick={() => setShowOptionsMenu(false)}>
+              <Link href={`/profili/${post.user?.username}`} className="block px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors" onClick={() => setShowOptionsMenu(false)}>
                 Shiko profilin
               </Link>
               {!isOwner && (
                 <>
-                  <div className="border-t border-[var(--border)] my-1" />
-                  <ReportButton reportedPost={post._id} className="block w-full text-left px-4 py-2.5 text-[14px] text-[var(--danger)] hover:bg-[var(--bg)]" />
+                  <div className="border-t border-[var(--border)] my-0.5" />
+                  <ReportButton reportedPost={post._id} className="block w-full text-left px-4 py-3 text-[14px] text-[var(--danger)] hover:bg-[var(--bg)] transition-colors" />
                 </>
               )}
             </div>
@@ -198,25 +215,30 @@ export function PostCard(props: {
         </div>
       </header>
 
+      {/* Share modal */}
       {showShareModal && (
-        <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center bg-black/50" onClick={() => setShowShareModal(false)}>
-          <div className="w-full max-w-[400px] bg-[var(--bg-card)] rounded-t-2xl sm:rounded-2xl p-4 pb-8 safe-area-pb" onClick={(e) => e.stopPropagation()}>
-            <p className="text-[14px] font-semibold text-[var(--text)] mb-3">Ndaj postimin</p>
-            <button type="button" onClick={copyLink} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--bg)] text-[var(--text)] text-[14px]">
-              <IconShare />
-              Kopjo linkun
-            </button>
-            <Link href={`/post/${post._id}`} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--bg)] text-[var(--text)] text-[14px]">
-              <IconComment />
-              Shko te postimi
-            </Link>
-            <button type="button" onClick={() => setShowShareModal(false)} className="w-full mt-2 py-3 text-[14px] font-semibold text-[var(--text-muted)]">
+        <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowShareModal(false)}>
+          <div className="w-full max-w-[400px] bg-[var(--bg-card)] rounded-t-2xl sm:rounded-2xl p-5 pb-8 safe-area-pb border border-[var(--border)] shadow-[var(--shadow-lg)]" onClick={(e) => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto mb-4 sm:hidden" />
+            <p className="text-[15px] font-semibold text-[var(--text)] mb-4">Ndaj postimin</p>
+            <div className="space-y-1">
+              <button type="button" onClick={copyLink} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--bg)] text-[var(--text)] text-[14px] transition-colors">
+                <IconShare />
+                Kopjo linkun
+              </button>
+              <Link href={`/post/${post._id}`} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--bg)] text-[var(--text)] text-[14px] transition-colors">
+                <IconComment />
+                Shko te postimi
+              </Link>
+            </div>
+            <button type="button" onClick={() => setShowShareModal(false)} className="w-full mt-3 py-3 text-[14px] font-semibold text-[var(--text-muted)] rounded-xl hover:bg-[var(--bg)] transition-colors">
               Anulo
             </button>
           </div>
         </div>
       )}
 
+      {/* Media */}
       <div
         className="relative aspect-square bg-black cursor-pointer select-none"
         onDoubleClick={handleDoubleTap}
@@ -251,25 +273,31 @@ export function PostCard(props: {
               <>
                 <button
                   type="button"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-black"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
                   onClick={() => setCurrentMedia((i) => (i === 0 ? (post.media?.length ?? 1) - 1 : i - 1))}
                   aria-label="Para"
                 >
-                  <span className="text-lg font-bold">‹</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
                 </button>
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-black"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
                   onClick={() => setCurrentMedia((i) => (i === (post.media?.length ?? 1) - 1 ? 0 : i + 1))}
                   aria-label="Pas"
                 >
-                  <span className="text-lg font-bold">›</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
                 </button>
+                {/* Dots indicator */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {post.media.map((_, idx) => (
+                    <span key={idx} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentMedia ? 'bg-white w-3' : 'bg-white/50'}`} />
+                  ))}
+                </div>
               </>
             )}
           </>
         )}
-        {/* Muzikë – shirit si Instagram */}
+        {/* Music bar */}
         {post.music?.url && (
           <>
             <audio
@@ -278,11 +306,11 @@ export function PostCard(props: {
               onEnded={handleMusicEnded}
               preload="metadata"
             />
-            <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 px-3 py-2 bg-gradient-to-t from-black/80 to-transparent">
+            <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 px-4 py-3 bg-gradient-to-t from-black/80 to-transparent">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); toggleMusic(); }}
-                className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white flex-shrink-0"
+                className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center text-white flex-shrink-0 hover:bg-white/25 transition-colors"
                 aria-label={musicPlaying ? 'Ndalo muzikën' : 'Luaj muzikën'}
               >
                 {musicPlaying ? (
@@ -292,8 +320,8 @@ export function PostCard(props: {
                 )}
               </button>
               <div className="flex-1 min-w-0 flex items-center gap-2">
-                <span className="text-white/90 text-xs">♪</span>
-                <span className="text-white text-[13px] truncate">
+                <span className="text-white/80 text-xs">♪</span>
+                <span className="text-white text-[13px] truncate font-medium">
                   {post.music.title || 'Muzikë'}
                   {post.music.artist ? ` · ${post.music.artist}` : ''}
                 </span>
@@ -303,38 +331,39 @@ export function PostCard(props: {
         )}
       </div>
 
-      <div className="px-4 pt-2 pb-4">
-        <div className="flex items-center gap-4 mb-2">
-          <button type="button" onClick={handleLike} className="p-2 -ml-2 text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
+      {/* Actions & caption */}
+      <div className="px-4 pt-3 pb-4">
+        <div className="flex items-center gap-3 mb-2.5">
+          <button type="button" onClick={handleLike} className={`p-1.5 -ml-1.5 rounded-full transition-all ${liked ? 'text-[var(--primary)] scale-110' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
             <IconHeart filled={liked} />
           </button>
-          <Link href={`/post/${post._id}`} className="p-2 text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label="Komentet">
+          <Link href={`/post/${post._id}`} className="p-1.5 text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label="Komentet">
             <IconComment />
           </Link>
-          <button type="button" onClick={handleShareClick} className="p-2 text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label="Ndaj">
+          <button type="button" onClick={handleShareClick} className="p-1.5 text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label="Ndaj">
             <IconShare />
           </button>
-          <button type="button" onClick={handleSave} className="ml-auto p-2 text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label={saved ? 'Hiq nga të ruajturat' : 'Ruaj'}>
+          <button type="button" onClick={handleSave} className={`ml-auto p-1.5 rounded-full transition-all ${saved ? 'text-[var(--text)] scale-110' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={saved ? 'Hiq nga të ruajturat' : 'Ruaj'}>
             <IconBookmark filled={saved} />
           </button>
         </div>
         {likesCount > 0 && (
-          <p className="text-[14px] font-semibold text-[var(--text)] mb-0.5">
+          <p className="text-[14px] font-semibold text-[var(--text)] mb-1">
             {likesCount === 1 ? '1 pelqim' : `${likesCount} pelqime`}
           </p>
         )}
         {post.caption && (
-          <p className="text-[14px] text-[var(--text)] leading-[18px]">
-            <Link href={`/profili/${post.user?.username}`} className="font-semibold mr-1">
+          <p className="text-[14px] text-[var(--text)] leading-[20px]">
+            <Link href={`/profili/${post.user?.username}`} className="font-semibold mr-1 hover:opacity-80 transition-opacity">
               {post.user?.username}
             </Link>
             {post.caption}
           </p>
         )}
         {post.hashtags && post.hashtags.length > 0 && (
-          <p className="text-[14px] text-[var(--primary)] mt-1">
+          <p className="text-[13px] text-[var(--primary)] mt-1.5 flex flex-wrap gap-x-1">
             {post.hashtags.map((h) => (
-              <Link key={h} href={`/explore/hashtag/${h}`} className="mr-1">
+              <Link key={h} href={`/explore/hashtag/${h}`} className="hover:underline">
                 #{h}
               </Link>
             ))}

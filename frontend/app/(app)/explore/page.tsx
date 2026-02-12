@@ -23,9 +23,9 @@ type Hashtag = { tag: string; count: number };
 
 function ExploreGridSkeleton() {
   return (
-    <div className="grid grid-cols-3 gap-px md:gap-0.5">
+    <div className="grid grid-cols-3 gap-1">
       {Array.from({ length: 12 }).map((_, i) => (
-        <Skeleton key={i} className="aspect-square w-full" />
+        <Skeleton key={i} className="aspect-square w-full rounded-lg" />
       ))}
     </div>
   );
@@ -122,17 +122,18 @@ export default function ExplorePage() {
   }, [pullY, onRefresh]);
 
   return (
-    <div className="max-w-[470px] md:max-w-4xl mx-auto px-0 md:px-4 py-4 bg-[var(--bg)] w-full min-h-screen">
+    <div className="max-w-[560px] md:max-w-4xl mx-auto px-0 md:px-4 py-4 bg-[var(--bg)] w-full min-h-screen">
       {pullY > 0 && (
         <div className="flex justify-center py-2 bg-[var(--bg)] sticky top-0 z-10" style={{ paddingTop: Math.min(pullY, 60) }}>
-          <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
+          <div className="w-7 h-7 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
         </div>
       )}
 
+      {/* Search bar */}
       <div className="px-4 mb-4">
         <Link
           href="/kerko"
-          className="flex items-center gap-3 w-full px-4 py-3 rounded-[10px] bg-[var(--bg)] border border-[var(--border)] text-[var(--text-muted)] text-[14px] hover:border-[var(--text-secondary)] transition-colors"
+          className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] text-[14px] hover:border-[var(--text-secondary)] transition-colors shadow-[var(--shadow-sm)]"
         >
           <span className="[&_svg]:w-5 [&_svg]:h-5 text-[var(--text-muted)] flex-shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -144,57 +145,66 @@ export default function ExplorePage() {
         </Link>
       </div>
 
-      <div className="flex gap-2 px-4 mb-4 overflow-x-auto scrollbar-hide pb-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab('postime')}
-          className={`px-4 py-2.5 rounded-[8px] text-[14px] font-semibold whitespace-nowrap transition-colors ${
-            activeTab === 'postime'
-              ? 'bg-[var(--text)] text-[var(--bg-card)]'
-              : 'bg-[var(--bg)] text-[var(--text-muted)] border border-[var(--border)] hover:bg-[var(--border)]'
-          }`}
-        >
-          Postime
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('hashtag')}
-          className={`px-4 py-2.5 rounded-[8px] text-[14px] font-semibold whitespace-nowrap transition-colors ${
-            activeTab === 'hashtag'
-              ? 'bg-[var(--text)] text-[var(--bg-card)]'
-              : 'bg-[var(--bg)] text-[var(--text-muted)] border border-[var(--border)] hover:bg-[var(--border)]'
-          }`}
-        >
-          Hashtag
-        </button>
+      {/* Tab pills */}
+      <div className="flex gap-2 px-4 mb-5 overflow-x-auto scrollbar-hide pb-1">
+        {[
+          { key: 'postime', label: 'Postime' },
+          { key: 'hashtag', label: 'Hashtag' },
+        ].map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setActiveTab(t.key as 'postime' | 'hashtag')}
+            className={`px-5 py-2.5 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all ${
+              activeTab === t.key
+                ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20'
+                : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text)] hover:border-[var(--text-secondary)]'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
+      {/* Hashtags grid */}
       {activeTab === 'hashtag' && (
         <div className="flex flex-wrap gap-2 px-4 mb-6">
           {hashtags.map((h) => (
             <Link
               key={h.tag}
               href={`/explore/hashtag/${h.tag}`}
-              className="px-4 py-2 rounded-full bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] text-sm font-medium hover:bg-[var(--border)] transition"
+              className="group px-4 py-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text)] text-[13px] font-medium hover:border-[var(--primary)] hover:bg-[var(--primary-soft)] transition-all shadow-[var(--shadow-sm)]"
             >
-              #{h.tag} <span className="text-[var(--text-muted)]">({h.count})</span>
+              <span className="text-[var(--primary)] group-hover:font-semibold">#{h.tag}</span>
+              <span className="text-[var(--text-muted)] ml-1.5">({h.count})</span>
             </Link>
           ))}
+          {hashtags.length === 0 && !loading && (
+            <p className="text-[14px] text-[var(--text-muted)] px-1">Nuk ka hashtag trending ende.</p>
+          )}
         </div>
       )}
 
+      {/* Posts grid */}
       {loading && activeTab === 'postime' ? (
-        <ExploreGridSkeleton />
+        <div className="px-1 md:px-0">
+          <ExploreGridSkeleton />
+        </div>
       ) : error && posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-          <p className="text-[var(--text)] font-medium mb-3">{error}</p>
-          <button type="button" onClick={() => loadExplore(1, false)} className="px-5 py-2.5 rounded-lg bg-[var(--primary)] text-white text-[14px] font-semibold">
+        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center mb-4 shadow-[var(--shadow-sm)]">
+            <svg className="w-7 h-7 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          </div>
+          <p className="text-[15px] font-medium text-[var(--text)] mb-1">{error}</p>
+          <button type="button" onClick={() => loadExplore(1, false)} className="mt-4 px-6 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold hover:opacity-90 shadow-md shadow-[var(--primary)]/20 transition-opacity">
             Provo përsëri
           </button>
         </div>
       ) : activeTab === 'postime' ? (
         <>
-          <div className="grid grid-cols-3 gap-px md:gap-0.5">
+          <div className="grid grid-cols-3 gap-1 px-1 md:px-0">
             {posts.map((post, i) => (
               <motion.div
                 key={post._id}
@@ -202,8 +212,19 @@ export default function ExplorePage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: Math.min(i * 0.02, 0.25) }}
               >
-                <Link href={`/post/${post._id}`} className="block aspect-square bg-black">
-                  <img src={post.media?.[0]?.url || ''} alt="" className="w-full h-full object-cover" />
+                <Link
+                  href={`/post/${post._id}`}
+                  className="block aspect-square bg-[var(--border)] rounded-lg overflow-hidden relative group"
+                >
+                  <img src={post.media?.[0]?.url || ''} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="flex items-center gap-3 text-white text-[13px] font-semibold">
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
+                        {post.likes?.length || 0}
+                      </span>
+                    </div>
+                  </div>
                 </Link>
               </motion.div>
             ))}

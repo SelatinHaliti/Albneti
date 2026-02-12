@@ -173,22 +173,23 @@ export default function FeedPage() {
   }, [pullY, refreshFeed]);
 
   return (
-    <div className="max-w-[600px] mx-auto min-h-screen bg-[var(--bg)] w-full border-x border-[var(--border)] md:rounded-lg md:border md:shadow-sm md:min-h-[calc(100vh-2rem)] md:my-4">
+    <div className="max-w-[560px] mx-auto min-h-screen bg-[var(--bg)] w-full">
       {pullY > 0 && (
-        <div className="flex justify-center py-3 bg-[var(--bg)] sticky top-0 z-10 rounded-t-lg" style={{ paddingTop: Math.min(pullY, 60) }}>
-          <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
+        <div className="flex justify-center py-3 bg-[var(--bg)] sticky top-0 z-10" style={{ paddingTop: Math.min(pullY, 60) }}>
+          <div className="w-7 h-7 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
         </div>
       )}
-      {/* Story ring vetëm në "Kryefaja" */}
+
+      {/* Story ring - only on "Kryefaja" */}
       {feedMode !== 'following' && (
-        <div className="bg-[var(--bg-card)] rounded-t-lg overflow-hidden border-b border-[var(--border)]">
-          <div className="flex items-center justify-between px-5 pt-4 pb-2">
-            <span className="text-[15px] font-semibold text-[var(--text)]">Story</span>
+        <div className="bg-[var(--bg-card)] overflow-hidden border-b border-[var(--border)]">
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <span className="text-[14px] font-semibold text-[var(--text)]">Story</span>
             {!loading && stories.length > 0 && (
               <button
                 type="button"
                 onClick={() => setStoryOrder((o) => (o === 'latest' ? 'default' : 'latest'))}
-                className="text-[13px] font-semibold text-[var(--primary)] hover:underline"
+                className="text-[13px] font-semibold text-[var(--primary)] hover:opacity-80 transition-opacity"
               >
                 {storyOrder === 'latest' ? 'Kryesor' : 'Fundi'}
               </button>
@@ -199,42 +200,47 @@ export default function FeedPage() {
       )}
 
       {loading ? (
-        <div className="space-y-4 pb-6 pt-2">
+        <div className="space-y-5 pb-6 pt-4 px-3">
           {[1, 2, 3].map((i) => (
             <SkeletonPostBlock key={i} />
           ))}
         </div>
       ) : error && posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 px-6 text-center bg-[var(--bg-card)] rounded-b-lg">
-          <p className="text-[15px] font-semibold text-[var(--text)]">{error}</p>
+        <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center mb-5 shadow-[var(--shadow-sm)]">
+            <svg className="w-8 h-8 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          </div>
+          <p className="text-[16px] font-semibold text-[var(--text)]">{error}</p>
           <button
             type="button"
             onClick={() => { setError(null); refreshFeed(); }}
-            className="mt-5 px-6 py-3 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold hover:opacity-90 transition-opacity"
+            className="mt-5 px-6 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold hover:opacity-90 transition-opacity shadow-md shadow-[var(--primary)]/20"
           >
             Provo përsëri
           </button>
         </div>
       ) : posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 px-6 text-center bg-[var(--bg-card)] rounded-b-lg">
-          <div className="w-20 h-20 rounded-2xl bg-[var(--bg)] flex items-center justify-center mb-5 shadow-inner">
+        <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+          <div className="w-20 h-20 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center mb-5 shadow-[var(--shadow-sm)]">
             <svg className="w-10 h-10 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
             </svg>
           </div>
           {feedMode === 'following' ? (
             <>
-              <p className="text-[16px] font-semibold text-[var(--text)]">Nuk ka postime nga ndjekjet</p>
-              <p className="text-[14px] text-[var(--text-muted)] mt-2 max-w-[300px]">Këtu shfaqen vetëm postet e përdoruesve që ndiqni. Shkoni te <strong>Për ty</strong> për të parë të gjitha postet e platformës.</p>
-              <Link href="/feed" className="mt-5 px-5 py-2.5 rounded-xl text-[14px] font-semibold bg-[var(--primary)] text-white hover:opacity-90">
+              <p className="text-[17px] font-semibold text-[var(--text)]">Nuk ka postime nga ndjekjet</p>
+              <p className="text-[14px] text-[var(--text-muted)] mt-2 max-w-[300px] leading-relaxed">Këtu shfaqen vetëm postet e përdoruesve që ndiqni. Shkoni te <strong>Për ty</strong> për të parë të gjitha postet.</p>
+              <Link href="/feed" className="mt-6 px-6 py-2.5 rounded-xl text-[14px] font-semibold bg-[var(--primary)] text-white hover:opacity-90 shadow-md shadow-[var(--primary)]/20 transition-opacity">
                 Shiko Për ty
               </Link>
             </>
           ) : (
             <>
-              <p className="text-[16px] font-semibold text-[var(--text)]">Ende nuk ka postime</p>
-              <p className="text-[14px] text-[var(--text-muted)] mt-2 max-w-[280px]">Bëhu i pari që poston. Kush poston, e sheh gjithkush.</p>
-              <Link href="/krijo/post" className="mt-5 px-5 py-2.5 rounded-xl text-[14px] font-semibold bg-[var(--primary)] text-white hover:opacity-90">
+              <p className="text-[17px] font-semibold text-[var(--text)]">Ende nuk ka postime</p>
+              <p className="text-[14px] text-[var(--text-muted)] mt-2 max-w-[280px] leading-relaxed">Bëhu i pari që poston. Kush poston, e sheh gjithkush.</p>
+              <Link href="/krijo/post" className="mt-6 px-6 py-2.5 rounded-xl text-[14px] font-semibold bg-[var(--primary)] text-white hover:opacity-90 shadow-md shadow-[var(--primary)]/20 transition-opacity">
                 Posto
               </Link>
             </>
@@ -242,7 +248,7 @@ export default function FeedPage() {
         </div>
       ) : (
         <>
-          <div className="space-y-6 pb-8 pt-4 px-1">
+          <div className="space-y-5 pb-8 pt-4 px-3">
             <AnimatePresence>
               {posts.map((post) => (
                 <PostCard key={post._id} post={post} />
@@ -258,7 +264,7 @@ export default function FeedPage() {
           )}
           {loadingMore && (
             <div className="flex justify-center py-8 bg-[var(--bg)]">
-              <div className="w-7 h-7 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
             </div>
           )}
         </>
