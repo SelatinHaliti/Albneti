@@ -95,7 +95,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={markAllRead}
-              className="text-[13px] font-semibold text-red-600 hover:text-red-500 hover:underline transition-colors"
+              className="text-[13px] font-semibold text-[var(--primary)] hover:opacity-80 hover:underline transition-colors"
             >
               Lexo të gjitha
             </button>
@@ -125,7 +125,7 @@ export default function NotificationsPage() {
           >
             Të palexuara
             {unreadCount > 0 && (
-              <span className="min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+              <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--primary)] text-white text-[11px] font-bold flex items-center justify-center">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -160,7 +160,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={loadNotifications}
-              className="px-5 py-2.5 rounded-xl bg-red-600 text-white text-[14px] font-semibold hover:bg-red-500 active:bg-red-700 transition-colors"
+              className="px-5 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold hover:brightness-110 active:brightness-90 transition-colors"
             >
               Provo përsëri
             </button>
@@ -194,7 +194,7 @@ export default function NotificationsPage() {
                 className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
                   n.isRead
                     ? 'hover:bg-[var(--bg-card)]'
-                    : 'bg-red-500/10 hover:bg-red-500/15'
+                    : 'bg-[var(--primary)]/10 hover:bg-[var(--primary)]/15'
                 }`}
               >
                 <div className="relative flex-shrink-0">
@@ -215,7 +215,7 @@ export default function NotificationsPage() {
                     </div>
                   )}
                   {!n.isRead && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[var(--bg)]" aria-hidden />
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--primary)] ring-2 ring-[var(--bg)]" aria-hidden />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -237,7 +237,7 @@ export default function NotificationsPage() {
                 {n.post && (
                   <Link
                     href={`/post/${typeof n.post === 'object' && n.post && '_id' in n.post ? n.post._id : n.post}`}
-                    className="flex-shrink-0 text-[13px] font-semibold text-red-600 hover:text-red-500 hover:underline"
+                    className="flex-shrink-0 text-[13px] font-semibold text-[var(--primary)] hover:opacity-80 hover:underline"
                     onClick={() => markOneRead(n._id)}
                   >
                     Shiko

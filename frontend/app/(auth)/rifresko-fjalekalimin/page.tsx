@@ -52,7 +52,7 @@ function ResetForm() {
 
   if (!token) {
     return (
-      <p className="text-center text-red-500 py-4">
+      <p className="text-center text-[var(--danger)] py-4">
         Linku është i pavlefshëm. Kërkoeni përsëri një link për rifreskim.
       </p>
     );
@@ -69,7 +69,7 @@ function ResetForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">{error}</p>
+        <p className="text-sm text-[var(--danger)] bg-[var(--primary-soft)] p-3 rounded-lg">{error}</p>
       )}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fjalëkalimi i ri</label>

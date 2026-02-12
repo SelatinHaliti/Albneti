@@ -80,7 +80,7 @@ export default function RegisterPage() {
         {error && (
           <motion.p
             variants={item}
-            className="text-xs text-[var(--danger)] bg-red-50 dark:bg-red-950/30 px-3 py-2.5 rounded-lg"
+            className="text-xs text-[var(--danger)] bg-[var(--primary-soft)] px-3 py-2.5 rounded-lg"
           >
             {error}
           </motion.p>

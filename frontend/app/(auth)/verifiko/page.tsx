@@ -41,7 +41,7 @@ function VerifyForm() {
 
   if (!token) {
     return (
-      <p className="text-center text-red-500 py-4">
+      <p className="text-center text-[var(--danger)] py-4">
         Linku i verifikimit mungon. Kontrolloni email-in tuaj.
       </p>
     );
@@ -58,7 +58,7 @@ function VerifyForm() {
   return (
     <div className="space-y-4">
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">{error}</p>
+        <p className="text-sm text-[var(--danger)] bg-[var(--primary-soft)] p-3 rounded-lg">{error}</p>
       )}
       <button
         type="button"

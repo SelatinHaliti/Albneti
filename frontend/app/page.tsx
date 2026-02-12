@@ -55,7 +55,7 @@ export default function HomePage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white bg-red-600 shadow-md shadow-red-600/30 hover:bg-red-500 active:bg-red-700 transition-all"
+                className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white bg-[var(--primary)] shadow-md shadow-[var(--primary)]/30 hover:brightness-110 active:brightness-90 transition-all"
               >
                 Kyçu
               </motion.button>
@@ -64,7 +64,7 @@ export default function HomePage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-red-600 border-2 border-red-600 bg-transparent hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-[var(--primary)] border-2 border-[var(--primary)] bg-transparent hover:bg-[var(--primary-soft)] transition-colors"
               >
                 Regjistrohu
               </motion.button>
