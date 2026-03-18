@@ -23,7 +23,6 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -31,17 +30,15 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
     try {
-      const data = await api<{ success: boolean; message?: string }>('/api/auth/regjistrohu', {
+      const data = await api<{ user: unknown; token: string }>('/api/auth/regjistrohu', {
         method: 'POST',
         body: { username, email, fullName, password },
       });
-      // Siguri: regjistrimi nuk kthen token pa verifikim email-i.
-      setAuth(null, null);
-      setSuccess(data.message || 'Regjistrimi u krye. Kontrolloni email-in për verifikim.');
-      router.push('/kycu?reason=verify');
+      setAuth(data.user as Parameters<typeof setAuth>[0], data.token);
+      router.push('/feed');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gabim gjatë regjistrimit.');
     } finally {
@@ -80,14 +77,6 @@ export default function RegisterPage() {
         initial="hidden"
         animate="show"
       >
-        {success && (
-          <motion.p
-            variants={item}
-            className="text-xs text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/30 px-3 py-2.5 rounded-lg border border-green-200 dark:border-green-800"
-          >
-            {success}
-          </motion.p>
-        )}
         {error && (
           <motion.p
             variants={item}

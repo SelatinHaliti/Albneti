@@ -84,11 +84,8 @@ export const register = async (req, res) => {
       console.error('sendVerificationEmail threw:', e?.message || e);
     }
 
-    // Për siguri: mos jep token pa u verifikuar email-i.
-    res.status(201).json({
-      success: true,
-      message: 'Regjistrimi u krye. Kontrolloni email-in për të verifikuar llogarinë.',
-    });
+    // Jep token menjëherë (pa verifikim email-i).
+    sendTokenResponse(user, res, 201);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim gjatë regjistrimit.' });
   }
@@ -112,11 +109,6 @@ export const login = async (req, res) => {
     }
     if (user.isBlocked) {
       return res.status(403).json({ message: 'Llogaria juaj është bllokuar.' });
-    }
-    if (!user.isVerified) {
-      return res.status(403).json({
-        message: 'Ju lutemi verifikoni email-in para se të kyçeni. Kontrolloni inbox/spam.',
-      });
     }
 
     const isMatch = await user.comparePassword(password);
@@ -164,57 +156,12 @@ export const verifyEmail = async (req, res) => {
 /**
  * Dërgo sërish email verifikimi (nëse llogaria s'është verifikuar ende)
  */
-export const resendVerification = async (req, res) => {
-  try {
-    const { email } = req.body || {};
-    if (!email) return res.status(400).json({ message: 'Vendosni email-in.' });
-    if (!isSmtpConfigured()) {
-      return res.status(503).json({ message: 'Email verifikimi nuk është konfiguruar në server.' });
-    }
-
-    const user = await User.findOne({ email: String(email).toLowerCase() });
-    if (!user) {
-      return res.json({ success: true, message: 'Nëse ekziston llogaria, do të merrni një email verifikimi.' });
-    }
-    if (user.isVerified) {
-      return res.json({ success: true, message: 'Email-i tashmë është i verifikuar. Mund të kyçeni.' });
-    }
-    if (user.isBlocked) {
-      return res.status(403).json({ message: 'Llogaria juaj është bllokuar.' });
-    }
-
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    user.verificationToken = verificationToken;
-    user.verificationTokenExpires = verificationTokenExpires;
-    await user.save();
-
-    const result = await sendVerificationEmail(user.email, verificationToken, user.username);
-    if (!result?.ok) {
-      return res.status(500).json({
-        message: `Dërgimi i email-it dështoi. ${result?.error || ''}`.trim(),
-      });
-    }
-
-    return res.json({ success: true, message: 'Email-i i verifikimit u dërgua. Kontrolloni inbox/spam.' });
-  } catch (err) {
-    res.status(500).json({ message: err.message || 'Gabim.' });
-  }
+export const resendVerification = async (_req, res) => {
+  return res.status(410).json({ message: 'Verifikimi me email është çaktivizuar.' });
 };
 
-/**
- * Status i email-it (diagnostikë)
- */
-export const emailStatus = async (req, res) => {
-  res.json({
-    success: true,
-    smtpConfigured: isSmtpConfigured(),
-    frontendUrl: process.env.FRONTEND_URL || null,
-    smtpHost: process.env.SMTP_HOST ? String(process.env.SMTP_HOST) : null,
-    smtpPort: process.env.SMTP_PORT ? String(process.env.SMTP_PORT) : null,
-    smtpSecure: process.env.SMTP_SECURE ? String(process.env.SMTP_SECURE) : null,
-    smtpFrom: process.env.SMTP_FROM ? String(process.env.SMTP_FROM) : null,
-  });
+export const emailStatus = async (_req, res) => {
+  return res.status(410).json({ message: 'Verifikimi me email është çaktivizuar.' });
 };
 
 /**
