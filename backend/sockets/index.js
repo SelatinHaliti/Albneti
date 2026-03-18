@@ -84,6 +84,28 @@ export function setupSocketIO(io) {
       io.to(`conv:${conversationId}`).emit('messages_read', { userId, conversationId });
     });
 
+    // ——— WebRTC Call signaling (audio/video) ———
+    // Relayon vetëm mesazhet e sinjalizimit; media rrjedh P2P.
+    socket.on('call:offer', ({ toUserId, conversationId, mode, sdp }) => {
+      if (!toUserId || !sdp) return;
+      io.to(`user:${toUserId}`).emit('call:offer', { fromUserId: userId, conversationId, mode, sdp });
+    });
+
+    socket.on('call:answer', ({ toUserId, conversationId, sdp }) => {
+      if (!toUserId || !sdp) return;
+      io.to(`user:${toUserId}`).emit('call:answer', { fromUserId: userId, conversationId, sdp });
+    });
+
+    socket.on('call:ice', ({ toUserId, conversationId, candidate }) => {
+      if (!toUserId || !candidate) return;
+      io.to(`user:${toUserId}`).emit('call:ice', { fromUserId: userId, conversationId, candidate });
+    });
+
+    socket.on('call:end', ({ toUserId, conversationId, reason }) => {
+      if (!toUserId) return;
+      io.to(`user:${toUserId}`).emit('call:end', { fromUserId: userId, conversationId, reason });
+    });
+
     // ——— Chat Global Shqiptar ———
     socket.on('global_chat_message', async (payload) => {
       try {

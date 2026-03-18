@@ -116,6 +116,14 @@ export function PostCard(props: {
     lastTapRef.current = now;
   }, [liked]);
 
+  const handleMediaPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Mos e trajto double-tap kur përdoruesi prek butona/link brenda medias (p.sh. arrows).
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a')) return;
+    if (e.pointerType !== 'touch') return;
+    handleDoubleTap();
+  };
+
   const postUrl = typeof window !== 'undefined' ? `${window.location.origin}/post/${post._id}` : '';
 
   const handleShareClick = () => {
@@ -126,11 +134,24 @@ export function PostCard(props: {
     setShowShareModal(true);
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(postUrl).then(() => {
-      setShowShareModal(false);
-      toast('Linku u kopjua');
-    }).catch(() => toastError('Nuk u kopjua linku.'));
+  const shareOrCopy = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && 'share' in navigator && postUrl) {
+        await (navigator as Navigator & { share: (data: { url: string }) => Promise<void> }).share({ url: postUrl });
+        setShowShareModal(false);
+        toast('U nda me sukses');
+        return;
+      }
+    } catch (_) {
+      // fallback to clipboard
+    }
+    navigator.clipboard
+      .writeText(postUrl)
+      .then(() => {
+        setShowShareModal(false);
+        toast('Linku u kopjua');
+      })
+      .catch(() => toastError('Nuk u kopjua linku.'));
   };
 
   const toggleMusic = () => {
@@ -198,8 +219,8 @@ export function PostCard(props: {
               <Link href={`/post/${post._id}`} className="block px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors" onClick={() => setShowOptionsMenu(false)}>
                 Shko te postimi
               </Link>
-              <button type="button" onClick={() => { copyLink(); setShowOptionsMenu(false); }} className="w-full text-left px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors">
-                Kopjo linkun
+              <button type="button" onClick={() => { shareOrCopy(); setShowOptionsMenu(false); }} className="w-full text-left px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors">
+                Ndaj / Kopjo linkun
               </button>
               <Link href={`/profili/${post.user?.username}`} className="block px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors" onClick={() => setShowOptionsMenu(false)}>
                 Shiko profilin
@@ -222,9 +243,9 @@ export function PostCard(props: {
             <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto mb-4 sm:hidden" />
             <p className="text-[15px] font-semibold text-[var(--text)] mb-4">Ndaj postimin</p>
             <div className="space-y-1">
-              <button type="button" onClick={copyLink} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--bg)] text-[var(--text)] text-[14px] transition-colors">
+              <button type="button" onClick={shareOrCopy} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--bg)] text-[var(--text)] text-[14px] transition-colors">
                 <IconShare />
-                Kopjo linkun
+                Ndaj / Kopjo linkun
               </button>
               <Link href={`/post/${post._id}`} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--bg)] text-[var(--text)] text-[14px] transition-colors">
                 <IconComment />
@@ -242,6 +263,7 @@ export function PostCard(props: {
       <div
         className="relative aspect-square bg-black cursor-pointer select-none"
         onDoubleClick={handleDoubleTap}
+        onPointerUp={handleMediaPointerUp}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && handleDoubleTap()}
@@ -274,7 +296,7 @@ export function PostCard(props: {
                 <button
                   type="button"
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
-                  onClick={() => setCurrentMedia((i) => (i === 0 ? (post.media?.length ?? 1) - 1 : i - 1))}
+                  onClick={(e) => { e.stopPropagation(); setCurrentMedia((i) => (i === 0 ? (post.media?.length ?? 1) - 1 : i - 1)); }}
                   aria-label="Para"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
@@ -282,7 +304,7 @@ export function PostCard(props: {
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
-                  onClick={() => setCurrentMedia((i) => (i === (post.media?.length ?? 1) - 1 ? 0 : i + 1))}
+                  onClick={(e) => { e.stopPropagation(); setCurrentMedia((i) => (i === (post.media?.length ?? 1) - 1 ? 0 : i + 1)); }}
                   aria-label="Pas"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
