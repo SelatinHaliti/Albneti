@@ -72,7 +72,17 @@ export const register = async (req, res) => {
       verificationTokenExpires,
     });
 
-    await sendVerificationEmail(user.email, verificationToken, user.username);
+    // Mos e blloko përgjigjen e regjistrimit nga dërgimi i email-it.
+    // Nëse email-i dështon (SMTP/API), përdoruesi prapë duhet të kyçet.
+    try {
+      Promise.resolve(sendVerificationEmail(user.email, verificationToken, user.username)).catch((e) => {
+        // eslint-disable-next-line no-console
+        console.error('sendVerificationEmail failed:', e?.message || e);
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('sendVerificationEmail threw:', e?.message || e);
+    }
 
     sendTokenResponse(user, res, 201);
   } catch (err) {
