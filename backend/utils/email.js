@@ -7,14 +7,18 @@ import nodemailer from 'nodemailer';
 const createTransporter = () => {
   const host = (process.env.SMTP_HOST || '').trim().toLowerCase();
   if (!host || host.includes('example')) return null;
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
+  const user = (process.env.SMTP_USER || '').trim();
+  // Gmail App Password shpesh kopjohet me hapësira (p.sh. "abcd efgh ijkl mnop")
+  // Nodemailer pret string pa hapësira.
+  const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  if (!user || !pass) return null;
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user,
+      pass,
     },
   });
 };
