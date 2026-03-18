@@ -84,7 +84,11 @@ export const register = async (req, res) => {
       console.error('sendVerificationEmail threw:', e?.message || e);
     }
 
-    sendTokenResponse(user, res, 201);
+    // Për siguri: mos jep token pa u verifikuar email-i.
+    res.status(201).json({
+      success: true,
+      message: 'Regjistrimi u krye. Kontrolloni email-in për të verifikuar llogarinë.',
+    });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim gjatë regjistrimit.' });
   }
@@ -108,6 +112,11 @@ export const login = async (req, res) => {
     }
     if (user.isBlocked) {
       return res.status(403).json({ message: 'Llogaria juaj është bllokuar.' });
+    }
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: 'Ju lutemi verifikoni email-in para se të kyçeni. Kontrolloni inbox/spam.',
+      });
     }
 
     const isMatch = await user.comparePassword(password);

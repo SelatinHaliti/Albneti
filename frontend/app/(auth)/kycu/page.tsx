@@ -30,10 +30,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     const reason = searchParams.get('reason');
-    if (reason === 'session' || reason === 'forbidden') {
+    if (reason === 'session' || reason === 'forbidden' || reason === 'verify') {
       logout();
       if (reason === 'session') setReasonMessage('Sesioni ka skaduar. Kyçuni përsëri.');
       else setReasonMessage('Nuk keni leje për këtë veprim. Kyçuni përsëri.');
+      if (reason === 'verify') setReasonMessage('Regjistrimi u krye. Verifikoni email-in para se të kyçeni.');
     }
   }, [searchParams, logout]);
 
