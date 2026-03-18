@@ -19,6 +19,8 @@ const createTransporter = () => {
   });
 };
 
+export const isSmtpConfigured = () => Boolean(createTransporter());
+
 /* Brand colors – përputhen me app (primary #0095f6, theks i kuq) */
 const BRAND = {
   primary: '#0095f6',

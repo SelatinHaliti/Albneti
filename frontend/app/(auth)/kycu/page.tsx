@@ -21,7 +21,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [reasonMessage, setReasonMessage] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +43,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
     try {
       const data = await api<{ user: unknown; token: string }>('/api/auth/kycu', {
@@ -54,6 +57,27 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : 'Gabim gjatë kyçjes.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    setInfo('');
+    if (!email.trim()) {
+      setError('Shkruani email-in për të dërguar verifikimin.');
+      return;
+    }
+    setResendLoading(true);
+    try {
+      const data = await api<{ success: boolean; message?: string }>('/api/auth/ridergo-verifikimin', {
+        method: 'POST',
+        body: { email },
+      });
+      setInfo(data.message || 'Nëse ekziston llogaria, do të merrni një email verifikimi.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nuk u arrit të dërgohet email-i i verifikimit.');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -104,6 +128,14 @@ export default function LoginPage() {
             {error}
           </motion.p>
         )}
+        {info && (
+          <motion.div
+            variants={item}
+            className="text-xs text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-300 px-3 py-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800"
+          >
+            {info}
+          </motion.div>
+        )}
         <motion.div variants={item}>
           <input
             type="email"
@@ -129,6 +161,17 @@ export default function LoginPage() {
         <motion.div variants={item} className="pt-1">
           <button type="submit" disabled={loading} className="auth-btn">
             {loading ? 'Duke u kyçur...' : 'Kyçu'}
+          </button>
+        </motion.div>
+
+        <motion.div variants={item} className="pt-1">
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resendLoading}
+            className="w-full text-sm py-3 rounded-xl border border-[var(--border)] text-[var(--text)] hover:bg-white/40 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+          >
+            {resendLoading ? 'Duke dërguar...' : 'Dërgo sërish email-in e verifikimit'}
           </button>
         </motion.div>
       </motion.form>

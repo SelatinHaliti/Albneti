@@ -4,6 +4,7 @@ import {
   login,
   logout,
   verifyEmail,
+  resendVerification,
   forgotPassword,
   resetPassword,
   getMe,
@@ -16,6 +17,7 @@ router.post('/regjistrohu', register);
 router.post('/kycu', login);
 router.post('/dil', logout);
 router.post('/verifiko-email', verifyEmail);
+router.post('/ridergo-verifikimin', resendVerification);
 router.post('/harruar-fjalekalimin', forgotPassword);
 router.post('/rifresko-fjalekalimin', resetPassword);
 router.get('/une', protect, getMe);

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
+import { isSmtpConfigured, sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -158,6 +158,50 @@ export const verifyEmail = async (req, res) => {
     sendTokenResponse(user, res);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim gjatë verifikimit.' });
+  }
+};
+
+/**
+ * Dërgo sërish email verifikimi (nëse llogaria s'është verifikuar ende)
+ */
+export const resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ message: 'Vendosni email-in.' });
+    if (!isSmtpConfigured()) {
+      return res.status(503).json({ message: 'Email verifikimi nuk është konfiguruar në server.' });
+    }
+
+    const user = await User.findOne({ email: String(email).toLowerCase() });
+    if (!user) {
+      return res.json({ success: true, message: 'Nëse ekziston llogaria, do të merrni një email verifikimi.' });
+    }
+    if (user.isVerified) {
+      return res.json({ success: true, message: 'Email-i tashmë është i verifikuar. Mund të kyçeni.' });
+    }
+    if (user.isBlocked) {
+      return res.status(403).json({ message: 'Llogaria juaj është bllokuar.' });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpires = verificationTokenExpires;
+    await user.save();
+
+    try {
+      Promise.resolve(sendVerificationEmail(user.email, verificationToken, user.username)).catch((e) => {
+        // eslint-disable-next-line no-console
+        console.error('sendVerificationEmail failed:', e?.message || e);
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('sendVerificationEmail threw:', e?.message || e);
+    }
+
+    return res.json({ success: true, message: 'Email-i i verifikimit u dërgua. Kontrolloni inbox/spam.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
   }
 };
 

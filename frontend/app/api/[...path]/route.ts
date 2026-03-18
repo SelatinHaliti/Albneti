@@ -4,7 +4,14 @@
  */
 const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-const PUBLIC_AUTH_PATHS = ['auth/regjistrohu', 'auth/kycu', 'auth/harruar-fjalekalimin', 'auth/rifresko-fjalekalimin', 'auth/verifiko-email'];
+const PUBLIC_AUTH_PATHS = [
+  'auth/regjistrohu',
+  'auth/kycu',
+  'auth/ridergo-verifikimin',
+  'auth/harruar-fjalekalimin',
+  'auth/rifresko-fjalekalimin',
+  'auth/verifiko-email',
+];
 
 function forwardHeaders(req: Request, path: string): Headers {
   const out = new Headers();
