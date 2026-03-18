@@ -20,10 +20,43 @@ const createTransporter = () => {
       user,
       pass,
     },
+    // Disa hoste kërkojnë TLS edhe me secure=false (STARTTLS).
+    tls: { servername: host },
   });
 };
 
 export const isSmtpConfigured = () => Boolean(createTransporter());
+
+function normalizeMailerError(err) {
+  if (!err) return 'Gabim i panjohur.';
+  if (typeof err === 'string') return err;
+  const e = err;
+  const code = e?.code ? String(e.code) : '';
+  const response = e?.response ? String(e.response) : '';
+  const message = e?.message ? String(e.message) : '';
+  const parts = [code, message, response].filter(Boolean);
+  return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
+}
+
+async function sendMail({ to, subject, html }) {
+  const transporter = createTransporter();
+  if (!transporter) {
+    return { ok: false, error: 'SMTP nuk është konfiguruar në server.' };
+  }
+  try {
+    // Verifikon lidhjen/auth përpara dërgimit (na jep gabim real nëse s’punon).
+    await transporter.verify();
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'AlbNet <noreply@albnet.com>',
+      to,
+      subject,
+      html,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: normalizeMailerError(err) };
+  }
+}
 
 /* Brand colors – përputhen me app (primary #0095f6, theks i kuq) */
 const BRAND = {
@@ -108,11 +141,6 @@ function ctaButton(href, label) {
  * Dërgon email verifikimi – dizajn i plotë
  */
 export const sendVerificationEmail = async (email, token, username) => {
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.warn('SMTP nuk është konfiguruar - verifikimi me email nuk dërgohet.');
-    return;
-  }
   const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verifiko?token=${token}`;
 
   const content = `
@@ -135,27 +163,22 @@ export const sendVerificationEmail = async (email, token, username) => {
     </p>
   `;
 
-  try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'AlbNet <noreply@albnet.com>',
-      to: email,
-      subject: 'Verifiko llogarinë tënde – AlbNet',
-      html: baseEmailTemplate(content),
-    });
-  } catch (err) {
-    console.error('Gabim dërgim email verifikimi:', err.message);
+  const result = await sendMail({
+    to: email,
+    subject: 'Verifiko llogarinë tënde – AlbNet',
+    html: baseEmailTemplate(content),
+  });
+  if (!result.ok) {
+    // eslint-disable-next-line no-console
+    console.error('Gabim dërgim email verifikimi:', result.error);
   }
+  return result;
 };
 
 /**
  * Dërgon email për reset të fjalëkalimit – i njëjti dizajn
  */
 export const sendPasswordResetEmail = async (email, token, username) => {
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.warn('SMTP nuk është konfiguruar.');
-    return;
-  }
   const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/rifresko-fjalekalimin?token=${token}`;
 
   const content = `
@@ -181,14 +204,14 @@ export const sendPasswordResetEmail = async (email, token, username) => {
     </p>
   `;
 
-  try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'AlbNet <noreply@albnet.com>',
-      to: email,
-      subject: 'Rifreskimi i fjalëkalimit – AlbNet',
-      html: baseEmailTemplate(content),
-    });
-  } catch (err) {
-    console.error('Gabim dërgim email reset fjalëkalimi:', err.message);
+  const result = await sendMail({
+    to: email,
+    subject: 'Rifreskimi i fjalëkalimit – AlbNet',
+    html: baseEmailTemplate(content),
+  });
+  if (!result.ok) {
+    // eslint-disable-next-line no-console
+    console.error('Gabim dërgim email reset fjalëkalimi:', result.error);
   }
+  return result;
 };

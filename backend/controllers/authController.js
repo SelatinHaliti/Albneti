@@ -189,20 +189,32 @@ export const resendVerification = async (req, res) => {
     user.verificationTokenExpires = verificationTokenExpires;
     await user.save();
 
-    try {
-      Promise.resolve(sendVerificationEmail(user.email, verificationToken, user.username)).catch((e) => {
-        // eslint-disable-next-line no-console
-        console.error('sendVerificationEmail failed:', e?.message || e);
+    const result = await sendVerificationEmail(user.email, verificationToken, user.username);
+    if (!result?.ok) {
+      return res.status(500).json({
+        message: `Dërgimi i email-it dështoi. ${result?.error || ''}`.trim(),
       });
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('sendVerificationEmail threw:', e?.message || e);
     }
 
     return res.json({ success: true, message: 'Email-i i verifikimit u dërgua. Kontrolloni inbox/spam.' });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }
+};
+
+/**
+ * Status i email-it (diagnostikë)
+ */
+export const emailStatus = async (req, res) => {
+  res.json({
+    success: true,
+    smtpConfigured: isSmtpConfigured(),
+    frontendUrl: process.env.FRONTEND_URL || null,
+    smtpHost: process.env.SMTP_HOST ? String(process.env.SMTP_HOST) : null,
+    smtpPort: process.env.SMTP_PORT ? String(process.env.SMTP_PORT) : null,
+    smtpSecure: process.env.SMTP_SECURE ? String(process.env.SMTP_SECURE) : null,
+    smtpFrom: process.env.SMTP_FROM ? String(process.env.SMTP_FROM) : null,
+  });
 };
 
 /**
