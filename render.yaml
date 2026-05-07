@@ -20,7 +20,7 @@ services:
       - key: JWT_EXPIRE
         value: 7d
       - key: FRONTEND_URL
-        value: https://frontend-kohl-delta-60.vercel.app
+        value: https://albneti.vercel.app
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

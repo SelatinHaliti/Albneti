@@ -28,12 +28,19 @@ connectDB();
 const app = express();
 const httpServer = createServer(app);
 
-// Lejo të gjitha origin-et e localhost për dev (3000, 3001, etj.)
+// Lejo origin-et e njohura (dev + produksion)
 const allowedOrigins = [
+  // Zhvillim lokal
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
+  // Produksion – Vercel
+  'https://albneti.vercel.app',
+  'https://albneti-git-main-selatinhaliti6-2891s-projects.vercel.app',
+  // Produksion – Render (për self-referential calls)
+  'https://albneti-api.onrender.com',
+  // Variabël dinamike nga .env
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
@@ -50,8 +57,15 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(null, true); // në dev lejojmë çdo origin
+      // Lejo kërkesat pa origin (curl, Postman, server-to-server)
+      if (!origin) return cb(null, true);
+      // Lejo origin-et e njohura
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      // Lejo çdo subdomain i Vercel-it (preview deployments)
+      if (/\.vercel\.app$/.test(origin)) return cb(null, true);
+      // Lejo localhost me çdo port (zhvillim lokal)
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true);
+      return cb(null, true); // Në rast dyshimi lejo (mund ta bësh false për security strikte)
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -104,21 +118,28 @@ app.get('/api/health', async (req, res) => {
 setupSocketIO(io);
 setIO(io);
 
+// Export app për Vercel
+export default app;
+
 const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => {
-  console.log(`AlbNet backend në http://localhost:${PORT}`);
-  console.log(`API: http://localhost:${PORT}/api`);
-  import('./config/cloudinary.js').then(({ isCloudinaryConfigured }) => {
-    if (!isCloudinaryConfigured) {
-      console.warn('Cloudinary: NUK është konfiguruar. Vendosni CLOUDINARY_* në backend/.env (merrni nga https://cloudinary.com)');
-    } else {
-      console.log('Cloudinary: konfiguruar');
+
+// Nis serverin vetëm nëse nuk jemi në Vercel (për dev lokal)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  httpServer.listen(PORT, () => {
+    console.log(`AlbNet backend në http://localhost:${PORT}`);
+    console.log(`API: http://localhost:${PORT}/api`);
+    import('./config/cloudinary.js').then(({ isCloudinaryConfigured }) => {
+      if (!isCloudinaryConfigured) {
+        console.warn('Cloudinary: NUK është konfiguruar. Vendosni CLOUDINARY_* në backend/.env (merrni nga https://cloudinary.com)');
+      } else {
+        console.log('Cloudinary: konfiguruar');
+      }
+    }).catch(() => {});
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Gabim: Porti ${PORT} është i zënë. Mbyllni procesin tjetër ose përdorni PORT=${parseInt(PORT, 10) + 1} npm run start`);
+      process.exit(1);
     }
-  }).catch(() => {});
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Gabim: Porti ${PORT} është i zënë. Mbyllni procesin tjetër ose përdorni PORT=${parseInt(PORT, 10) + 1} npm run start`);
-    process.exit(1);
-  }
-  throw err;
-});
+    throw err;
+  });
+}

@@ -1,5 +1,5 @@
-// Në shfletues: të gjitha kërkesat shkojnë te /api/* (proxy Next.js). Në server: URL e backend-it.
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// Në prodhim (Vercel), kërkesat shkojnë direkt te /api/* falë vercel.json rewrites.
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window === 'undefined' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5000');
 const API_URL = typeof window !== 'undefined' ? '' : BACKEND_URL;
 
 function getToken(): string | null {

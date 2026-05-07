@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "AlbNet",
+    "slug": "albnet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "scheme": "albnet",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.albnet.app",
+      "backgroundColor": "#0a0a0a",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "AlbNet ka nevojë për kamerën për të bërë foto dhe video.",
+        "NSPhotoLibraryUsageDescription": "AlbNet ka nevojë për galerinë për të zgjedhur foto.",
+        "NSMicrophoneUsageDescription": "AlbNet ka nevojë për mikrofonin për të regjistruar video."
+      }
+    },
+    "android": {
+      "package": "com.albnet.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "edgeToEdgeEnabled": false,
+      "backgroundColor": "#0a0a0a",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#0a0a0a",
+          "imageWidth": 200
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5d81486f-b9f2-4060-a1e4-94668b89b2b2"
+      }
+    },
+    "owner": "selatinis-organization"
+  }
+}

@@ -2,7 +2,12 @@
  * Proxy për /api/* – i dërgon kërkesat te backend me të gjitha header-at (përfshirë Authorization).
  * Siguron që backend merr tokenin dhe nuk kthen 401/403 për shkak të header-ave të humbura.
  */
-const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// BACKEND_API_URL = variabël server-side (vendose te Vercel env vars)
+// NEXT_PUBLIC_API_URL = fallback për zhvillim lokal
+const BACKEND =
+  process.env.BACKEND_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:5001';
 
 const PUBLIC_AUTH_PATHS = [
   'auth/regjistrohu',
