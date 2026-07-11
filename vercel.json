@@ -1,4 +1,12 @@
 {
+  "version": 2,
+  "installCommand": "npm install",
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
