@@ -23,6 +23,8 @@ const notificationSchema = new mongoose.Schema(
         'event_interest',
         'event_reminder',
         'event_update',
+        'event_promo',
+        'verification',
       ],
       required: true,
     },

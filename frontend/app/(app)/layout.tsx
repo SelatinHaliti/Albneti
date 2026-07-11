@@ -5,7 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
-import { SocketProvider } from '@/components/SocketProvider';
+import { SocketProvider, useSocket } from '@/components/SocketProvider';
 import { api } from '@/utils/api';
 import {
   IconHome,
@@ -35,15 +35,25 @@ const navItems = [
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart },
   { href: '/chat-global', label: 'Chat Global', Icon: IconGlobe },
   { href: '/komuniteti', label: 'Komuniteti', Icon: IconGlobe },
+  { href: '/verifikim', label: 'Verifikim', Icon: IconSettings },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SocketProvider>
+      <AppShell>{children}</AppShell>
+    </SocketProvider>
+  );
+}
+
+function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const theme = useUIStore((s) => s.theme);
   const toggleTheme = useUIStore((s) => s.toggleTheme);
+  const { unreadNotifications: socketUnread } = useSocket();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [feedDropdownOpen, setFeedDropdownOpen] = useState(false);
   const feedDropdownRefMobile = useRef<HTMLDivElement>(null);
@@ -75,7 +85,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     api<{ unreadCount: number }>('/api/notifications?limit=1')
       .then((r) => setUnreadNotifications(r.unreadCount ?? 0))
       .catch(() => {});
-  }, [user, pathname]);
+  }, [user, pathname, socketUnread]);
+
+  const totalUnread = Math.max(unreadNotifications, socketUnread);
 
   if (!user) {
     return (
@@ -118,7 +130,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <SocketProvider>
       <div className={`min-h-screen flex flex-col md:flex-row ${isReelsPage ? 'bg-black' : 'bg-[var(--bg)]'}`}>
         {/* ── Mobile top bar ── */}
         {!isReelsPage && (
@@ -157,7 +168,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center justify-end gap-0.5">
               <Link href="/njoftime" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors relative" aria-label="Njoftime">
                 <IconHeart />
-                {unreadNotifications > 0 && (
+                {totalUnread > 0 && (
                   <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)]" />
                 )}
               </Link>
@@ -222,9 +233,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     {navItem.href === '/njoftime' ? (
                       <>
                         <IconHeart />
-                        {unreadNotifications > 0 && (
+                        {totalUnread > 0 && (
                           <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[var(--danger)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--bg-card)]">
-                            {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                            {totalUnread > 9 ? '9+' : totalUnread}
                           </span>
                         )}
                       </>
@@ -314,7 +325,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
 
         {/* ── Mobile bottom nav (Instagram style) ── */}
-        <nav className={`md:hidden fixed bottom-0 left-0 right-0 h-[50px] border-t flex items-center justify-around z-40 safe-area-pb ${isReelsPage ? 'bg-black/80 backdrop-blur-xl border-white/10' : 'ig-nav-bar'}`}>
+        <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 safe-area-pb ${isReelsPage ? '' : 'pb-1'}`}>
+          <div className={`flex items-center justify-around h-[52px] ${isReelsPage ? 'bg-black/80 backdrop-blur-xl border-t border-white/10 mx-0 rounded-none' : 'liquid-nav-pill'}`}>
           {bottomNavItems.map((item) => {
             const isActive = item.icon === 'avatar'
               ? pathname.startsWith('/profili')
@@ -357,10 +369,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          </div>
         </nav>
       </div>
       <CreateMenu open={createMenuOpen} onClose={() => setCreateMenuOpen(false)} />
       <Toaster />
-    </SocketProvider>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, createContext, useContext, useState } from 'react';
+import { useEffect, createContext, useContext, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -15,9 +15,16 @@ const SOCKET_URL =
 type SocketContextType = {
   socket: Socket | null;
   isConnected: boolean;
+  unreadNotifications: number;
+  bumpNotifications: () => void;
 };
 
-const SocketContext = createContext<SocketContextType>({ socket: null, isConnected: false });
+const SocketContext = createContext<SocketContextType>({
+  socket: null,
+  isConnected: false,
+  unreadNotifications: 0,
+  bumpNotifications: () => {},
+});
 
 export function useSocket() {
   return useContext(SocketContext);
@@ -27,6 +34,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  const bumpNotifications = useCallback(() => {
+    setUnreadNotifications((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -41,6 +53,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     setSocket(s);
     s.on('connect', () => setIsConnected(true));
     s.on('disconnect', () => setIsConnected(false));
+    s.on('notification', () => {
+      setUnreadNotifications((n) => n + 1);
+    });
     return () => {
       s.close();
       setSocket(null);
@@ -49,7 +64,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
+    <SocketContext.Provider value={{ socket, isConnected, unreadNotifications, bumpNotifications }}>
       {children}
     </SocketContext.Provider>
   );

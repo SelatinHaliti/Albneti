@@ -2,6 +2,8 @@ import Post from '../models/Post.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.js';
+import { parseMentionsFromCaption } from '../utils/mentions.js';
+import { rankPosts } from '../services/feedAlgorithm.js';
 
 /**
  * Krijo postim (foto, video) me muzikë opsionale
@@ -51,14 +53,27 @@ export const createPost = async (req, res) => {
           .map((h) => h.trim().replace(/^#/, ''))
           .filter(Boolean)
       : [];
+    const mentionUsers = await parseMentionsFromCaption(caption || '');
     const post = await Post.create({
       user: req.user.id,
       type: type || 'image',
       media,
       caption: caption || '',
       hashtags: hashtagArray,
+      mentions: mentionUsers.map((u) => u._id),
       music: musicData,
     });
+    for (const mentioned of mentionUsers) {
+      if (mentioned._id.toString() !== req.user.id) {
+        await Notification.create({
+          recipient: mentioned._id,
+          sender: req.user.id,
+          type: 'mention',
+          post: post._id,
+          text: 'të përmendi në një postim',
+        });
+      }
+    }
     const populated = await Post.findById(post._id).populate(
       'user',
       'username avatar fullName'
@@ -84,17 +99,51 @@ export const getFeed = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const filter = { isArchived: false };
+    const blockedIds = [
+      ...(user.blockedUsers || []).map((id) => id.toString()),
+    ];
     if (onlyFollowing) {
-      const followingIds = [...(user.following || []).map((id) => id.toString()), user._id.toString()];
+      const followingIds = [...(user.following || []).map((id) => id.toString()), user._id.toString()]
+        .filter((id) => !blockedIds.includes(id));
       filter.user = { $in: followingIds };
+    } else {
+      const fetchLimit = Math.min(limit * 4, 80);
+      const rawPosts = await Post.find(filter)
+        .sort({ createdAt: -1 })
+        .limit(fetchLimit)
+        .populate('user', 'username avatar fullName isVerified verifiedSubscription')
+        .populate('comments.user', 'username avatar')
+        .lean();
+
+      const filtered = rawPosts.filter(
+        (p) => !blockedIds.includes(String(p.user?._id)) && !p.user?.isBlocked
+      );
+      const authorIds = [...new Set(filtered.map((p) => String(p.user?._id)))];
+      const authors = await User.find({ _id: { $in: authorIds } }).select('following isVerified verifiedSubscription').lean();
+      const authorsMap = Object.fromEntries(authors.map((a) => [String(a._id), a]));
+
+      const ranked = rankPosts(filtered, user, authorsMap);
+      const posts = ranked.slice(skip, skip + limit);
+
+      const savedSet = new Set((user.savedPosts || []).map((id) => id.toString()));
+      posts.forEach((p) => {
+        p.saved = savedSet.has(p._id.toString());
+      });
+
+      const hasMore = ranked.length > skip + limit;
+      const nextCursor = hasMore ? String(page + 1) : null;
+      return res.json({ posts, hasMore, nextCursor, algorithm: 'albnet_ranked' });
     }
-    // Përndryshe (for_you ose çdo vlerë tjetër): pa filtër user → të gjithë postet
+
+    if (blockedIds.length && !onlyFollowing) {
+      filter.user = { ...(filter.user || {}), $nin: blockedIds };
+    }
 
     const posts = await Post.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('user', 'username avatar fullName')
+      .populate('user', 'username avatar fullName isVerified')
       .populate('comments.user', 'username avatar')
       .lean();
 
@@ -132,7 +181,7 @@ export const getReels = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('user', 'username avatar fullName')
+      .populate('user', 'username avatar fullName isVerified')
       .populate('comments.user', 'username avatar')
       .lean();
 
@@ -161,7 +210,7 @@ export const getReels = async (req, res) => {
 export const getPost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
-      .populate('user', 'username avatar fullName')
+      .populate('user', 'username avatar fullName isVerified')
       .populate('comments.user', 'username avatar')
       .lean();
     if (!post) return res.status(404).json({ message: 'Postimi nuk u gjet.' });
@@ -201,7 +250,7 @@ export const updatePost = async (req, res) => {
     }
     await post.save();
     const populated = await Post.findById(post._id)
-      .populate('user', 'username avatar fullName')
+      .populate('user', 'username avatar fullName isVerified')
       .lean();
     res.json({ success: true, post: populated });
   } catch (err) {
@@ -216,7 +265,7 @@ export const getArchivedPosts = async (req, res) => {
   try {
     const posts = await Post.find({ user: req.user.id, isArchived: true })
       .sort({ createdAt: -1 })
-      .populate('user', 'username avatar fullName')
+      .populate('user', 'username avatar fullName isVerified')
       .lean();
     res.json({ posts });
   } catch (err) {

@@ -27,7 +27,7 @@ export function CreateMenu({ open, onClose }: { open: boolean; onClose: () => vo
     <div className="fixed inset-0 z-[70] ig-modal-overlay flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
         ref={ref}
-        className="w-full max-w-[360px] liquid-glass-strong rounded-t-3xl sm:rounded-3xl p-2 pb-6 safe-area-pb sm:mx-4"
+        className="w-full max-w-[360px] liquid-glass-ultra rounded-t-3xl sm:rounded-3xl p-2 pb-6 safe-area-pb sm:mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto mb-4 sm:hidden" />

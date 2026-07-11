@@ -1,6 +1,7 @@
 import Event from '../models/Event.js';
 import Notification from '../models/Notification.js';
 import { emitNotification } from '../sockets/io.js';
+import { distributeEventPromos } from '../services/eventAdsService.js';
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const MS_1H = 60 * 60 * 1000;
@@ -129,6 +130,11 @@ export const getEvents = async (req, res) => {
       ? formatted.filter((e) => e.isInterested).length
       : 0;
 
+    const featured = events.find((e) => e.featured);
+    if (featured && userId) {
+      distributeEventPromos(featured._id).catch(() => {});
+    }
+
     res.json({
       events: formatted,
       myInterestedCount: myCount,
@@ -173,6 +179,11 @@ export const toggleInterest = async (req, res) => {
         reminder1hSent: false,
       });
       interested = true;
+
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { eventCategoryInterests: event.category },
+        lastActiveAt: new Date(),
+      });
 
       const msUntil = new Date(event.startAt).getTime() - Date.now();
       await sendEventNotification(userId, {

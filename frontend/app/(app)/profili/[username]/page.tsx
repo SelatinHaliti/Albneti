@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
 import { IconGrid } from '@/components/Icons';
 import { PostMediaThumb } from '@/components/PostMediaThumb';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 type User = {
@@ -19,6 +20,8 @@ type User = {
   bio?: string;
   website?: string;
   location?: string;
+  isVerified?: boolean;
+  isPrivate?: boolean;
   followers: unknown[];
   following: unknown[];
 };
@@ -39,9 +42,17 @@ type ProfileTab = 'postime' | 'ruajturat' | 'tagged' | 'arkivuara';
 export default function ProfilePage() {
   const params = useParams();
   const currentUser = useAuthStore((s) => s.user);
-  const [profile, setProfile] = useState<{ user: User; posts: Post[]; isFollowing: boolean; isOwnProfile: boolean } | null>(null);
+  const [profile, setProfile] = useState<{
+    user: User;
+    posts: Post[];
+    isFollowing: boolean;
+    isOwnProfile: boolean;
+    isPrivateLocked?: boolean;
+    followRequestPending?: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
+  const [followPending, setFollowPending] = useState(false);
   const [tab, setTab] = useState<ProfileTab>('postime');
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [taggedPosts, setTaggedPosts] = useState<Post[]>([]);
@@ -58,11 +69,17 @@ export default function ProfilePage() {
     if (!username) return;
     (async () => {
       try {
-        const res = await api<{ user: User; posts: Post[]; isFollowing: boolean; isOwnProfile: boolean }>(
-          `/api/users/${username}`
-        );
+        const res = await api<{
+          user: User;
+          posts: Post[];
+          isFollowing: boolean;
+          isOwnProfile: boolean;
+          isPrivateLocked?: boolean;
+          followRequestPending?: boolean;
+        }>(`/api/users/${username}`);
         setProfile(res);
         setFollowing(res.isFollowing);
+        setFollowPending(!!res.followRequestPending);
       } catch (_) {
         setProfile(null);
       } finally {
@@ -109,33 +126,23 @@ export default function ProfilePage() {
   const handleFollow = async () => {
     if (!profile?.user || profile.isOwnProfile) return;
     const prevFollowing = following;
-    setFollowing(!following);
-    setProfile((p) =>
-      p
-        ? {
-            ...p,
-            user: {
-              ...p.user,
-              followers: following ? p.user.followers.slice(0, -1) : [...p.user.followers, {}],
-            },
-          }
-        : null
-    );
+    const prevPending = followPending;
+    if (following || followPending) {
+      setFollowing(false);
+      setFollowPending(false);
+    } else {
+      setFollowPending(true);
+    }
     try {
-      await api(`/api/users/${profile.user._id}/ndiq`, { method: 'POST' });
+      const res = await api<{ isFollowing: boolean; followRequestPending?: boolean }>(
+        `/api/users/${profile.user._id}/ndiq`,
+        { method: 'POST' }
+      );
+      setFollowing(res.isFollowing);
+      setFollowPending(!!res.followRequestPending);
     } catch (_) {
       setFollowing(prevFollowing);
-      setProfile((p) =>
-        p
-          ? {
-              ...p,
-              user: {
-                ...p.user,
-                followers: prevFollowing ? [...p.user.followers, {}] : p.user.followers.slice(0, -1),
-              },
-            }
-          : null
-      );
+      setFollowPending(prevPending);
       toastError('Nuk u ndryshua. Provo përsëri.');
     }
   };
@@ -181,7 +188,7 @@ export default function ProfilePage() {
     );
   }
 
-  const { user, posts, isOwnProfile } = profile;
+  const { user, posts, isOwnProfile, isPrivateLocked } = profile;
   const displayUser = isOwnProfile && currentUser
     ? {
         ...user,
@@ -246,14 +253,27 @@ export default function ProfilePage() {
         {/* Info */}
         <div className="flex-1 min-w-0 text-center sm:text-left">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-5">
-            <h1 className="text-[22px] sm:text-[28px] font-semibold text-[var(--text)] leading-tight">{user.username}</h1>
+            <h1 className="text-[22px] sm:text-[28px] font-semibold text-[var(--text)] leading-tight flex items-center gap-1.5 justify-center sm:justify-start">
+              {user.username}
+              {user.isVerified && <VerifiedBadge size={20} />}
+            </h1>
             {isOwnProfile ? (
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
               <Link
                 href="/profili/redakto"
-                className="px-5 py-2 rounded-xl text-[13px] font-semibold border border-[var(--border)] text-[var(--text)] bg-[var(--bg-card)] hover:bg-[var(--bg)] transition-colors shadow-[var(--shadow-sm)]"
+                className="px-5 py-2 rounded-xl text-[13px] font-semibold border border-[var(--border)] text-[var(--text)] liquid-glass-card hover:opacity-90 transition-opacity"
               >
                 Redakto profilin
               </Link>
+              {!user.isVerified && (
+                <Link
+                  href="/verifikim"
+                  className="px-5 py-2 rounded-xl text-[13px] font-semibold text-white bg-[var(--ig-blue)] hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                >
+                  <VerifiedBadge size={14} /> Verifiko
+                </Link>
+              )}
+              </div>
             ) : (
               <div className="flex gap-2">
                 <Link
@@ -267,11 +287,13 @@ export default function ProfilePage() {
                   onClick={handleFollow}
                   className={`px-6 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-[var(--shadow-sm)] ${
                     following
-                      ? 'border border-[var(--border)] text-[var(--text)] bg-[var(--bg-card)] hover:bg-[var(--bg)]'
-                      : 'bg-[var(--primary)] text-white hover:opacity-90 shadow-md shadow-[var(--primary)]/20'
+                      ? 'border border-[var(--border)] text-[var(--text)] liquid-glass-card'
+                      : followPending
+                        ? 'border border-[var(--ig-blue)] text-[var(--ig-blue)] liquid-glass-card'
+                        : 'bg-[var(--primary)] text-white hover:opacity-90 shadow-md shadow-[var(--primary)]/20'
                   }`}
                 >
-                  {following ? 'Çndiq' : 'Ndiq'}
+                  {following ? 'Çndiq' : followPending ? 'Kërkesë dërguar' : 'Ndiq'}
                 </button>
               </div>
             )}
@@ -346,6 +368,14 @@ export default function ProfilePage() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="aspect-square bg-[var(--border)] animate-shimmer rounded-lg" />
             ))}
+          </div>
+        ) : isPrivateLocked && tab === 'postime' ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+            <div className="w-20 h-20 rounded-full liquid-glass-ultra flex items-center justify-center mb-4 text-3xl">🔒</div>
+            <p className="text-[16px] font-semibold text-[var(--text)]">Ky është një llogari private</p>
+            <p className="text-[13px] text-[var(--text-muted)] mt-2 max-w-[280px]">
+              Ndiq këtë përdorues për të parë postimet e tij.
+            </p>
           </div>
         ) : displayPosts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-[var(--text-muted)]">

@@ -21,11 +21,17 @@ import adminRoutes from './routes/admin.js';
 import musicRoutes from './routes/music.js';
 import globalChatRoutes from './routes/globalChat.js';
 import communityRoutes from './routes/community.js';
+import verificationRoutes from './routes/verification.js';
 import { setupSocketIO } from './sockets/index.js';
 import { setIO } from './sockets/io.js';
 import { seedCommunityEvents } from './services/eventSeed.js';
+import { runScheduledEventPromos } from './services/eventAdsService.js';
 
-connectDB().then(() => seedCommunityEvents());
+connectDB().then(() => {
+  seedCommunityEvents();
+  setTimeout(() => runScheduledEventPromos().catch(() => {}), 15000);
+  setInterval(() => runScheduledEventPromos().catch(() => {}), 6 * 60 * 60 * 1000);
+});
 
 const app = express();
 const httpServer = createServer(app);
@@ -101,6 +107,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/music', musicRoutes);
 app.use('/api/global-chat', globalChatRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/verification', verificationRoutes);
 
 // Health check – përfshirë gjendjen e DB (për load balancer / monitoring)
 app.get('/api/health', async (req, res) => {

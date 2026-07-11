@@ -1,5 +1,6 @@
 import Post from '../models/Post.js';
 import User from '../models/User.js';
+import { scoreExplorePost } from '../services/feedAlgorithm.js';
 
 /**
  * Explore - postime të reja / trending (algoritëm i thjeshtë)
@@ -14,20 +15,6 @@ export const getExplorePosts = async (req, res) => {
     const posts = await Post.aggregate([
       { $match: { isArchived: false, ...(excludeUser ? { user: { $ne: excludeUser } } : {}) } },
       {
-        $addFields: {
-          score: {
-            $add: [
-              { $size: '$likes' },
-              { $multiply: [{ $size: '$comments' }, 2] },
-              { $ifNull: ['$viewCount', 0] },
-            ],
-          },
-        },
-      },
-      { $sort: { score: -1, createdAt: -1 } },
-      { $skip: skip },
-      { $limit: limit },
-      {
         $lookup: {
           from: 'users',
           localField: 'user',
@@ -36,6 +23,9 @@ export const getExplorePosts = async (req, res) => {
         },
       },
       { $unwind: '$user' },
+      { $match: { 'user.isBlocked': { $ne: true } } },
+      { $sort: { createdAt: -1 } },
+      { $limit: Math.min(limit * 3, 60) },
       {
         $project: {
           'user.password': 0,
@@ -44,7 +34,14 @@ export const getExplorePosts = async (req, res) => {
         },
       },
     ]);
-    res.json({ posts, hasMore: posts.length === limit });
+
+    const ranked = posts
+      .map((p) => ({ ...p, _rank: scoreExplorePost(p) }))
+      .sort((a, b) => b._rank - a._rank)
+      .slice(skip, skip + limit)
+      .map(({ _rank, ...p }) => p);
+
+    res.json({ posts: ranked, hasMore: ranked.length === limit, algorithm: 'albnet_explore' });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

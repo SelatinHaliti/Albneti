@@ -11,6 +11,7 @@ export interface User {
   website?: string;
   location?: string;
   isVerified?: boolean;
+  verifiedPlan?: string;
   role?: string;
   isPrivate?: boolean;
   followers?: number;

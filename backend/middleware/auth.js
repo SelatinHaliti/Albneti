@@ -24,6 +24,7 @@ export const protect = async (req, res, next) => {
       return res.status(403).json({ message: 'Llogaria juaj është bllokuar.' });
     }
     req.user = user;
+    User.findByIdAndUpdate(user._id, { lastActiveAt: new Date() }).catch(() => {});
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Sesioni ka skaduar. Kyçuni përsëri.' });

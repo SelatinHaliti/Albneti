@@ -31,6 +31,9 @@ const eventSchema = new mongoose.Schema(
     link: { type: String, default: '' },
     featured: { type: Boolean, default: false },
     interested: [interestSchema],
+    promoUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    lastPromoAt: Date,
+    promoSentCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

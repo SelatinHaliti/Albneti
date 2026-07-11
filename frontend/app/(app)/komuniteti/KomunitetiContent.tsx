@@ -42,10 +42,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   festival: 'Festival',
 };
 
-const CREATORS = [
-  { username: 'albnet_official', name: 'AlbNet', verified: true, followers: '12.5K' },
-  { username: 'diaspora_shqip', name: 'Diaspora Shqip', verified: true, followers: '8.2K' },
-  { username: 'kultura_shqiptare', name: 'Kultura Shqiptare', verified: false, followers: '5.1K' },
+const CREATORS_FALLBACK = [
+  { username: 'albnet_official', name: 'AlbNet', verified: true, followers: 0 },
 ];
 
 export default function KomunitetiContent() {
@@ -57,6 +55,7 @@ export default function KomunitetiContent() {
 
   const [events, setEvents] = useState<CommunityEvent[]>([]);
   const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
+  const [creators, setCreators] = useState<{ username: string; name: string; verified: boolean; followers: number }[]>(CREATORS_FALLBACK);
   const [hashtags, setHashtags] = useState<Hashtag[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('all');
@@ -96,6 +95,9 @@ export default function KomunitetiContent() {
   useEffect(() => {
     api<{ hashtags: Hashtag[] }>('/api/explore/hashtag-trending')
       .then((r) => setHashtags(r.hashtags || []))
+      .catch(() => {});
+    api<{ creators: { username: string; name: string; verified: boolean; followers: number }[] }>('/api/verification/creators')
+      .then((r) => { if (r.creators?.length) setCreators(r.creators); })
       .catch(() => {});
   }, []);
 
@@ -304,8 +306,8 @@ export default function KomunitetiContent() {
           <span>⭐</span> Krijues të Verifikuar
         </h2>
         <div className="space-y-2">
-          {CREATORS.map((c) => (
-            <Link key={c.username} href={`/profili/${c.username}`} className="creator-row">
+          {creators.map((c) => (
+            <Link key={c.username} href={`/profili/${c.username}`} className="creator-row liquid-glass-card">
               <div className="w-10 h-10 rounded-full bg-[var(--albanian-gradient)] flex items-center justify-center text-white font-bold text-sm">
                 {c.name[0]}
               </div>
@@ -314,7 +316,9 @@ export default function KomunitetiContent() {
                   {c.name}
                   {c.verified && <VerifiedBadge />}
                 </p>
-                <p className="text-[12px] text-[var(--text-muted)]">@{c.username} · {c.followers} ndjekës</p>
+                <p className="text-[12px] text-[var(--text-muted)]">
+                  @{c.username} · {c.followers >= 1000 ? `${(c.followers / 1000).toFixed(1)}K` : c.followers} ndjekës
+                </p>
               </div>
               <span className="text-[12px] font-semibold text-[var(--ig-blue)]">Ndiq</span>
             </Link>

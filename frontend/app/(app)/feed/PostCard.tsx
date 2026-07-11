@@ -7,12 +7,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
 import { IconHeart, IconComment, IconShare, IconBookmark, IconMore } from '@/components/Icons';
 import { MusicSticker } from '@/components/MusicSticker';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { PostMediaFrame } from '@/components/PostMediaFrame';
 import { ReportButton } from '@/components/ReportButton';
 
 type Post = {
   _id: string;
-  user: { _id: string; username: string; avatar?: string; fullName?: string };
+  user: { _id: string; username: string; avatar?: string; fullName?: string; isVerified?: boolean };
   type: string;
   media: { url: string; type: string }[];
   caption: string;
@@ -228,6 +229,7 @@ export function PostCard(props: {
             className="font-semibold text-[14px] text-[var(--text)] truncate block hover:opacity-80 transition-opacity"
           >
             {post.user?.username}
+            {post.user?.isVerified && <VerifiedBadge size={14} className="ml-1" />}
           </Link>
           {post.createdAt && (
             <span className="text-[12px] text-[var(--text-secondary)] hidden">{timeAgo(post.createdAt)}</span>
@@ -407,6 +409,7 @@ export function PostCard(props: {
           <p className="text-[14px] text-[var(--text)] leading-[18px]">
             <Link href={`/profili/${post.user?.username}`} className="font-semibold mr-1.5 hover:opacity-80 transition-opacity">
               {post.user?.username}
+            {post.user?.isVerified && <VerifiedBadge size={14} className="ml-1" />}
             </Link>
             {post.caption}
           </p>

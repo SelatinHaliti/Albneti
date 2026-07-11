@@ -17,7 +17,7 @@ type Notification = {
   createdAt: string;
 };
 
-const EVENT_TYPES = ['event_interest', 'event_reminder', 'event_update'];
+const EVENT_TYPES = ['event_interest', 'event_reminder', 'event_update', 'event_promo'];
 
 const typeLabels: Record<string, string> = {
   like: 'pelqeu postimin tënd',
@@ -30,6 +30,8 @@ const typeLabels: Record<string, string> = {
   event_interest: 'regjistrim eventi',
   event_reminder: 'kujtesë eventi',
   event_update: 'përditësim eventi',
+  event_promo: 'event për ty',
+  verification: 'verifikim',
 };
 
 const typeIcons: Record<string, string> = {
@@ -43,6 +45,8 @@ const typeIcons: Record<string, string> = {
   event_interest: '✅',
   event_reminder: '🔔',
   event_update: '📅',
+  event_promo: '📣',
+  verification: '✓',
 };
 
 function timeAgo(date: string): string {

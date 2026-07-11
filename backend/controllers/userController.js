@@ -16,18 +16,47 @@ export const getProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
     }
-    const posts = await Post.find({ user: user._id, isArchived: false })
-      .sort({ createdAt: -1 })
-      .populate('user', 'username avatar fullName')
-      .lean();
     const isFollowing =
       req.user &&
       user.followers.some((f) => f._id.toString() === req.user.id);
+    const isOwnProfile = req.user?.id === user._id.toString();
+    const followRequestPending =
+      req.user &&
+      !isFollowing &&
+      !isOwnProfile &&
+      (user.followRequests || []).some((id) => id.toString() === req.user.id);
+
+    let posts = [];
+    let isPrivateLocked = false;
+    if (isOwnProfile || !user.isPrivate || isFollowing) {
+      posts = await Post.find({ user: user._id, isArchived: false })
+        .sort({ createdAt: -1 })
+        .populate('user', 'username avatar fullName isVerified')
+        .lean();
+    } else {
+      isPrivateLocked = true;
+    }
+
     res.json({
-      user,
+      user: {
+        _id: user._id,
+        username: user.username,
+        fullName: user.fullName,
+        avatar: user.avatar,
+        bio: user.bio,
+        website: user.website,
+        location: user.location,
+        isVerified: user.isVerified,
+        isPrivate: user.isPrivate,
+        followers: user.followers,
+        following: user.following,
+        verifiedSubscription: user.verifiedSubscription,
+      },
       posts,
       isFollowing: !!isFollowing,
-      isOwnProfile: req.user?.id === user._id.toString(),
+      isOwnProfile,
+      isPrivateLocked,
+      followRequestPending: !!followRequestPending,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
@@ -106,6 +135,10 @@ export const toggleFollow = async (req, res) => {
     const isFollowing = currentUser.following.some(
       (id) => id.toString() === userId
     );
+    const hasRequested = (targetUser.followRequests || []).some(
+      (id) => id.toString() === req.user.id
+    );
+
     if (isFollowing) {
       currentUser.following = currentUser.following.filter(
         (id) => id.toString() !== userId
@@ -113,6 +146,24 @@ export const toggleFollow = async (req, res) => {
       targetUser.followers = targetUser.followers.filter(
         (id) => id.toString() !== req.user.id
       );
+      targetUser.followRequests = (targetUser.followRequests || []).filter(
+        (id) => id.toString() !== req.user.id
+      );
+    } else if (hasRequested) {
+      targetUser.followRequests = (targetUser.followRequests || []).filter(
+        (id) => id.toString() !== req.user.id
+      );
+    } else if (targetUser.isPrivate) {
+      if (!hasRequested) {
+        targetUser.followRequests = targetUser.followRequests || [];
+        targetUser.followRequests.push(req.user.id);
+        await Notification.create({
+          recipient: targetUser._id,
+          sender: req.user.id,
+          type: 'follow',
+          text: 'kërkoi të të ndjekë',
+        });
+      }
     } else {
       currentUser.following.push(userId);
       targetUser.followers.push(req.user.id);
@@ -124,9 +175,16 @@ export const toggleFollow = async (req, res) => {
     }
     await currentUser.save();
     await targetUser.save();
+
+    const nowFollowing = currentUser.following.some((id) => id.toString() === userId);
+    const requestPending = (targetUser.followRequests || []).some(
+      (id) => id.toString() === req.user.id
+    );
+
     res.json({
       success: true,
-      isFollowing: !isFollowing,
+      isFollowing: nowFollowing,
+      followRequestPending: requestPending,
       followersCount: targetUser.followers.length,
     });
   } catch (err) {
