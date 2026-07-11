@@ -12,6 +12,7 @@ import {
   closePeerConnection,
   waitForIceGathering,
 } from '@/lib/webrtc';
+import { stopCallRingtone } from '@/lib/callRingtone';
 
 type CallMode = 'audio' | 'video';
 
@@ -23,6 +24,7 @@ type CommonProps = {
   otherUsername?: string;
   signalingBridge: CallSignalingBridge;
   onClose: () => void;
+  onStopRing: () => void;
   onConnected?: () => void;
 };
 
@@ -56,6 +58,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     otherUsername,
     signalingBridge,
     onClose,
+    onStopRing,
     onConnected,
   } = props;
   const direction = props.direction;
@@ -140,6 +143,8 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     (reason: string, emitEvent?: 'end' | 'reject' | 'none') => {
       if (endedRef.current) return;
       endedRef.current = true;
+      stopCallRingtone();
+      onStopRing();
 
       if (emitEvent === 'end') emitSignal('call:end', { reason });
       if (emitEvent === 'reject') emitSignal('call:reject', { reason });
@@ -148,11 +153,13 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       setStatus('ended');
       onClose();
     },
-    [cleanupLocal, emitSignal, onClose]
+    [cleanupLocal, emitSignal, onClose, onStopRing]
   );
 
   const attachRemoteStream = useCallback(
     (stream: MediaStream) => {
+      stopCallRingtone();
+      onStopRing();
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = stream;
         void remoteVideoRef.current.play().catch(() => {});
@@ -165,7 +172,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       setStatus('connected');
       onConnected?.();
     },
-    [onConnected]
+    [onConnected, onStopRing]
   );
 
   const createPeer = useCallback(async () => {
@@ -247,13 +254,15 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
         remoteReadyRef.current = true;
         await flushIceQueue(pc, iceQueueRef.current);
+        stopCallRingtone();
+        onStopRing();
         setStatus('connecting');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Gabim në përgjigje.');
         setStatus('error');
       }
     },
-    []
+    [onStopRing]
   );
 
   const startOutgoingCall = useCallback(async () => {
@@ -279,6 +288,10 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     if (!incomingOffer || acceptStartedRef.current || endedRef.current) return;
     acceptStartedRef.current = true;
 
+    stopCallRingtone();
+    onStopRing();
+    setStatus('connecting');
+
     emitSignal('call:ringing', {});
 
     const pc = await createPeer();
@@ -298,7 +311,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
     emitSignal('call:answer', { sdp: localDesc });
     setStatus('connecting');
-  }, [incomingOffer, createPeer, getLocalStream, emitSignal, mode]);
+  }, [incomingOffer, createPeer, getLocalStream, emitSignal, onStopRing]);
 
   // ICE + answer nga signaling bridge (mos humb asnjë kandidat para mount)
   useEffect(() => {
@@ -329,7 +342,11 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     };
 
     const onRinging = () => {
-      if (direction === 'outgoing') setStatus('connecting');
+      if (direction === 'outgoing') {
+        stopCallRingtone();
+        onStopRing();
+        setStatus('connecting');
+      }
     };
 
     socket.on('call:end', onRemoteEnd);
@@ -341,7 +358,19 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       socket.off('call:reject', onRemoteEnd);
       socket.off('call:ringing', onRinging);
     };
-  }, [socket, otherUserId, conversationId, direction, finishCall]);
+  }, [socket, otherUserId, conversationId, direction, finishCall, onStopRing]);
+
+  // Ndal ringringun sapo nuk jemi më në pritje (prano/lidhur/gabim)
+  useEffect(() => {
+    if (direction === 'incoming' && status !== 'ringing') {
+      stopCallRingtone();
+      onStopRing();
+    }
+    if (status === 'connected' || status === 'error' || status === 'ended') {
+      stopCallRingtone();
+      onStopRing();
+    }
+  }, [status, direction, onStopRing]);
 
   // Outgoing: nis thirrjen një herë
   useEffect(() => {
@@ -367,6 +396,8 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
     return () => {
       clearTimeout(ringTimer);
+      stopCallRingtone();
+      onStopRing();
       if (!endedRef.current) {
         endedRef.current = true;
         socket.emit('call:end', {
@@ -392,6 +423,8 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
   const onAccept = () => {
     if (accepting || acceptStartedRef.current) return;
+    stopCallRingtone();
+    onStopRing();
     setAccepting(true);
     acceptCall()
       .then(() => setAccepting(false))
@@ -458,7 +491,9 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-white px-6 text-center">
           <audio ref={remoteAudioRef} autoPlay playsInline />
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--ig-blue)]/40 to-purple-600/40 flex items-center justify-center text-4xl mb-6 animate-pulse ring-4 ring-white/10">
+          <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-[var(--ig-blue)]/40 to-purple-600/40 flex items-center justify-center text-4xl mb-6 ring-4 ring-white/10 ${
+            status === 'ringing' ? 'animate-pulse' : ''
+          }`}>
             {otherUsername ? otherUsername.charAt(0).toUpperCase() : '📞'}
           </div>
           <p className="text-xl font-semibold">{title}</p>

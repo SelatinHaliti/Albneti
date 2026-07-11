@@ -7,6 +7,11 @@ import { useSocket } from '@/components/SocketProvider';
 import { useToastStore } from '@/store/useToastStore';
 import { CallModal } from '@/components/CallModal';
 import { acquireLocalMedia, resolveIceServers } from '@/lib/webrtc';
+import {
+  startIncomingRingtone,
+  startOutgoingRingtone,
+  stopCallRingtone,
+} from '@/lib/callRingtone';
 
 export type CallMode = 'audio' | 'video';
 
@@ -47,45 +52,18 @@ type CallContextType = {
     mode: CallMode;
   }) => Promise<void>;
   endCall: () => void;
+  stopRing: () => void;
 };
 
 const CallContext = createContext<CallContextType>({
   activeCall: null,
   startCall: async () => {},
   endCall: () => {},
+  stopRing: () => {},
 });
 
 export function useCall() {
   return useContext(CallContext);
-}
-
-function playRingtone(stopRef: React.MutableRefObject<(() => void) | null>) {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 440;
-    gain.gain.value = 0.08;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    const interval = setInterval(() => {
-      osc.frequency.value = osc.frequency.value === 440 ? 480 : 440;
-    }, 600);
-    stopRef.current = () => {
-      clearInterval(interval);
-      try {
-        osc.stop();
-        ctx.close();
-      } catch {
-        /* ignore */
-      }
-      stopRef.current = null;
-    };
-  } catch {
-    /* audio nuk lejohet */
-  }
 }
 
 function createSignalingBridge(): CallSignalingBridge {
@@ -134,18 +112,16 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const toastError = useToastStore((s) => s.error);
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
   const activeCallRef = useRef<ActiveCall | null>(null);
-  const ringStopRef = useRef<(() => void) | null>(null);
   const signalingBridgeRef = useRef<ReturnType<typeof createSignalingBridge> | null>(null);
 
   activeCallRef.current = activeCall;
 
   const stopRing = useCallback(() => {
-    ringStopRef.current?.();
-    ringStopRef.current = null;
+    stopCallRingtone();
   }, []);
 
   const endCall = useCallback(() => {
-    stopRing();
+    stopCallRingtone();
     signalingBridgeRef.current?.reset();
     signalingBridgeRef.current = null;
     setActiveCall((current) => {
@@ -154,7 +130,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       return null;
     });
-  }, [stopRing]);
+  }, []);
 
   const startCall = useCallback(
     async (opts: {
@@ -172,13 +148,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      stopRing();
+      stopCallRingtone();
       signalingBridgeRef.current?.reset();
       signalingBridgeRef.current = createSignalingBridge();
 
       try {
         const localStream = await acquireLocalMedia(opts.mode);
         void resolveIceServers();
+        startOutgoingRingtone();
         setActiveCall({
           direction: 'outgoing',
           conversationId: opts.conversationId,
@@ -188,6 +165,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           localStream,
         });
       } catch (e) {
+        stopCallRingtone();
         const msg = e instanceof Error ? e.message : '';
         if (msg.includes('Permission') || msg.includes('NotAllowed') || msg.includes('denied')) {
           toastError('Lejo mikrofonin/kamerën në browser për të thirrur.');
@@ -198,7 +176,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         signalingBridgeRef.current = null;
       }
     },
-    [socket, user, stopRing, toastError]
+    [socket, user, toastError]
   );
 
   // Global call signaling – offer, end, busy, ICE/answer buffering
@@ -230,10 +208,10 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      stopRing();
+      stopCallRingtone();
       signalingBridgeRef.current?.reset();
       signalingBridgeRef.current = createSignalingBridge();
-      playRingtone(ringStopRef);
+      startIncomingRingtone();
       void resolveIceServers();
       setActiveCall({
         direction: 'incoming',
@@ -260,7 +238,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       sdp: RTCSessionDescriptionInit;
     }) => {
       if (!matchesActiveCall(payload.fromUserId, payload.conversationId)) return;
+      stopCallRingtone();
       signalingBridgeRef.current?.pushAnswer(payload.sdp);
+    };
+
+    const onCalleeRinging = (payload: { fromUserId: string; conversationId?: string }) => {
+      if (!matchesActiveCall(payload.fromUserId, payload.conversationId)) return;
+      stopCallRingtone();
     };
 
     const onEnd = (payload: { fromUserId: string; conversationId?: string; reason?: string }) => {
@@ -268,7 +252,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         if (!current) return null;
         if (String(payload.fromUserId) !== String(current.otherUserId)) return current;
         if (payload.conversationId && payload.conversationId !== current.conversationId) return current;
-        stopRing();
+        stopCallRingtone();
         signalingBridgeRef.current?.reset();
         signalingBridgeRef.current = null;
         if (current.direction === 'outgoing' && current.localStream) {
@@ -284,7 +268,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     };
 
     const onBusy = () => {
-      stopRing();
+      stopCallRingtone();
       signalingBridgeRef.current?.reset();
       signalingBridgeRef.current = null;
       setActiveCall((current) => {
@@ -297,7 +281,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     };
 
     const onOffline = () => {
-      stopRing();
+      stopCallRingtone();
       signalingBridgeRef.current?.reset();
       signalingBridgeRef.current = null;
       setActiveCall((current) => {
@@ -310,7 +294,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     };
 
     const onCallError = (payload?: { message?: string }) => {
-      stopRing();
+      stopCallRingtone();
       signalingBridgeRef.current?.reset();
       signalingBridgeRef.current = null;
       setActiveCall((current) => {
@@ -325,6 +309,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     socket.on('call:offer', onOffer);
     socket.on('call:ice', onIce);
     socket.on('call:answer', onAnswer);
+    socket.on('call:ringing', onCalleeRinging);
     socket.on('call:end', onEnd);
     socket.on('call:reject', onEnd);
     socket.on('call:busy', onBusy);
@@ -335,23 +320,25 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       socket.off('call:offer', onOffer);
       socket.off('call:ice', onIce);
       socket.off('call:answer', onAnswer);
+      socket.off('call:ringing', onCalleeRinging);
       socket.off('call:end', onEnd);
       socket.off('call:reject', onEnd);
       socket.off('call:busy', onBusy);
       socket.off('call:offline', onOffline);
       socket.off('call:error', onCallError);
-      stopRing();
+      stopCallRingtone();
     };
-  }, [socket, user, stopRing, toastError]);
+  }, [socket, user, toastError]);
 
   const handleAcceptNavigate = useCallback(() => {
+    stopCallRingtone();
     if (activeCall?.conversationId) {
       router.push(`/mesazhe/${activeCall.conversationId}`);
     }
   }, [activeCall, router]);
 
   return (
-    <CallContext.Provider value={{ activeCall, startCall, endCall }}>
+    <CallContext.Provider value={{ activeCall, startCall, endCall, stopRing }}>
       {children}
       {activeCall && socket && user && signalingBridgeRef.current && (
         <CallModal
@@ -366,6 +353,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           localStream={activeCall.direction === 'outgoing' ? activeCall.localStream : undefined}
           signalingBridge={signalingBridgeRef.current}
           onClose={endCall}
+          onStopRing={stopRing}
           onConnected={handleAcceptNavigate}
         />
       )}
