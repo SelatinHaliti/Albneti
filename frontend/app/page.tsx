@@ -90,13 +90,17 @@ export default function HomePage() {
             </div>
           </Link>
 
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-6">
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-4">
             {FEATURES.map((f) => (
               <span key={f.label} className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1">
                 <span>{f.icon}</span>{f.label}
               </span>
             ))}
           </div>
+
+          <Link href="/shkarko" className="mt-6 block text-center text-[12px] font-semibold text-[var(--ig-blue)] hover:underline">
+            📲 Shkarko për iOS, Android, Mac & Windows
+          </Link>
         </motion.div>
       </div>
     </div>

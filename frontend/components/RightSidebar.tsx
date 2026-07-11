@@ -51,6 +51,25 @@ export function RightSidebar() {
       {/* Albanian unique features */}
       <AlbanianPulse />
 
+      <Link href="/komuniteti" className="albanian-card block p-4 mb-5 hover:opacity-90 transition-opacity">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🇦🇱</span>
+          <div>
+            <p className="text-[14px] font-semibold text-[var(--text)]">Komuniteti Shqiptar</p>
+            <p className="text-[12px] text-[var(--text-muted)]">Ngjarje, krijues, diaspora</p>
+          </div>
+        </div>
+      </Link>
+
+      <Link href="/shkarko" className="install-cta-card mb-5">
+        <span className="text-2xl">📲</span>
+        <div className="flex-1">
+          <p className="text-[13px] font-semibold text-[var(--text)]">Shkarko AlbNet</p>
+          <p className="text-[11px] text-[var(--text-muted)]">iOS · Android · Mac · Windows</p>
+        </div>
+        <span className="text-[var(--text-muted)]">→</span>
+      </Link>
+
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div className="mb-5">

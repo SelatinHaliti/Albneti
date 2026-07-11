@@ -1,10 +1,32 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { PWARegister } from '@/components/PWARegister';
 
 export const metadata: Metadata = {
   title: 'AlbNet – Instagram Shqiptar',
   description: 'Kyçu për të parë fotot, story-t dhe reels nga komuniteti shqiptar.',
+  applicationName: 'AlbNet',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'AlbNet',
+  },
+  formatDetection: { telephone: false },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#e41e26' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -15,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="sq" suppressHydrationWarning>
       <body className="antialiased bg-[var(--bg)] text-[var(--text)]">
+        <PWARegister />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

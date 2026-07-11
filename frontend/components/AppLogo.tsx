@@ -22,12 +22,12 @@ export function AppLogo({ size = 40 }: { size?: number }) {
           fill="#0f0f0f"
         />
         {/* Shqiponja – e kuqe */}
-        <g fill="#dc2626">
+        <g fill="#e41e26">
           {/* Dy kokët (me sy dhe sqep) */}
           <ellipse cx="13" cy="16" rx="3.2" ry="3.5" />
-          <path d="M10.2 15.2L8 13" stroke="#dc2626" strokeWidth="0.65" fill="none" strokeLinecap="round" />
+          <path d="M10.2 15.2L8 13" stroke="#e41e26" strokeWidth="0.65" fill="none" strokeLinecap="round" />
           <ellipse cx="35" cy="16" rx="3.2" ry="3.5" />
-          <path d="M37.8 15.2L40 13" stroke="#dc2626" strokeWidth="0.65" fill="none" strokeLinecap="round" />
+          <path d="M37.8 15.2L40 13" stroke="#e41e26" strokeWidth="0.65" fill="none" strokeLinecap="round" />
           {/* Trupi */}
           <path d="M21 19v13h6V19h-6z" />
           <path d="M24 19l-5 6h2l3-3 3 3h2l-5-6z" />

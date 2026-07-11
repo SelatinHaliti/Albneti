@@ -1,0 +1,49 @@
+{
+  "name": "albnet-desktop",
+  "version": "1.0.0",
+  "description": "AlbNet – Rrjeti Social Shqiptar për Mac & Windows",
+  "main": "main.js",
+  "author": "AlbNet",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "set NODE_ENV=development&& electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder --win --mac"
+  },
+  "build": {
+    "appId": "com.albnet.desktop",
+    "productName": "AlbNet",
+    "copyright": "Copyright © 2026 AlbNet",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "assets/**"
+    ],
+    "mac": {
+      "category": "public.app-category.social-networking",
+      "icon": "assets/icon.icns",
+      "target": ["dmg", "zip"],
+      "darkModeSupport": true
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": ["nsis", "portable"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "shortcutName": "AlbNet"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}

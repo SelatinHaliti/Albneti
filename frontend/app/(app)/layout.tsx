@@ -24,6 +24,7 @@ import { AppLogo } from '@/components/AppLogo';
 import { Toaster } from '@/components/Toaster';
 import { CreateMenu } from '@/components/CreateMenu';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { InstallAppBanner } from '@/components/InstallAppBanner';
 
 const navItems = [
   { href: '/feed', label: 'Kryefaja', Icon: IconHome },
@@ -33,6 +34,7 @@ const navItems = [
   { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage },
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart },
   { href: '/chat-global', label: 'Chat Global', Icon: IconGlobe },
+  { href: '/komuniteti', label: 'Komuniteti', Icon: IconGlobe },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -303,6 +305,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </aside>
 
         <main className={`flex-1 md:ml-[72px] lg:ml-[245px] ${isReelsPage ? 'pt-0 pb-0' : 'pt-[52px] md:pt-0 pb-[56px] md:pb-0'} min-h-screen`}>
+          {!isReelsPage && (
+            <div className="md:hidden px-3 pt-2">
+              <InstallAppBanner />
+            </div>
+          )}
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
 
