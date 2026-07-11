@@ -8,8 +8,12 @@
   ],
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://albneti-api.onrender.com/api/$1"
+    },
+    {
       "source": "/(.*)",
-      "destination": "frontend/$1"
+      "destination": "/frontend/$1"
     }
   ]
 }
