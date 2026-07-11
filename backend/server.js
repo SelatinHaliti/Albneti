@@ -23,6 +23,7 @@ import globalChatRoutes from './routes/globalChat.js';
 import communityRoutes from './routes/community.js';
 import verificationRoutes from './routes/verification.js';
 import callRoutes from './routes/calls.js';
+import pushRoutes from './routes/push.js';
 import { stripeWebhook } from './controllers/verificationController.js';
 import { setupSocketIO } from './sockets/index.js';
 import { setIO } from './sockets/io.js';
@@ -119,6 +120,7 @@ app.use('/api/global-chat', globalChatRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/calls', callRoutes);
+app.use('/api/push', pushRoutes);
 
 // Health check – përfshirë gjendjen e DB (për load balancer / monitoring)
 app.get('/api/health', async (req, res) => {

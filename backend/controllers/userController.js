@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Post from '../models/Post.js';
 import Notification from '../models/Notification.js';
+import { notifyUser, buildPushFromNotification } from '../services/pushService.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.js';
 
 /**
@@ -157,20 +158,26 @@ export const toggleFollow = async (req, res) => {
       if (!hasRequested) {
         targetUser.followRequests = targetUser.followRequests || [];
         targetUser.followRequests.push(req.user.id);
-        await Notification.create({
+        const notif = await Notification.create({
           recipient: targetUser._id,
           sender: req.user.id,
           type: 'follow',
           text: 'kërkoi të të ndjekë',
         });
+        void notifyUser(targetUser._id, {
+          push: buildPushFromNotification(notif, req.user.username),
+        });
       }
     } else {
       currentUser.following.push(userId);
       targetUser.followers.push(req.user.id);
-      await Notification.create({
+      const notif = await Notification.create({
         recipient: targetUser._id,
         sender: req.user.id,
         type: 'follow',
+      });
+      void notifyUser(targetUser._id, {
+        push: buildPushFromNotification(notif, req.user.username),
       });
     }
     await currentUser.save();

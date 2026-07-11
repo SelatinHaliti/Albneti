@@ -27,6 +27,7 @@ import { Toaster } from '@/components/Toaster';
 import { CreateMenu } from '@/components/CreateMenu';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { InstallAppBanner } from '@/components/InstallAppBanner';
+import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { MobileMenu } from '@/components/MobileMenu';
 
 const navItems = [
@@ -341,6 +342,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
           {!isReelsPage && (
             <div className="md:hidden px-3 pt-2 max-w-[100vw]">
               <InstallAppBanner />
+              <PushNotificationPrompt />
             </div>
           )}
           <ErrorBoundary>{children}</ErrorBoundary>

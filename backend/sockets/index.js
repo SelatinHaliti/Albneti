@@ -5,6 +5,7 @@ import Conversation from '../models/Conversation.js';
 import Notification from '../models/Notification.js';
 import GlobalChatMessage from '../models/GlobalChatMessage.js';
 import GlobalChatBan from '../models/GlobalChatBan.js';
+import { sendIncomingCallPush, notifyUser, buildPushFromNotification } from '../services/pushService.js';
 
 const userSockets = new Map(); // userId -> Set(socketId)
 const GLOBAL_CHAT_ROOM = 'global-chat';
@@ -97,6 +98,23 @@ export function setupSocketIO(io) {
         const populated = await Message.findById(message._id).populate('sender', 'username avatar');
         io.to(`conv:${conversationId}`).emit('message', populated);
         io.to(`user:${recipientId}`).emit('new_message_notification', { conversationId, message: populated });
+
+        const notif = await Notification.create({
+          recipient: recipientId,
+          sender: userId,
+          type: 'message',
+          message: message._id,
+          text: (content || '').slice(0, 50) || 'Një mesazh i ri',
+        });
+        const senderName = populated?.sender?.username;
+        void notifyUser(recipientId, {
+          socket: { type: 'message', _id: notif._id, text: notif.text },
+          push: {
+            ...buildPushFromNotification(notif, senderName),
+            url: `/mesazhe/${conversationId}`,
+            tag: `msg-${conversationId}`,
+          },
+        });
       } catch (err) {
         socket.emit('error', { message: err.message });
       }
@@ -130,6 +148,11 @@ export function setupSocketIO(io) {
         conversationId,
         mode: mode === 'video' ? 'video' : 'audio',
         sdp,
+      });
+      void sendIncomingCallPush(toUserId, {
+        callerUsername: caller?.username,
+        conversationId,
+        mode: mode === 'video' ? 'video' : 'audio',
       });
     });
 

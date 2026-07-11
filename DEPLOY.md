@@ -95,7 +95,17 @@ Për thirrje midis rrjeteve të ndryshme (WiFi / 4G), duhet **TURN server**. Alb
 
 ---
 
-## 6. Përdoruesi i parë admin
+## 6. Njoftime Push (Web Push)
+
+Për njoftime në telefon edhe jashtë app-it (thirrje, mesazhe – si Instagram):
+
+1. `cd backend && npm install && node scripts/generate-vapid.js`
+2. Vendos `VAPID_*` në **Render** dhe `NEXT_PUBLIC_VAPID_PUBLIC_KEY` në **Vercel**
+3. Udhëzime: **`PUSH-NOTIFICATIONS.md`**
+
+---
+
+## 7. Përdoruesi i parë admin
 
 Për të pasur një përdorues admin, në MongoDB (Atlas ose lokalisht) ndërroje fushën `role` të dokumentit të atij përdoruesi nga `user` në `admin`:
 

@@ -1,7 +1,7 @@
 import Event from '../models/Event.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
-import { emitNotification } from '../sockets/io.js';
+import { notifyUser, buildPushFromNotification } from '../services/pushService.js';
 import { distributeEventPromos } from '../services/eventAdsService.js';
 
 const MS_24H = 24 * 60 * 60 * 1000;
@@ -57,7 +57,10 @@ async function sendEventNotification(userId, { type, event, text }) {
     isRead: false,
     createdAt: doc.createdAt,
   };
-  emitNotification(String(userId), payload);
+  void notifyUser(String(userId), {
+    socket: payload,
+    push: buildPushFromNotification(doc, 'AlbNet'),
+  });
   return doc;
 }
 
