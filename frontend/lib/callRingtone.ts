@@ -1,56 +1,129 @@
 /**
- * Ringtone për thirrje hyrëse/dalëse – ndalet menjëherë kur pranohet ose refuzohet.
+ * Ringtone thirrje – HTMLAudio + WebAudio, ndalet menjëherë (pause + suspend + close).
  */
 
 type RingMode = 'incoming' | 'outgoing';
 
+const RING_AUDIO_ID = 'albnet-call-ring-audio';
+
+let session = 0;
+let mode: RingMode | null = null;
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
-let oscillators: OscillatorNode[] = [];
-let patternInterval: ReturnType<typeof setInterval> | null = null;
-let patternTimeouts: ReturnType<typeof setTimeout>[] = [];
-let vibrateInterval: ReturnType<typeof setInterval> | null = null;
-let currentMode: RingMode | null = null;
-let generation = 0;
+let mediaDest: MediaStreamAudioDestinationNode | null = null;
+let ringAudioEl: HTMLAudioElement | null = null;
+let loopTimer: ReturnType<typeof setInterval> | null = null;
+let pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
+let vibrateTimer: ReturnType<typeof setInterval> | null = null;
+let activeOscillators: OscillatorNode[] = [];
 
-function ensureContext(): AudioContext | null {
-  try {
-    if (!audioCtx || audioCtx.state === 'closed') {
-      audioCtx = new AudioContext();
-    }
-    if (audioCtx.state === 'suspended') {
-      void audioCtx.resume();
-    }
-    return audioCtx;
-  } catch {
-    return null;
+function getRingAudioElement(): HTMLAudioElement {
+  if (typeof document === 'undefined') {
+    return { pause: () => {}, play: () => Promise.resolve(), } as unknown as HTMLAudioElement;
+  }
+  let el = document.getElementById(RING_AUDIO_ID) as HTMLAudioElement | null;
+  if (!el) {
+    el = document.createElement('audio');
+    el.id = RING_AUDIO_ID;
+    el.setAttribute('playsinline', 'true');
+    el.setAttribute('webkit-playsinline', 'true');
+    el.setAttribute('data-albnet-call-ring', '1');
+    el.loop = false;
+    el.volume = 1;
+    el.style.display = 'none';
+    document.body.appendChild(el);
+  }
+  ringAudioEl = el;
+  return el;
+}
+
+function killAllTimeouts() {
+  if (loopTimer) {
+    clearInterval(loopTimer);
+    loopTimer = null;
+  }
+  for (const t of pendingTimeouts) clearTimeout(t);
+  pendingTimeouts = [];
+  if (vibrateTimer) {
+    clearInterval(vibrateTimer);
+    vibrateTimer = null;
   }
 }
 
-function clearOscillators() {
-  for (const osc of oscillators) {
+function killAllOscillators() {
+  for (const o of activeOscillators) {
     try {
-      osc.onended = null;
-      osc.stop();
-      osc.disconnect();
+      o.onended = null;
+      o.stop(0);
+      o.disconnect();
     } catch {
       /* ignore */
     }
   }
-  oscillators = [];
+  activeOscillators = [];
 }
 
-function clearTimers() {
-  if (patternInterval) {
-    clearInterval(patternInterval);
-    patternInterval = null;
+function killHtmlAudio() {
+  if (typeof document === 'undefined') return;
+  const elements = document.querySelectorAll<HTMLAudioElement>(
+    `audio[data-albnet-call-ring], #${RING_AUDIO_ID}`
+  );
+  for (const el of Array.from(elements)) {
+    try {
+      el.pause();
+      el.currentTime = 0;
+      el.loop = false;
+      const stream = el.srcObject as MediaStream | null;
+      if (stream) {
+        stream.getTracks().forEach((t) => {
+          try {
+            t.stop();
+          } catch {
+            /* ignore */
+          }
+        });
+      }
+      el.srcObject = null;
+      el.removeAttribute('src');
+      el.load();
+    } catch {
+      /* ignore */
+    }
   }
-  for (const t of patternTimeouts) clearTimeout(t);
-  patternTimeouts = [];
-  if (vibrateInterval) {
-    clearInterval(vibrateInterval);
-    vibrateInterval = null;
+}
+
+function killAudioContext() {
+  if (masterGain && audioCtx && audioCtx.state !== 'closed') {
+    try {
+      masterGain.gain.cancelScheduledValues(0);
+      masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      masterGain.disconnect();
+    } catch {
+      /* ignore */
+    }
   }
+  masterGain = null;
+  mediaDest = null;
+
+  if (audioCtx && audioCtx.state !== 'closed') {
+    try {
+      void audioCtx.suspend();
+      void audioCtx.close();
+    } catch {
+      /* ignore */
+    }
+  }
+  audioCtx = null;
+}
+
+/** Ndalon menjëherë – pa vonesë, pa fade */
+export function stopCallRingtone(): void {
+  session += 1;
+  mode = null;
+  killAllTimeouts();
+  killAllOscillators();
+  killHtmlAudio();
+  killAudioContext();
   try {
     navigator.vibrate?.(0);
   } catch {
@@ -58,45 +131,25 @@ function clearTimers() {
   }
 }
 
-/** Ndalon menjëherë çdo tingull/vibrim thirrjeje */
-export function stopCallRingtone(): void {
-  generation += 1;
-  currentMode = null;
-  clearTimers();
-  clearOscillators();
-
-  if (masterGain && audioCtx && audioCtx.state !== 'closed') {
-    try {
-      const t = audioCtx.currentTime;
-      masterGain.gain.cancelScheduledValues(t);
-      masterGain.gain.setValueAtTime(masterGain.gain.value, t);
-      masterGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  const ctxToClose = audioCtx;
-  masterGain = null;
-  audioCtx = null;
-
-  if (ctxToClose && ctxToClose.state !== 'closed') {
-    setTimeout(() => {
-      void ctxToClose.close().catch(() => {});
-    }, 80);
-  }
-}
-
-function scheduleTimeout(fn: () => void, ms: number, gen: number) {
+function schedule(fn: () => void, ms: number, sid: number) {
   const id = setTimeout(() => {
-    patternTimeouts = patternTimeouts.filter((x) => x !== id);
-    if (gen !== generation || !currentMode) return;
+    pendingTimeouts = pendingTimeouts.filter((x) => x !== id);
+    if (sid !== session || !mode) return;
     fn();
   }, ms);
-  patternTimeouts.push(id);
+  pendingTimeouts.push(id);
 }
 
-function playDualTone(ctx: AudioContext, gain: GainNode, f1: number, f2: number, durationSec: number) {
+function playDualTone(
+  ctx: AudioContext,
+  gain: GainNode,
+  f1: number,
+  f2: number,
+  durationSec: number,
+  sid: number
+) {
+  if (sid !== session || !mode) return;
+
   const o1 = ctx.createOscillator();
   const o2 = ctx.createOscillator();
   o1.type = 'sine';
@@ -110,83 +163,119 @@ function playDualTone(ctx: AudioContext, gain: GainNode, f1: number, f2: number,
   o2.start(now);
   o1.stop(now + durationSec);
   o2.stop(now + durationSec);
-  o1.onended = () => {
+  activeOscillators.push(o1, o2);
+
+  const cleanup = () => {
+    activeOscillators = activeOscillators.filter((x) => x !== o1 && x !== o2);
     try {
       o1.disconnect();
-    } catch {
-      /* ignore */
-    }
-  };
-  o2.onended = () => {
-    try {
       o2.disconnect();
     } catch {
       /* ignore */
     }
   };
-  oscillators.push(o1, o2);
+  o1.onended = cleanup;
+  o2.onended = cleanup;
 }
 
-function startVibration() {
+function startVibration(sid: number) {
   try {
     if (!navigator.vibrate) return;
-    navigator.vibrate([400, 200, 400, 2000]);
-    vibrateInterval = setInterval(() => {
-      if (!currentMode) return;
-      navigator.vibrate([400, 200, 400, 2000]);
-    }, 3200);
+    navigator.vibrate([400, 200, 400, 1800]);
+    vibrateTimer = setInterval(() => {
+      if (sid !== session || mode !== 'incoming') return;
+      navigator.vibrate([400, 200, 400, 1800]);
+    }, 3000);
   } catch {
     /* ignore */
   }
 }
 
-/** Thirrje hyrëse – ring-ring si telefon */
-export function startIncomingRingtone(): void {
-  stopCallRingtone();
-  const gen = generation;
-  const ctx = ensureContext();
-  if (!ctx) return;
+function bootAudioPipeline(sid: number): AudioContext | null {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    audioCtx = ctx;
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 0;
+    mediaDest = ctx.createMediaStreamDestination();
+    masterGain.connect(mediaDest);
+    masterGain.connect(ctx.destination);
 
-  currentMode = 'incoming';
-  masterGain = ctx.createGain();
-  masterGain.gain.value = 0.14;
-  masterGain.connect(ctx.destination);
-  startVibration();
+    const audio = getRingAudioElement();
+    audio.srcObject = mediaDest.stream;
+    audio.loop = false;
+    void audio.play().catch(() => {});
 
-  const ringBurst = () => {
-    if (gen !== generation || currentMode !== 'incoming' || !masterGain) return;
-    playDualTone(ctx, masterGain, 440, 480, 0.35);
-    scheduleTimeout(() => {
-      if (gen !== generation || currentMode !== 'incoming' || !masterGain) return;
-      playDualTone(ctx, masterGain, 440, 480, 0.35);
-    }, 450, gen);
-  };
-
-  ringBurst();
-  patternInterval = setInterval(ringBurst, 2800);
+    void ctx.resume();
+    return ctx;
+  } catch {
+    return null;
+  }
 }
 
-/** Thirrje dalëse – tingull i butë derisa përgjigjet */
-export function startOutgoingRingtone(): void {
+/** Thirrje hyrëse */
+export function startIncomingRingtone(): void {
+  if (typeof window === 'undefined') return;
   stopCallRingtone();
-  const gen = generation;
-  const ctx = ensureContext();
-  if (!ctx) return;
+  const sid = session;
+  mode = 'incoming';
 
-  currentMode = 'outgoing';
-  masterGain = ctx.createGain();
-  masterGain.gain.value = 0.06;
-  masterGain.connect(ctx.destination);
+  const ctx = bootAudioPipeline(sid);
+  if (!ctx || !masterGain) return;
+
+  masterGain.gain.setValueAtTime(0.15, ctx.currentTime);
+  startVibration(sid);
+
+  const burst = () => {
+    if (sid !== session || mode !== 'incoming' || !masterGain) return;
+    playDualTone(ctx, masterGain, 440, 480, 0.4, sid);
+    schedule(() => {
+      if (sid !== session || mode !== 'incoming' || !masterGain) return;
+      playDualTone(ctx, masterGain, 440, 480, 0.4, sid);
+    }, 500, sid);
+  };
+
+  burst();
+  loopTimer = setInterval(burst, 2600);
+}
+
+/** Thirrje dalëse – ringback */
+export function startOutgoingRingtone(): void {
+  if (typeof window === 'undefined') return;
+  stopCallRingtone();
+  const sid = session;
+  mode = 'outgoing';
+
+  const ctx = bootAudioPipeline(sid);
+  if (!ctx || !masterGain) return;
+
+  masterGain.gain.setValueAtTime(0.07, ctx.currentTime);
 
   const beep = () => {
-    if (gen !== generation || currentMode !== 'outgoing' || !masterGain) return;
-    playDualTone(ctx, masterGain, 350, 400, 0.2);
+    if (sid !== session || mode !== 'outgoing' || !masterGain) return;
+    playDualTone(ctx, masterGain, 425, 475, 0.25, sid);
   };
 
   beep();
-  patternInterval = setInterval(beep, 2200);
+  loopTimer = setInterval(beep, 2000);
 }
 
 export function isCallRingtonePlaying(): boolean {
-  return currentMode !== null;
+  return mode !== null;
+}
+
+export type CallRingPhase = 'idle' | 'incoming' | 'outgoing' | 'active';
+
+/** Sinkronizon fazën e thirrjes me tingullin */
+export function syncCallRingPhase(phase: CallRingPhase): void {
+  if (phase === 'incoming') {
+    startIncomingRingtone();
+    return;
+  }
+  if (phase === 'outgoing') {
+    startOutgoingRingtone();
+    return;
+  }
+  stopCallRingtone();
 }

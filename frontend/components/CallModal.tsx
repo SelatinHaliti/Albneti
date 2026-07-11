@@ -418,13 +418,17 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     return () => clearInterval(t);
   }, [status]);
 
+  const onDecline = () => {
+    onStopRing();
+    stopCallRingtone();
+    finishCall('declined', 'reject');
+  };
   const onHangup = () => finishCall('hangup', 'end');
-  const onDecline = () => finishCall('declined', 'reject');
 
   const onAccept = () => {
     if (accepting || acceptStartedRef.current) return;
-    stopCallRingtone();
     onStopRing();
+    stopCallRingtone();
     setAccepting(true);
     acceptCall()
       .then(() => setAccepting(false))
