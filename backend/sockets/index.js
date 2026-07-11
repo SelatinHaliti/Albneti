@@ -146,9 +146,15 @@ export function setupSocketIO(io) {
       io.to(`user:${toUserId}`).emit('call:ringing', { fromUserId: userId, conversationId });
     });
 
+    socket.on('call:busy', ({ toUserId, conversationId }) => {
+      if (!toUserId) return;
+      io.to(`user:${toUserId}`).emit('call:busy', { fromUserId: userId, conversationId });
+    });
+
     socket.on('call:reject', ({ toUserId, conversationId, reason }) => {
       if (!toUserId) return;
       clearCallActive(userId);
+      clearCallActive(toUserId);
       io.to(`user:${toUserId}`).emit('call:reject', { fromUserId: userId, conversationId, reason });
     });
 
@@ -196,7 +202,16 @@ export function setupSocketIO(io) {
     });
 
     socket.on('disconnect', () => {
-      clearCallActive(userId);
+      const entry = activeCalls.get(String(userId));
+      if (entry) {
+        io.to(`user:${entry.withUserId}`).emit('call:end', {
+          fromUserId: userId,
+          conversationId: entry.conversationId,
+          reason: 'disconnect',
+        });
+        clearCallActive(userId);
+        clearCallActive(entry.withUserId);
+      }
       socket.leave(GLOBAL_CHAT_ROOM);
       const globalRoom = io.sockets.adapter.rooms.get(GLOBAL_CHAT_ROOM);
       io.to(GLOBAL_CHAT_ROOM).emit('global_chat_online_count', { count: globalRoom?.size ?? 0 });

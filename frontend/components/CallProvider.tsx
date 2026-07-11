@@ -82,7 +82,10 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const { socket } = useSocket();
   const toastError = useToastStore((s) => s.error);
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
+  const activeCallRef = useRef<ActiveCall | null>(null);
   const ringStopRef = useRef<(() => void) | null>(null);
+
+  activeCallRef.current = activeCall;
 
   const stopRing = useCallback(() => {
     ringStopRef.current?.();
@@ -121,6 +124,10 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }) => {
       if (!payload.conversationId || !payload.fromUserId) return;
       if (String(payload.fromUserId) === String(user.id)) return;
+      if (activeCallRef.current) {
+        socket.emit('call:busy', { toUserId: payload.fromUserId, conversationId: payload.conversationId });
+        return;
+      }
 
       stopRing();
       playRingtone(ringStopRef);
@@ -134,12 +141,17 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
-    const onEnd = (payload: { fromUserId: string; conversationId?: string }) => {
+    const onEnd = (payload: { fromUserId: string; conversationId?: string; reason?: string }) => {
       setActiveCall((current) => {
         if (!current) return null;
         if (String(payload.fromUserId) !== String(current.otherUserId)) return current;
         if (payload.conversationId && payload.conversationId !== current.conversationId) return current;
         stopRing();
+        if (payload.reason === 'declined') {
+          toastError('Thirrja u refuzua.');
+        } else if (payload.reason === 'no_answer' || payload.reason === 'disconnect') {
+          toastError('Thirrja u mbyll.');
+        }
         return null;
       });
     };

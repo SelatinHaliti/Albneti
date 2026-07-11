@@ -36,9 +36,9 @@ export async function flushIceQueue(
   pc: RTCPeerConnection,
   queue: RTCIceCandidateInit[]
 ): Promise<void> {
-  while (queue.length > 0) {
-    const candidate = queue.shift();
-    if (!candidate) continue;
+  const pending = [...queue];
+  queue.length = 0;
+  for (const candidate of pending) {
     try {
       await pc.addIceCandidate(new RTCIceCandidate(candidate));
     } catch {
@@ -46,3 +46,43 @@ export async function flushIceQueue(
     }
   }
 }
+
+/** Shton ose zëvendëson track-et lokale pa gabimin "sender already exists" */
+export function attachLocalTracks(pc: RTCPeerConnection, stream: MediaStream): void {
+  for (const track of stream.getTracks()) {
+    const existing = pc.getSenders().find((s) => s.track?.kind === track.kind);
+    if (existing) {
+      void existing.replaceTrack(track);
+    } else {
+      pc.addTrack(track, stream);
+    }
+  }
+}
+
+export function stopMediaStream(stream: MediaStream | null): void {
+  if (!stream) return;
+  stream.getTracks().forEach((t) => {
+    try {
+      t.stop();
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+export function closePeerConnection(pc: RTCPeerConnection | null): void {
+  if (!pc) return;
+  try {
+    pc.getSenders().forEach((s) => {
+      try {
+        s.track?.stop();
+      } catch {
+        /* ignore */
+      }
+    });
+    pc.close();
+  } catch {
+    /* ignore */
+  }
+}
+
