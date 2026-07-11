@@ -417,6 +417,83 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   text-align: center;
 }
 
+/* ─── Download page ─── */
+.download-app-icon {
+  padding: 8px;
+  border-radius: 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+.download-primary-btn {
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #e41e26 0%, #c41e26 100%);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 4px 20px rgba(228, 30, 38, 0.35);
+}
+.download-primary-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+.download-primary-btn:disabled { opacity: 0.6; cursor: wait; }
+.download-secondary-btn {
+  padding: 11px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ig-blue);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  transition: background 0.15s;
+}
+.download-secondary-btn:hover { background: var(--bg-elevated); }
+.download-success-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-glass-strong);
+  text-align: center;
+}
+.download-platform-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 4px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.download-platform-tab.active {
+  border-color: var(--albanian-red);
+  background: var(--albanian-soft);
+}
+.download-platform-tab:hover:not(.active) { border-color: var(--text-muted); }
+.download-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.download-step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
 /* ─── Community page ─── */
 .community-event-card {
   display: flex;
