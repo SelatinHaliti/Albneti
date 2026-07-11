@@ -25,8 +25,9 @@ Kopjo output-in:
 
 ## 2. Deploy
 
-1. **Render** → albneti-api → Environment → shto VAPID_* → Redeploy
-2. **Vercel** → albneti → Environment → `NEXT_PUBLIC_VAPID_PUBLIC_KEY` → Redeploy
+1. **Render** → albneti-api → Environment → shto VAPID_* (shiko `backend/.env` ose ekzekuto `scripts/setup-render-vapid.ps1` me `RENDER_API_KEY`)
+2. **Vercel** → `NEXT_PUBLIC_VAPID_PUBLIC_KEY` është në `frontend/.env.production` (deploy automatik)
+3. **Redeploy** Render pas shtimit të VAPID_PRIVATE_KEY
 
 ---
 

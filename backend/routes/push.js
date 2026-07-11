@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/vapid-public-key', (req, res) => {
   const key = getVapidPublicKey();
   if (!key) {
-    return res.status(503).json({ message: 'Push nuk është konfiguruar në server.' });
+    return res.status(503).json({ message: 'Push nuk është konfiguruar në server.', enabled: false });
   }
   res.json({ publicKey: key, enabled: isPushConfigured() });
 });

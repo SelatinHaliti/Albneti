@@ -1,11 +1,25 @@
 /**
  * Gjenero VAPID keys për Web Push.
  * Ekzekuto: node scripts/generate-vapid.js
- * Vendos rezultatin në backend/.env dhe Render Environment.
  */
-import webpush from 'web-push';
+import crypto from 'crypto';
 
-const keys = webpush.generateVAPIDKeys();
+function urlBase64Encode(buffer) {
+  return buffer
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+const curve = crypto.createECDH('prime256v1');
+curve.generateKeys();
+
+const keys = {
+  publicKey: urlBase64Encode(curve.getPublicKey()),
+  privateKey: urlBase64Encode(curve.getPrivateKey()),
+};
+
 console.log('\n=== VAPID Keys për AlbNet Push ===\n');
 console.log('VAPID_PUBLIC_KEY=' + keys.publicKey);
 console.log('VAPID_PRIVATE_KEY=' + keys.privateKey);

@@ -93,7 +93,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
     api<{ unreadCount: number }>('/api/notifications?limit=1')
       .then((r) => setUnreadNotifications(r.unreadCount ?? 0))
       .catch(() => {});
-  }, [user, pathname, socketUnread]);
+    import('@/lib/pushNotifications').then((m) => {
+      if (m.getNotificationPermission() === 'granted') void m.syncPushSubscriptionIfGranted();
+    });
+  }, [user, pathname, socketUnread, ready]);
 
   const totalUnread = Math.max(unreadNotifications, socketUnread);
 
