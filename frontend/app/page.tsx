@@ -61,20 +61,21 @@ export default function HomePage() {
         >
           <div className="border border-[var(--border)] rounded-xl p-10 mb-3 flex flex-col items-center bg-[var(--bg-card)]">
             <AppLogo size={68} />
-            <h1 className="mt-5 text-[32px] font-semibold tracking-tight" style={{ fontFamily: 'inherit' }}>
+            <h1 className="mt-5 text-[32px] font-semibold tracking-tight">
               <span className="logo-gradient">ALB</span>
               <span className="text-[var(--text)]">NET</span>
             </h1>
             <p className="mt-4 text-[15px] text-[var(--text-muted)] text-center leading-snug">
               Kyçu për të parë fotot, story-t dhe reels nga komuniteti shqiptar.
             </p>
+            <span className="albanian-badge mt-4">🇦🇱 Platforma #1 Shqiptare</span>
           </div>
 
           <div className="border border-[var(--border)] rounded-xl p-6 mb-3 space-y-2 bg-[var(--bg-card)]">
-            <Link href="/kycu" className="block w-full py-2 rounded-lg text-[14px] font-semibold text-white bg-[var(--primary)] text-center hover:opacity-90 transition-opacity">
+            <Link href="/kycu" className="block w-full py-2.5 rounded-lg text-[14px] font-semibold text-white text-center transition-colors" style={{ background: 'var(--ig-blue)' }}>
               Kyçu
             </Link>
-            <Link href="/regjistrohu" className="block w-full py-2 rounded-lg text-[14px] font-semibold text-[var(--primary)] text-center hover:bg-[var(--primary-soft)] transition-colors">
+            <Link href="/regjistrohu" className="block w-full py-2.5 rounded-lg text-[14px] font-semibold text-[var(--ig-blue)] text-center hover:bg-[var(--primary-soft)] transition-colors">
               Regjistrohu
             </Link>
           </div>

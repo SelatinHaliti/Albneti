@@ -6,6 +6,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'api.dicebear.com', pathname: '/**' },
     ],
   },
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
 };
 
 module.exports = nextConfig;

@@ -1,17 +1,10 @@
 import type { Metadata } from 'next';
-import { Outfit } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
-const outfit = Outfit({
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-sans',
-  display: 'swap',
-});
-
 export const metadata: Metadata = {
   title: 'AlbNet – Instagram Shqiptar',
-  description: 'Ndani momentet, lidhuni me miq dhe eksploroni përmbajtje në gjuhën shqipe.',
+  description: 'Kyçu për të parë fotot, story-t dhe reels nga komuniteti shqiptar.',
 };
 
 export default function RootLayout({
@@ -20,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sq" suppressHydrationWarning className={outfit.variable}>
-      <body className="antialiased font-sans text-[#1a1a2e] dark:text-[#f4f4f5]">
+    <html lang="sq" suppressHydrationWarning>
+      <body className="antialiased bg-[var(--bg)] text-[var(--text)]">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

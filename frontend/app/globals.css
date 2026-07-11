@@ -30,6 +30,8 @@
   --albanian-gradient: linear-gradient(135deg, #e41e26 0%, #1a1a1a 100%);
   --danger: #ed4956;
   --link: #00376b;
+  --ig-blue: #0095f6;
+  --ig-blue-hover: #1877f2;
   --success: #58c322;
   --ig-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
   --ig-gradient-ring: linear-gradient(135deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
@@ -58,6 +60,8 @@
   --primary-glow: rgba(255, 48, 64, 0.22);
   --albanian-soft: rgba(228, 30, 38, 0.15);
   --link: #e0f1ff;
+  --ig-blue: #4aa9ff;
+  --ig-blue-hover: #0095f6;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
@@ -228,9 +232,9 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 .auth-input:focus { border-color: var(--text-muted); }
 .auth-btn {
   width: 100%; padding: 10px 16px; font-size: 14px; font-weight: 600;
-  border-radius: 8px; border: none; background: var(--primary); color: #fff; cursor: pointer;
+  border-radius: 8px; border: none; background: var(--ig-blue); color: #fff; cursor: pointer;
 }
-.auth-btn:hover:not(:disabled) { opacity: 0.9; }
+.auth-btn:hover:not(:disabled) { background: var(--ig-blue-hover); }
 .auth-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .auth-link { color: var(--link); font-weight: 600; text-decoration: none; }
 .auth-link:hover { text-decoration: underline; }
