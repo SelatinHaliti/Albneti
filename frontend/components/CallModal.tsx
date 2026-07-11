@@ -344,8 +344,11 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   const onDecline = () => finishCall('declined', 'reject');
 
   const onAccept = () => {
+    if (accepting || acceptStartedRef.current) return;
+    setAccepting(true);
     acceptCall().catch((e) => {
       acceptStartedRef.current = false;
+      setAccepting(false);
       const msg = e instanceof Error ? e.message : 'Nuk u pranua thirrja.';
       if (msg.includes('Permission') || msg.includes('NotAllowed')) {
         setError('Lejo mikrofonin/kamerën për të pranuar.');
