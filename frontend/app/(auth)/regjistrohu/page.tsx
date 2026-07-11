@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { AppLogo } from '@/components/AppLogo';
 import { SocialLoginButtons } from '@/components/SocialLoginButtons';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore, normalizeAuthUser } from '@/store/useAuthStore';
 import { api } from '@/utils/api';
 
 const container = {
@@ -37,9 +37,10 @@ export default function RegisterPage() {
         method: 'POST',
         body: { username, email, fullName, password },
       });
-      setAuth(data.user as Parameters<typeof setAuth>[0], data.token);
+      const normalized = normalizeAuthUser(data.user);
+      if (!normalized) throw new Error('Përgjigja e serverit është e paplotë.');
+      setAuth(normalized, data.token);
       router.push('/feed');
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gabim gjatë regjistrimit.');
     } finally {

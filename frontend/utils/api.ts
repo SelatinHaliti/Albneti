@@ -1,10 +1,11 @@
 // Në prodhim (Vercel), kërkesat shkojnë direkt te /api/* falë vercel.json rewrites.
+import { getAuthToken, clearAuthSession } from '@/store/useAuthStore';
+
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window === 'undefined' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5000');
 const API_URL = typeof window !== 'undefined' ? '' : BACKEND_URL;
 
 function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
+  return getAuthToken();
 }
 
 /** Nxjerr mesazhin e gabimit nga përgjigja e API */
@@ -99,15 +100,12 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = getErrorMessage(data, res.status, path);
-    if (
-      typeof window !== 'undefined' &&
-      (res.status === 401 || res.status === 403) &&
-      !isPublicAuthPath(path)
-    ) {
-      try {
-        localStorage.removeItem('token');
-        window.location.replace('/kycu?reason=' + (res.status === 403 ? 'forbidden' : 'session'));
-      } catch (_) {}
+    if (typeof window !== 'undefined' && !isPublicAuthPath(path)) {
+      if (res.status === 401) {
+        clearAuthSession('session');
+      } else if (res.status === 403 && /bllokuar/i.test(msg)) {
+        clearAuthSession('forbidden');
+      }
     }
     throw new Error(msg);
   }
@@ -136,15 +134,12 @@ export async function apiUpload<T>(
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = getErrorMessage(data, res.status, path);
-    if (
-      typeof window !== 'undefined' &&
-      (res.status === 401 || res.status === 403) &&
-      !isPublicAuthPath(path)
-    ) {
-      try {
-        localStorage.removeItem('token');
-        window.location.replace('/kycu?reason=' + (res.status === 403 ? 'forbidden' : 'session'));
-      } catch (_) {}
+    if (typeof window !== 'undefined' && !isPublicAuthPath(path)) {
+      if (res.status === 401) {
+        clearAuthSession('session');
+      } else if (res.status === 403 && /bllokuar/i.test(msg)) {
+        clearAuthSession('forbidden');
+      }
     }
     throw new Error(msg);
   }

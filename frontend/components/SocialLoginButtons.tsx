@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleLogin } from '@react-oauth/google';
 import { api } from '@/utils/api';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore, normalizeAuthUser } from '@/store/useAuthStore';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 const APPLE_CLIENT_ID = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || '';
@@ -57,11 +57,15 @@ export function SocialLoginButtons({ onError }: Props) {
 
   const handleAuthSuccess = useCallback(
     (data: { user: unknown; token: string }) => {
-      setAuth(data.user as Parameters<typeof setAuth>[0], data.token);
+      const normalized = normalizeAuthUser(data.user);
+      if (!normalized) {
+        onError?.('Përgjigja e serverit është e paplotë.');
+        return;
+      }
+      setAuth(normalized, data.token);
       router.push('/feed');
-      router.refresh();
     },
-    [setAuth, router]
+    [setAuth, router, onError]
   );
 
   const handleGoogleSuccess = useCallback(

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore, normalizeAuthUser } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 
 function ResetForm() {
@@ -40,7 +40,9 @@ function ResetForm() {
         method: 'POST',
         body: { token, newPassword: password },
       });
-      setAuth(data.user as Parameters<typeof setAuth>[0], data.token);
+      const normalized = normalizeAuthUser(data.user);
+      if (!normalized) throw new Error('Përgjigja e serverit është e paplotë.');
+      setAuth(normalized, data.token);
       setSuccess(true);
       setTimeout(() => router.push('/feed'), 1500);
     } catch (err) {

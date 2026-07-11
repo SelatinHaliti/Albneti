@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { AppLogo } from '@/components/AppLogo';
 import { SocialLoginButtons } from '@/components/SocialLoginButtons';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore, normalizeAuthUser } from '@/store/useAuthStore';
+import { useAuthReady } from '@/hooks/useAuthReady';
 import { api } from '@/utils/api';
 
 const container = {
@@ -28,6 +29,14 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
   const logout = useAuthStore((s) => s.logout);
+  const { ready, isAuthenticated } = useAuthReady();
+
+  useEffect(() => {
+    if (ready && isAuthenticated) {
+      const redirect = searchParams.get('redirect');
+      router.replace(redirect && redirect.startsWith('/') ? redirect : '/feed');
+    }
+  }, [ready, isAuthenticated, router, searchParams]);
 
   useEffect(() => {
     const reason = searchParams.get('reason');
@@ -47,9 +56,10 @@ export default function LoginPage() {
         method: 'POST',
         body: { email, password },
       });
-      setAuth(data.user as Parameters<typeof setAuth>[0], data.token);
+      const normalized = normalizeAuthUser(data.user);
+      if (!normalized) throw new Error('Përgjigja e serverit është e paplotë.');
+      setAuth(normalized, data.token);
       router.push('/feed');
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gabim gjatë kyçjes.');
     } finally {

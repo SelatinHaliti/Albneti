@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthReady } from '@/hooks/useAuthReady';
 import { useUIStore } from '@/store/useUIStore';
 import { SocketProvider, useSocket } from '@/components/SocketProvider';
 import { CallProvider } from '@/components/CallProvider';
@@ -53,7 +54,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const user = useAuthStore((s) => s.user);
+  const { ready, isAuthenticated, user } = useAuthReady();
   const logout = useAuthStore((s) => s.logout);
   const theme = useUIStore((s) => s.theme);
   const toggleTheme = useUIStore((s) => s.toggleTheme);
@@ -82,11 +83,12 @@ function AppShell({ children }: { children: React.ReactNode }) {
   }, [feedDropdownOpen]);
 
   useEffect(() => {
-    if (!user) router.replace('/kycu');
-  }, [user, router]);
+    if (!ready) return;
+    if (!isAuthenticated) router.replace('/kycu');
+  }, [ready, isAuthenticated, router]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!ready || !user) return;
     api<{ unreadCount: number }>('/api/notifications?limit=1')
       .then((r) => setUnreadNotifications(r.unreadCount ?? 0))
       .catch(() => {});
@@ -94,7 +96,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   const totalUnread = Math.max(unreadNotifications, socketUnread);
 
-  if (!user) {
+  if (!ready || !isAuthenticated || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
         <div className="animate-pulse flex flex-col items-center gap-3">
@@ -110,7 +112,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     { href: '/explore', Icon: IconSearch },
     { href: '#create', Icon: IconAdd, isCreate: true },
     { href: '/reels', Icon: IconReels },
-    { href: '/profili/' + user.username, icon: 'avatar' as const },
+    { href: '/profili/' + (user.username || ''), icon: 'avatar' as const },
   ];
 
   const FeedDropdown = ({ className }: { className?: string }) => (

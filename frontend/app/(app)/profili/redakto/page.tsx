@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { apiUpload } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthReady } from '@/hooks/useAuthReady';
 
 type ApiUser = {
   id: string;
@@ -23,6 +24,7 @@ type ApiUser = {
 
 export default function EditProfilePage() {
   const router = useRouter();
+  const { ready, isAuthenticated } = useAuthReady();
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
   const logout = useAuthStore((s) => s.logout);
@@ -38,7 +40,8 @@ export default function EditProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!ready) return;
+    if (!isAuthenticated) {
       router.replace('/kycu');
       return;
     }
@@ -47,7 +50,7 @@ export default function EditProfilePage() {
     setWebsite(user.website ?? '');
     setLocation(user.location ?? '');
     setIsPrivate(!!user.isPrivate);
-  }, [user, router]);
+  }, [ready, isAuthenticated, user, router]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

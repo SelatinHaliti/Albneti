@@ -2,7 +2,7 @@
 
 import { useEffect, createContext, useContext, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore, getAuthToken } from '@/store/useAuthStore';
 
 const SOCKET_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -32,6 +32,7 @@ export function useSocket() {
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
+  const hasHydrated = useAuthStore((s) => s._hasHydrated);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -41,13 +42,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!token) {
+    const authToken = token || getAuthToken();
+    if (!hasHydrated && !useAuthStore.persist.hasHydrated()) return;
+    if (!authToken) {
       setSocket(null);
       setIsConnected(false);
       return;
     }
     const s = io(SOCKET_URL, {
-      auth: { token },
+      auth: { token: authToken },
       transports: ['websocket', 'polling'],
     });
     setSocket(s);
@@ -61,7 +64,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setSocket(null);
       setIsConnected(false);
     };
-  }, [token]);
+  }, [token, hasHydrated]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected, unreadNotifications, bumpNotifications }}>
