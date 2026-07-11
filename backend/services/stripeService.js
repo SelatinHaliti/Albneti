@@ -53,6 +53,17 @@ export async function activateSubscription(userId, plan, extra = {}) {
     $set: { isVerified: true, verifiedSubscription: subscription },
   });
 
+  try {
+    const Notification = (await import('../models/Notification.js')).default;
+    await Notification.create({
+      recipient: userId,
+      type: 'verification',
+      text: '🎉 Urime! Llogaria jote është verifikuar. Badge-i blu është aktiv.',
+    });
+  } catch {
+    /* opsional */
+  }
+
   return subscription;
 }
 
@@ -69,6 +80,10 @@ export async function createCheckoutSession(user, plan) {
     mode: 'subscription',
     payment_method_types: ['card'],
     customer_email: user.email,
+    client_reference_id: String(user._id),
+    locale: 'auto',
+    billing_address_collection: 'auto',
+    allow_promotion_codes: true,
     line_items: [
       {
         price_data: {
@@ -94,7 +109,7 @@ export async function createCheckoutSession(user, plan) {
         plan,
       },
     },
-    success_url: `${frontendUrl()}/verifikim?success=1&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${frontendUrl()}/verifikim/sukses?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${frontendUrl()}/verifikim?cancelled=1`,
   });
 
@@ -109,11 +124,17 @@ export async function fulfillCheckoutSession(sessionId, userId) {
   const stripe = getStripe();
   if (!stripe) throw new Error('Stripe nuk është konfiguruar.');
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
-  const paid = session.payment_status === 'paid' || session.status === 'complete';
-  if (!paid) throw new Error('Pagesa nuk u përfundua ende. Prisni pak dhe provoni përsëri.');
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ['subscription'],
+  });
 
-  if (String(session.metadata?.userId) !== String(userId)) {
+  const complete = session.status === 'complete' || session.payment_status === 'paid';
+  if (!complete) {
+    throw new Error('Pagesa nuk u përfundua ende. Prisni pak dhe provoni përsëri.');
+  }
+
+  const sessionUserId = session.metadata?.userId || session.client_reference_id;
+  if (String(sessionUserId) !== String(userId)) {
     throw new Error('Sesioni i pagesës nuk i përket këtij përdoruesi.');
   }
 
@@ -122,15 +143,30 @@ export async function fulfillCheckoutSession(sessionId, userId) {
     throw new Error('Plan i pavlefshëm në sesionin e pagesës.');
   }
 
+  const existing = await User.findById(userId).select('isVerified verifiedSubscription').lean();
+  const subId = session.subscription
+    ? String(typeof session.subscription === 'string' ? session.subscription : session.subscription.id)
+    : null;
+  if (
+    existing?.isVerified &&
+    subId &&
+    existing.verifiedSubscription?.stripeSubscriptionId === subId
+  ) {
+    return existing.verifiedSubscription;
+  }
+
   let expiresAt;
-  if (session.subscription) {
+  const subObj = typeof session.subscription === 'object' ? session.subscription : null;
+  if (subObj?.current_period_end) {
+    expiresAt = new Date(subObj.current_period_end * 1000);
+  } else if (session.subscription) {
     const sub = await stripe.subscriptions.retrieve(String(session.subscription));
     expiresAt = new Date(sub.current_period_end * 1000);
   }
 
   return activateSubscription(userId, plan, {
     stripeCustomerId: session.customer ? String(session.customer) : undefined,
-    stripeSubscriptionId: session.subscription ? String(session.subscription) : undefined,
+    stripeSubscriptionId: subId || undefined,
     expiresAt,
   });
 }

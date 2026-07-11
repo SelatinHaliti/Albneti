@@ -142,6 +142,11 @@ export const confirmCheckout = async (req, res) => {
       message: 'Pagesa u konfirmua! Je i verifikuar.',
       isVerified: true,
       subscription,
+      user: {
+        id: req.user.id,
+        isVerified: true,
+        verifiedPlan: subscription.plan,
+      },
     });
   } catch (err) {
     res.status(400).json({ message: err.message || 'Gabim gjatë konfirmimit të pagesës.' });
