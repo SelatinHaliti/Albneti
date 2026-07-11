@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
 import { SocketProvider, useSocket } from '@/components/SocketProvider';
+import { CallProvider } from '@/components/CallProvider';
 import { api } from '@/utils/api';
 import {
   IconHome,
@@ -42,7 +43,9 @@ const navItems = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SocketProvider>
-      <AppShell>{children}</AppShell>
+      <CallProvider>
+        <AppShell>{children}</AppShell>
+      </CallProvider>
     </SocketProvider>
   );
 }

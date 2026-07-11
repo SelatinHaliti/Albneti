@@ -8,6 +8,32 @@ import GlobalChatBan from '../models/GlobalChatBan.js';
 
 const userSockets = new Map(); // userId -> Set(socketId)
 const GLOBAL_CHAT_ROOM = 'global-chat';
+const activeCalls = new Map(); // userId -> { withUserId, conversationId }
+
+async function validateCallPair(userId, toUserId, conversationId) {
+  if (!toUserId || !conversationId) return false;
+  const conv = await Conversation.findById(conversationId).lean();
+  if (!conv) return false;
+  const ids = conv.participants.map((p) => p.toString());
+  return ids.includes(String(userId)) && ids.includes(String(toUserId));
+}
+
+function setCallActive(a, b, conversationId) {
+  activeCalls.set(String(a), { withUserId: String(b), conversationId });
+  activeCalls.set(String(b), { withUserId: String(a), conversationId });
+}
+
+function clearCallActive(userId) {
+  const entry = activeCalls.get(String(userId));
+  if (entry) {
+    activeCalls.delete(String(userId));
+    activeCalls.delete(entry.withUserId);
+  }
+}
+
+function isUserBusy(userId) {
+  return activeCalls.has(String(userId));
+}
 
 export function setupSocketIO(io) {
   io.use(async (socket, next) => {
@@ -85,24 +111,51 @@ export function setupSocketIO(io) {
     });
 
     // ——— WebRTC Call signaling (audio/video) ———
-    // Relayon vetëm mesazhet e sinjalizimit; media rrjedh P2P.
-    socket.on('call:offer', ({ toUserId, conversationId, mode, sdp }) => {
-      if (!toUserId || !sdp) return;
-      io.to(`user:${toUserId}`).emit('call:offer', { fromUserId: userId, conversationId, mode, sdp });
+    socket.on('call:offer', async ({ toUserId, conversationId, mode, sdp }) => {
+      if (!toUserId || !sdp || !conversationId) return;
+      const ok = await validateCallPair(userId, toUserId, conversationId);
+      if (!ok) return socket.emit('call:error', { message: 'Thirrja nuk lejohet.' });
+      if (isUserBusy(userId) || isUserBusy(toUserId)) {
+        return socket.emit('call:busy', { toUserId });
+      }
+      setCallActive(userId, toUserId, conversationId);
+      const caller = await User.findById(userId).select('username').lean();
+      io.to(`user:${toUserId}`).emit('call:offer', {
+        fromUserId: userId,
+        fromUsername: caller?.username,
+        conversationId,
+        mode: mode === 'video' ? 'video' : 'audio',
+        sdp,
+      });
     });
 
-    socket.on('call:answer', ({ toUserId, conversationId, sdp }) => {
+    socket.on('call:answer', async ({ toUserId, conversationId, sdp }) => {
       if (!toUserId || !sdp) return;
+      const ok = conversationId ? await validateCallPair(userId, toUserId, conversationId) : true;
+      if (!ok) return;
       io.to(`user:${toUserId}`).emit('call:answer', { fromUserId: userId, conversationId, sdp });
     });
 
-    socket.on('call:ice', ({ toUserId, conversationId, candidate }) => {
+    socket.on('call:ice', async ({ toUserId, conversationId, candidate }) => {
       if (!toUserId || !candidate) return;
       io.to(`user:${toUserId}`).emit('call:ice', { fromUserId: userId, conversationId, candidate });
     });
 
+    socket.on('call:ringing', ({ toUserId, conversationId }) => {
+      if (!toUserId) return;
+      io.to(`user:${toUserId}`).emit('call:ringing', { fromUserId: userId, conversationId });
+    });
+
+    socket.on('call:reject', ({ toUserId, conversationId, reason }) => {
+      if (!toUserId) return;
+      clearCallActive(userId);
+      io.to(`user:${toUserId}`).emit('call:reject', { fromUserId: userId, conversationId, reason });
+    });
+
     socket.on('call:end', ({ toUserId, conversationId, reason }) => {
       if (!toUserId) return;
+      clearCallActive(userId);
+      clearCallActive(toUserId);
       io.to(`user:${toUserId}`).emit('call:end', { fromUserId: userId, conversationId, reason });
     });
 
@@ -143,6 +196,7 @@ export function setupSocketIO(io) {
     });
 
     socket.on('disconnect', () => {
+      clearCallActive(userId);
       socket.leave(GLOBAL_CHAT_ROOM);
       const globalRoom = io.sockets.adapter.rooms.get(GLOBAL_CHAT_ROOM);
       io.to(GLOBAL_CHAT_ROOM).emit('global_chat_online_count', { count: globalRoom?.size ?? 0 });

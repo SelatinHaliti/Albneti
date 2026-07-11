@@ -368,7 +368,17 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   word-break: break-word;
 }
 
-/* ─── Touch targets (mobile) ─── */
+.call-overlay {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.call-controls button {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.call-controls button:active {
+  transform: scale(0.94);
+}
+
 @media (max-width: 767px) {
   .ig-touch {
     min-width: 44px;
