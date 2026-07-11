@@ -171,7 +171,7 @@ export function PostCard(props: {
   return (
     <article className="post-block overflow-hidden relative border-b border-[var(--border)] md:border-b-0 md:mb-4">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-3">
+      <header className="flex items-center gap-3 px-3 py-2.5">
         <Link href={`/profili/${post.user?.username}`} className="flex-shrink-0">
           <img
             src={post.user?.avatar || ''}
@@ -188,7 +188,7 @@ export function PostCard(props: {
             {post.user?.username}
           </Link>
           {post.createdAt && (
-            <span className="text-[12px] text-[var(--text-secondary)]">{timeAgo(post.createdAt)}</span>
+            <span className="text-[12px] text-[var(--text-secondary)] hidden">{timeAgo(post.createdAt)}</span>
           )}
         </div>
         <div className="relative ml-auto" ref={optionsRef}>
@@ -354,18 +354,20 @@ export function PostCard(props: {
       </div>
 
       {/* Actions & caption */}
-      <div className="px-4 pt-3 pb-4">
-        <div className="flex items-center gap-3 mb-2.5">
-          <button type="button" onClick={handleLike} className={`p-1.5 -ml-1.5 rounded-full transition-all ${liked ? 'text-[var(--primary)] scale-110' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
-            <IconHeart filled={liked} />
-          </button>
-          <Link href={`/post/${post._id}`} className="p-1.5 text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label="Komentet">
-            <IconComment />
-          </Link>
-          <button type="button" onClick={handleShareClick} className="p-1.5 text-[var(--text)] rounded-full hover:opacity-70 transition-opacity" aria-label="Ndaj">
-            <IconShare />
-          </button>
-          <button type="button" onClick={handleSave} className={`ml-auto p-1.5 rounded-full transition-all ${saved ? 'text-[var(--text)] scale-110' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={saved ? 'Hiq nga të ruajturat' : 'Ruaj'}>
+      <div className="px-3 pt-2 pb-3">
+        <div className="flex items-center mb-1.5">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={handleLike} className={`transition-all ${liked ? 'text-[var(--primary)]' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
+              <IconHeart filled={liked} />
+            </button>
+            <Link href={`/post/${post._id}`} className="text-[var(--text)] hover:opacity-70 transition-opacity" aria-label="Komentet">
+              <IconComment />
+            </Link>
+            <button type="button" onClick={handleShareClick} className="text-[var(--text)] hover:opacity-70 transition-opacity" aria-label="Ndaj">
+              <IconShare />
+            </button>
+          </div>
+          <button type="button" onClick={handleSave} className={`ml-auto transition-all ${saved ? 'text-[var(--text)]' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={saved ? 'Hiq nga të ruajturat' : 'Ruaj'}>
             <IconBookmark filled={saved} />
           </button>
         </div>
@@ -375,12 +377,20 @@ export function PostCard(props: {
           </p>
         )}
         {post.caption && (
-          <p className="text-[14px] text-[var(--text)] leading-[20px]">
-            <Link href={`/profili/${post.user?.username}`} className="font-semibold mr-1 hover:opacity-80 transition-opacity">
+          <p className="text-[14px] text-[var(--text)] leading-[18px]">
+            <Link href={`/profili/${post.user?.username}`} className="font-semibold mr-1.5 hover:opacity-80 transition-opacity">
               {post.user?.username}
             </Link>
             {post.caption}
           </p>
+        )}
+        {(post.comments?.length || 0) > 0 && (
+          <Link href={`/post/${post._id}`} className="text-[14px] text-[var(--text-muted)] mt-1.5 block hover:text-[var(--text-secondary)]">
+            Shiko të gjitha {(post.comments?.length || 0) === 1 ? '1 komentin' : `${post.comments?.length} komente`}
+          </Link>
+        )}
+        {post.createdAt && (
+          <p className="text-[10px] text-[var(--text-secondary)] uppercase mt-2 tracking-wide">{timeAgo(post.createdAt)}</p>
         )}
         {post.hashtags && post.hashtags.length > 0 && (
           <p className="text-[13px] text-[var(--primary)] mt-1.5 flex flex-wrap gap-x-1">

@@ -6,103 +6,63 @@ import { AppLogo } from '@/components/AppLogo';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg)] relative overflow-hidden">
-      {/* Liquid glass background orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[25%] left-[10%] w-[50%] h-[50%] rounded-full opacity-[0.06] blur-[120px]" style={{ background: 'var(--ig-gradient)' }} />
-        <div className="absolute -bottom-[20%] right-[5%] w-[45%] h-[45%] rounded-full opacity-[0.05] blur-[100px]" style={{ background: 'var(--ig-gradient)' }} />
-        <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[30%] h-[30%] rounded-full bg-[var(--primary)] opacity-[0.03] blur-[80px]" />
+    <div className="min-h-screen flex bg-[var(--bg)]">
+      {/* Left - hero image area (desktop) */}
+      <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30" style={{ background: 'var(--ig-gradient)' }} />
+        <div className="relative flex flex-col items-center gap-6 p-12">
+          <div className="grid grid-cols-2 gap-3 rotate-[-6deg]">
+            {[1,2,3,4].map((i) => (
+              <div key={i} className="w-32 h-40 rounded-2xl liquid-glass shadow-lg" style={{ background: `linear-gradient(135deg, rgba(254,44,85,0.${i+2}) 0%, rgba(188,24,136,0.${i+1}) 100%)` }} />
+            ))}
+          </div>
+          <p className="text-[18px] font-medium text-[var(--text)] text-center max-w-[300px]">
+            Ndani momentet, lidhuni me miq dhe eksploroni përmbajtje shqiptare.
+          </p>
+        </div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 32 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }}
-        className="relative z-10 flex flex-col items-center w-full max-w-[400px] px-6"
-      >
+      {/* Right - login card */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none lg:hidden">
+          <div className="absolute -top-[20%] left-[20%] w-[60%] h-[40%] rounded-full opacity-[0.06] blur-[100px]" style={{ background: 'var(--ig-gradient)' }} />
+        </div>
+
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5, ease: 'easeOut' }}
-          className="w-full liquid-glass-strong rounded-[24px] p-8 sm:p-10"
+          transition={{ duration: 0.5 }}
+          className="relative z-10 w-full max-w-[350px]"
         >
-          <div className="flex flex-col items-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.5, type: 'spring', stiffness: 200 }}
-            >
-              <AppLogo size={80} />
-            </motion.div>
-            <motion.h1
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.35, duration: 0.4 }}
-              className="mt-4 text-[28px] sm:text-[32px] font-extrabold tracking-tight text-[var(--text)]"
-            >
-              ALBNET
-            </motion.h1>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: 48 }}
-              transition={{ delay: 0.45, duration: 0.4 }}
-              className="mt-2 h-[2px] rounded-full"
-              style={{ background: 'var(--ig-gradient)' }}
-            />
+          <div className="liquid-glass-strong rounded-xl p-10 mb-3 flex flex-col items-center">
+            <AppLogo size={72} />
+            <h1 className="mt-4 text-[28px] font-semibold tracking-tight text-[var(--text)]">ALBNET</h1>
+            <p className="mt-3 text-[16px] text-[var(--text-muted)] text-center leading-snug">
+              Kyçu për të parë fotot dhe videot nga miqtë e tu.
+            </p>
           </div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-            className="mt-5 text-[14px] text-[var(--text-muted)] text-center leading-relaxed"
-          >
-            Ndani momentet me miq dhe familjen.
-            <br />
-            <span className="text-[13px] text-[var(--text-secondary)]">Platforma sociale shqiptare.</span>
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
-            className="mt-7 flex flex-col gap-2.5"
-          >
-            <Link href="/kycu" className="block w-full">
-              <motion.button
-                whileHover={{ scale: 1.015 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-3 rounded-xl text-[14px] font-semibold text-white bg-[var(--primary)] shadow-lg shadow-[var(--primary-glow)] transition-all"
-              >
-                Kyçu
-              </motion.button>
+          <div className="liquid-glass-strong rounded-xl p-6 mb-3 space-y-2">
+            <Link href="/kycu" className="block w-full py-2.5 rounded-lg text-[14px] font-semibold text-white bg-[var(--primary)] text-center hover:opacity-90 transition-opacity">
+              Kyçu
             </Link>
-            <Link href="/regjistrohu" className="block w-full">
-              <motion.button
-                whileHover={{ scale: 1.015 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-3 rounded-xl text-[14px] font-semibold text-[var(--primary)] border border-[var(--primary)]/30 glass-card transition-all"
-              >
-                Regjistrohu
-              </motion.button>
+            <Link href="/regjistrohu" className="block w-full py-2.5 rounded-lg text-[14px] font-semibold text-[var(--primary)] text-center hover:bg-[var(--primary-soft)] transition-colors">
+              Regjistrohu
             </Link>
-          </motion.div>
-        </motion.div>
+          </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.4 }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[12px] text-[var(--text-secondary)]"
-        >
-          {['Postime', 'Story', 'Reels', 'Mesazhe'].map((label, i) => (
-            <span key={label} className="flex items-center gap-3">
-              {i > 0 && <span className="w-1 h-1 rounded-full bg-[var(--text-secondary)]/40" />}
-              {label}
-            </span>
-          ))}
+          <div className="liquid-glass rounded-xl p-5 flex items-center gap-4">
+            <p className="text-[14px] text-[var(--text)] flex-1 text-center">
+              Shkarko aplikacionin.
+            </p>
+            <span className="text-[14px] font-semibold text-[var(--primary)]">Së shpejti</span>
+          </div>
+
+          <p className="mt-8 text-center text-[12px] text-[var(--text-secondary)]">
+            Postime · Story · Reels · Mesazhe
+          </p>
         </motion.div>
-      </motion.div>
+      </div>
     </div>
   );
 }

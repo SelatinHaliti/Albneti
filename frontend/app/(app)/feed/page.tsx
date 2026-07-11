@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/utils/api';
 import { PostCard } from './PostCard';
 import { StoryRing } from '@/components/StoryRing';
+import { RightSidebar } from '@/components/RightSidebar';
 import { SkeletonPostBlock, SkeletonStoryRing } from '@/components/Skeleton';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSearchParams } from 'next/navigation';
@@ -173,7 +174,8 @@ export default function FeedPage() {
   }, [pullY, refreshFeed]);
 
   return (
-    <div className="max-w-[470px] mx-auto min-h-screen bg-[var(--bg)] w-full">
+    <div className="ig-feed-layout">
+      <div className="max-w-[470px] mx-auto min-h-screen bg-[var(--bg)] w-full flex-shrink-0">
       {pullY > 0 && (
         <div className="flex justify-center py-3 bg-[var(--bg)] sticky top-0 z-10" style={{ paddingTop: Math.min(pullY, 60) }}>
           <div className="w-7 h-7 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
@@ -269,6 +271,8 @@ export default function FeedPage() {
           )}
         </>
       )}
+      </div>
+      <RightSidebar />
     </div>
   );
 }

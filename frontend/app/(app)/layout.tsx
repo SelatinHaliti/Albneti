@@ -22,6 +22,7 @@ import {
 } from '@/components/Icons';
 import { AppLogo } from '@/components/AppLogo';
 import { Toaster } from '@/components/Toaster';
+import { CreateMenu } from '@/components/CreateMenu';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const navItems = [
@@ -48,6 +49,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const feedMode = pathname === '/feed' ? (searchParams.get('feed') === 'following' ? 'following' : 'for_you') : null;
   const isReelsPage = pathname === '/reels';
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -87,7 +89,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const bottomNavItems = [
     { href: '/feed', Icon: IconHome },
     { href: '/explore', Icon: IconSearch },
-    { href: '/krijo/post', Icon: IconAdd, isCreate: true },
+    { href: '#create', Icon: IconAdd, isCreate: true },
     { href: '/reels', Icon: IconReels },
     { href: '/profili/' + user.username, icon: 'avatar' as const },
   ];
@@ -202,17 +204,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 ? pathname === '/feed'
                 : pathname === navItem.href || (navItem.href === '/explore' && pathname.startsWith('/explore'));
               const Icon = navItem.Icon;
-              return (
-                <Link
-                  key={navItem.href}
-                  href={navItem.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : navItem.href}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`group flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-150 ${
-                    isActive
-                      ? 'text-[var(--text)] font-bold'
-                      : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
-                  }`}
-                >
+              const inner = (
+                <>
                   <span className={`flex-shrink-0 relative transition-transform duration-150 ${isActive ? 'scale-105' : 'group-hover:scale-105'}`}>
                     {Icon === IconHome && <IconHome active={isActive} />}
                     {Icon === IconSearch && <IconSearch />}
@@ -238,6 +231,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     )}
                   </span>
                   <span className="hidden lg:inline text-[15px]">{navItem.label}</span>
+                </>
+              );
+              if (navItem.href === '/krijo/post') {
+                return (
+                  <button
+                    key={navItem.href}
+                    type="button"
+                    onClick={() => setCreateMenuOpen(true)}
+                    className="group w-full flex items-center gap-4 px-3 py-3 rounded-xl text-[var(--text)] hover:bg-[var(--primary-soft)] transition-all duration-150"
+                  >
+                    {inner}
+                  </button>
+                );
+              }
+              return (
+                <Link
+                  key={navItem.href}
+                  href={navItem.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : navItem.href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`group flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-150 ${
+                    isActive ? 'text-[var(--text)] font-bold' : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
+                  }`}
+                >
+                  {inner}
                 </Link>
               );
             })}
@@ -295,7 +312,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             const isActive = item.icon === 'avatar'
               ? pathname.startsWith('/profili')
               : pathname === item.href || (item.href === '/explore' && pathname.startsWith('/explore'));
-            return (
+            return item.isCreate ? (
+              <button
+                key="create"
+                type="button"
+                onClick={() => setCreateMenuOpen(true)}
+                className={`relative flex items-center justify-center flex-1 h-[50px] min-w-0 transition-colors ${isReelsPage ? 'text-white/80' : 'text-[var(--text)]'}`}
+                aria-label="Krijo"
+              >
+                <span className={`ig-create-btn ${isReelsPage ? 'border-white/80' : ''}`}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+              </button>
+            ) : (
               <Link
                 key={item.href}
                 href={item.href}
@@ -308,13 +337,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <img
                     src={user.avatar || ''}
                     alt=""
-                    className={`w-[26px] h-[26px] rounded-full object-cover flex-shrink-0 transition-all ${isActive ? 'ring-2 ring-[var(--primary)]' : ''}`}
+                    className={`w-[26px] h-[26px] rounded-full object-cover flex-shrink-0 transition-all ${isActive ? 'ring-2 ring-[var(--text)]' : ''}`}
                     onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username; }}
                   />
-                ) : item.isCreate ? (
-                  <span className={`ig-create-btn ${isReelsPage ? 'border-white/80' : ''}`}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  </span>
                 ) : (
                   <span className="flex items-center justify-center">
                     {item.Icon === IconHome && <IconHome active={isActive} />}
@@ -327,6 +352,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
       </div>
+      <CreateMenu open={createMenuOpen} onClose={() => setCreateMenuOpen(false)} />
       <Toaster />
     </SocketProvider>
   );
