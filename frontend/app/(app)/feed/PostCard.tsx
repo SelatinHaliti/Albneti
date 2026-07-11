@@ -393,9 +393,9 @@ export function PostCard(props: {
           <p className="text-[10px] text-[var(--text-secondary)] uppercase mt-2 tracking-wide">{timeAgo(post.createdAt)}</p>
         )}
         {post.hashtags && post.hashtags.length > 0 && (
-          <p className="text-[13px] text-[var(--primary)] mt-1.5 flex flex-wrap gap-x-1">
+          <p className="text-[13px] mt-1.5 flex flex-wrap gap-x-1">
             {post.hashtags.map((h) => (
-              <Link key={h} href={`/explore/hashtag/${h}`} className="hover:underline">
+              <Link key={h} href={`/explore/hashtag/${h}`} className="ig-link font-normal hover:underline">
                 #{h}
               </Link>
             ))}

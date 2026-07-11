@@ -7,6 +7,8 @@ import { api } from '@/utils/api';
 import { PostCard } from './PostCard';
 import { StoryRing } from '@/components/StoryRing';
 import { RightSidebar } from '@/components/RightSidebar';
+import { TrendingShqip } from '@/components/TrendingShqip';
+import { MobileAlbanianBanner } from '@/components/MobileAlbanianBanner';
 import { SkeletonPostBlock, SkeletonStoryRing } from '@/components/Skeleton';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSearchParams } from 'next/navigation';
@@ -200,6 +202,9 @@ export default function FeedPage() {
           {loading ? <SkeletonStoryRing /> : stories.length > 0 ? <StoryRing groups={sortedStories} currentUserId={user?.id} /> : null}
         </div>
       )}
+
+      {feedMode !== 'following' && <TrendingShqip />}
+      <MobileAlbanianBanner />
 
       {loading ? (
         <div className="space-y-5 pb-6 pt-4 px-3">

@@ -133,7 +133,7 @@ export default function ExplorePage() {
       <div className="px-4 mb-4">
         <Link
           href="/kerko"
-          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl glass-card text-[var(--text-muted)] text-[14px] hover:border-[var(--text-secondary)] transition-colors"
+          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-muted)] text-[14px] hover:border-[var(--text-secondary)] transition-colors"
         >
           <span className="[&_svg]:w-5 [&_svg]:h-5 text-[var(--text-muted)] flex-shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -158,7 +158,7 @@ export default function ExplorePage() {
             className={`px-5 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all ${
               activeTab === t.key
                 ? 'bg-[var(--text)] text-[var(--bg)]'
-                : 'glass-card text-[var(--text-muted)] hover:text-[var(--text)]'
+                : 'border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text)]'
             }`}
           >
             {t.label}

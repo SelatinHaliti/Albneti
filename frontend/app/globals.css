@@ -1,34 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ─── AlbNet – Instagram Liquid Glass Design System ─── */
+/* ─── AlbNet – Instagram + Identitet Shqiptar ─── */
 :root {
   --bg: #fafafa;
   --bg-card: #ffffff;
   --bg-elevated: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.72);
-  --bg-glass-strong: rgba(255, 255, 255, 0.88);
+  --bg-glass: rgba(255, 255, 255, 0.78);
+  --bg-glass-strong: rgba(255, 255, 255, 0.92);
   --text: #262626;
-  --text-muted: #737373;
-  --text-secondary: #a8a8a8;
-  --border: rgba(0, 0, 0, 0.08);
-  --border-light: rgba(0, 0, 0, 0.04);
-  --border-glass: rgba(255, 255, 255, 0.6);
-  --primary: #fe2c55;
-  --primary-hover: #e02447;
-  --primary-soft: rgba(254, 44, 85, 0.08);
-  --primary-glow: rgba(254, 44, 85, 0.15);
-  --danger: #fe2c55;
-  --success: #00f2fe;
+  --text-muted: #8e8e8e;
+  --text-secondary: #c7c7c7;
+  --border: #dbdbdb;
+  --border-light: #efefef;
+  --border-glass: rgba(255, 255, 255, 0.65);
+  /* Instagram action red */
+  --primary: #ed4956;
+  --primary-hover: #c13584;
+  --primary-soft: rgba(237, 73, 86, 0.1);
+  --primary-glow: rgba(237, 73, 86, 0.18);
+  /* Albanian identity accent */
+  --albanian-red: #e41e26;
+  --albanian-black: #1a1a1a;
+  --albanian-gold: #c9a227;
+  --albanian-soft: rgba(228, 30, 38, 0.08);
+  --albanian-gradient: linear-gradient(135deg, #e41e26 0%, #1a1a1a 100%);
+  --danger: #ed4956;
+  --link: #00376b;
+  --success: #58c322;
   --ig-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
   --ig-gradient-ring: linear-gradient(135deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 24px rgba(0,0,0,0.06);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,0.08);
-  --glass-blur: 20px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+  --glass-blur: 24px;
   --glass-saturate: 180%;
 }
 
@@ -36,37 +44,35 @@
   --bg: #000000;
   --bg-card: #000000;
   --bg-elevated: #121212;
-  --bg-glass: rgba(18, 18, 18, 0.75);
-  --bg-glass-strong: rgba(26, 26, 26, 0.92);
+  --bg-glass: rgba(18, 18, 18, 0.8);
+  --bg-glass-strong: rgba(22, 22, 22, 0.94);
   --text: #f5f5f5;
   --text-muted: #a8a8a8;
   --text-secondary: #737373;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-light: rgba(255, 255, 255, 0.05);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --primary: #ff3b5c;
-  --primary-hover: #fe2c55;
-  --primary-soft: rgba(255, 59, 92, 0.12);
-  --primary-glow: rgba(255, 59, 92, 0.2);
-  --danger: #ff3b5c;
-  --success: #00f2fe;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 24px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+  --border: #262626;
+  --border-light: #1a1a1a;
+  --border-glass: rgba(255, 255, 255, 0.07);
+  --primary: #ff3040;
+  --primary-hover: #ed4956;
+  --primary-soft: rgba(255, 48, 64, 0.14);
+  --primary-glow: rgba(255, 48, 64, 0.22);
+  --albanian-soft: rgba(228, 30, 38, 0.15);
+  --link: #e0f1ff;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
 }
 
-/* ─── Global base ─── */
 *, *::before, *::after {
   transition-property: color, background-color, border-color, box-shadow, opacity;
-  transition-duration: 0.2s;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 0.18s;
+  transition-timing-function: ease;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-feature-settings: "rlig" 1, "calt" 1;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
@@ -79,48 +85,53 @@ body {
 
 ::-webkit-scrollbar { width: 0; height: 0; }
 
-/* ─── Liquid Glass Components ─── */
+/* ─── Liquid Glass ─── */
 .liquid-glass {
   background: var(--bg-glass);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: 1px solid var(--border-glass);
-  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.1);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .liquid-glass-strong {
   background: var(--bg-glass-strong);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
   border: 1px solid var(--border-glass);
-  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
-.dark .liquid-glass,
-.dark .liquid-glass-strong {
-  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.04);
+/* ─── Albanian identity card ─── */
+.albanian-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.albanian-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--albanian-gradient);
 }
 
-/* ─── Post block (Instagram style) ─── */
+/* ─── Post block ─── */
 .post-block {
   background: var(--bg-card);
   border: none;
   border-radius: 0;
-  box-shadow: none;
   overflow: hidden;
 }
 @media (min-width: 768px) {
   .post-block {
     border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-  }
-  .post-block:hover {
-    box-shadow: var(--shadow-md);
+    border-radius: 8px;
   }
 }
 
-/* ─── Touch targets ─── */
 .ig-touch {
   min-width: 44px;
   min-height: 44px;
@@ -129,9 +140,9 @@ body {
   justify-content: center;
 }
 
-/* ─── Story ring (Instagram gradient) ─── */
+/* ─── Story ring ─── */
 .story-ring {
-  padding: 2.5px;
+  padding: 2px;
   border-radius: 50%;
   background: var(--ig-gradient-ring);
   flex-shrink: 0;
@@ -140,11 +151,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.story-ring:hover {
-  transform: scale(1.04);
-  box-shadow: 0 0 20px var(--primary-glow);
 }
 .story-ring-inner {
   border-radius: 50%;
@@ -152,18 +158,10 @@ body {
   overflow: hidden;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2.5px solid var(--bg-card);
+  border: 2px solid var(--bg-card);
 }
-.story-ring-inner img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.story-ring-inner img { width: 100%; height: 100%; object-fit: cover; }
 
-/* ─── Logo gradient ─── */
 .logo-gradient {
   background: var(--ig-gradient);
   -webkit-background-clip: text;
@@ -171,195 +169,156 @@ body {
   color: transparent;
 }
 
-/* ─── Focus ─── */
-input:focus, textarea:focus, button:focus-visible {
-  outline: none;
-}
+input:focus, textarea:focus, button:focus-visible { outline: none; }
 
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-/* ─── Animations ─── */
 @keyframes shimmer {
-  0% { opacity: 0.4; }
-  50% { opacity: 0.7; }
-  100% { opacity: 0.4; }
+  0% { opacity: 0.35; } 50% { opacity: 0.65; } 100% { opacity: 0.35; }
 }
-.animate-shimmer { animation: shimmer 1.8s ease-in-out infinite; }
+.animate-shimmer { animation: shimmer 1.6s ease-in-out infinite; }
 
 @keyframes double-tap-heart {
   0% { transform: scale(0); opacity: 1; }
-  15% { transform: scale(1.2); opacity: 1; }
+  15% { transform: scale(1.25); opacity: 1; }
   30% { transform: scale(1); opacity: 1; }
   100% { transform: scale(1); opacity: 0; }
 }
-.animate-double-tap span {
-  animation: double-tap-heart 0.8s ease-out forwards;
-}
+.animate-double-tap span { animation: double-tap-heart 0.85s ease-out forwards; }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-in { animation: fade-in 0.2s ease-out; }
+.animate-fade-in { animation: fade-in 0.25s ease-out; }
 
-@keyframes glass-shine {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
+.animate-pulse-live { animation: pulse-live 2s ease-in-out infinite; }
 
-@keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 var(--primary-glow); }
-  70% { box-shadow: 0 0 0 8px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-
-/* ─── Safe area ─── */
 .safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0); }
 .safe-area-pt { padding-top: env(safe-area-inset-top, 0); }
 
-/* ─── Auth pages ─── */
-.auth-page-bg {
-  background: var(--bg);
-  position: relative;
-}
+/* ─── Auth ─── */
+.auth-page-bg { background: var(--bg); position: relative; }
 .auth-page-bg::before {
   content: "";
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, var(--primary-glow) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(188, 24, 136, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 0% 80%, rgba(240, 148, 51, 0.05) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 0;
+    radial-gradient(ellipse 70% 50% at 50% -5%, var(--albanian-soft) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 35% at 100% 100%, rgba(201,162,39,0.05) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
 }
 .auth-card {
-  position: relative;
-  z-index: 1;
+  position: relative; z-index: 1;
   background: var(--bg-glass-strong);
-  border: 1px solid var(--border-glass);
-  border-radius: 20px;
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
 }
 .auth-input {
-  width: 100%;
-  padding: 13px 16px;
-  font-size: 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg-glass);
-  backdrop-filter: blur(8px);
-  color: var(--text);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%; padding: 10px 12px; font-size: 14px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-elevated); color: var(--text);
 }
-.auth-input::placeholder { color: var(--text-muted); }
-.auth-input:hover { border-color: var(--text-secondary); }
-.auth-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-soft);
-}
+.auth-input:focus { border-color: var(--text-muted); }
 .auth-btn {
-  width: 100%;
-  padding: 13px 16px;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 12px;
-  border: none;
-  background: var(--primary);
-  color: #fff;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s, box-shadow 0.2s;
-  box-shadow: 0 2px 12px var(--primary-glow);
+  width: 100%; padding: 10px 16px; font-size: 14px; font-weight: 600;
+  border-radius: 8px; border: none; background: var(--primary); color: #fff; cursor: pointer;
 }
-.auth-btn:hover:not(:disabled) {
-  opacity: 0.92;
-  box-shadow: 0 4px 20px var(--primary-glow);
-}
-.auth-btn:active:not(:disabled) { transform: scale(0.98); }
-.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-.auth-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+.auth-btn:hover:not(:disabled) { opacity: 0.9; }
+.auth-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.auth-link { color: var(--link); font-weight: 600; text-decoration: none; }
 .auth-link:hover { text-decoration: underline; }
 
-/* ─── Glass card utility ─── */
 .glass-card {
   background: var(--bg-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: 16px;
-  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  border-radius: 12px;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
-/* ─── Instagram feed layout (3-column desktop) ─── */
+.ig-nav-bar {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-color: var(--border);
+}
+
 .ig-feed-layout {
   display: flex;
   justify-content: center;
   gap: 0;
-  max-width: 935px;
+  max-width: 975px;
   margin: 0 auto;
   min-height: 100vh;
 }
 
-/* ─── Instagram nav bar ─── */
-.ig-nav-bar {
-  background: var(--bg-glass-strong);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-color: var(--border);
-}
+.reels-container { background: #000; height: 100dvh; overflow: hidden; position: relative; }
+.reels-progress { height: 2px; background: rgba(255,255,255,0.25); border-radius: 1px; overflow: hidden; }
+.reels-progress-fill { height: 100%; background: #fff; transition: width 0.1s linear; }
 
-/* ─── Reels container ─── */
-.reels-container {
-  background: #000;
-  height: 100dvh;
-  overflow: hidden;
-  position: relative;
-}
-
-.reels-progress {
-  height: 2px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 1px;
-  overflow: hidden;
-}
-.reels-progress-fill {
-  height: 100%;
-  background: #fff;
-  border-radius: 1px;
-  transition: width 0.1s linear;
-}
-
-/* ─── Dropdown menu (glass) ─── */
 .ig-dropdown {
   background: var(--bg-glass-strong);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--border-glass);
-  border-radius: 16px;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
-/* ─── Modal overlay ─── */
 .ig-modal-overlay {
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-/* ─── Create button (Instagram style) ─── */
 .ig-create-btn {
-  width: 24px;
-  height: 24px;
+  width: 24px; height: 24px;
   border: 2px solid currentColor;
   border-radius: 8px;
-  display: flex;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ─── Trending hashtag pill ─── */
+.trend-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  transition: all 0.15s;
+}
+.trend-pill:hover {
+  background: var(--albanian-soft);
+  border-color: var(--albanian-red);
+  color: var(--albanian-red);
+}
+
+/* ─── Instagram link color ─── */
+.ig-link { color: var(--link); font-weight: 600; }
+.ig-link:hover { opacity: 0.8; }
+
+/* ─── Albanian badge ─── */
+.albanian-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: var(--albanian-soft);
+  color: var(--albanian-red);
+  border: 1px solid rgba(228, 30, 38, 0.2);
 }
