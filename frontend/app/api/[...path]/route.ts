@@ -8,7 +8,7 @@ const PRODUCTION_BACKEND = 'https://albneti-api.onrender.com';
 const BACKEND =
   process.env.BACKEND_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.VERCEL ? PRODUCTION_BACKEND : 'http://localhost:5001');
+  (process.env.VERCEL ? PRODUCTION_BACKEND : 'http://localhost:5000');
 
 const PUBLIC_AUTH_PATHS = [
   'auth/regjistrohu',
@@ -95,7 +95,8 @@ async function proxy(
   try {
     res = await fetch(url, { method, headers, body });
   } catch (err) {
-    const message = 'Backend-i nuk është i arritshëm. Nisni me: cd backend && npm run start';
+    const message =
+      'Serveri po zgjohet (Render free). Prisni 30–60 sekonda dhe provoni përsëri.';
     return new Response(JSON.stringify({ message }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' },

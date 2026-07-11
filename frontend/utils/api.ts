@@ -29,7 +29,11 @@ function getErrorMessage(data: unknown, status: number, path?: string): string {
       if (first && typeof first === 'object' && 'msg' in first) return String((first as { msg: string }).msg);
     }
   }
-  if (status === 503) return 'Backend-i nuk është i arritshëm. Nisni: cd backend && npm run start';
+  if (status === 503) {
+    return isProductionApi()
+      ? 'Serveri po zgjohet. Prisni 30–60 sekonda dhe rifreskoni faqen.'
+      : 'Backend-i nuk është i arritshëm. Nisni: cd backend && npm run start';
+  }
   if (status === 403) return path && isPublicAuthPath(path) ? 'Kërkesa nuk u pranua. Kontrolloni të dhënat.' : 'Nuk keni leje për këtë veprim.';
   if (status === 401) return path && isPublicAuthPath(path) ? 'Email ose fjalëkalim i gabuar.' : 'Sesioni ka skaduar ose nuk jeni të kyçur.';
   return `Gabim (${status}). Provoni përsëri.`;
@@ -50,7 +54,20 @@ function isPublicAuthPath(path: string): boolean {
   return PUBLIC_AUTH_PATHS.some((p) => path.startsWith(p));
 }
 
-const DEFAULT_TIMEOUT_MS = 30000;
+const DEFAULT_TIMEOUT_MS = 60000;
+
+function isProductionApi(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.hostname.includes('vercel.app') ||
+    window.location.hostname === 'albneti.vercel.app' ||
+    !window.location.hostname.includes('localhost')
+  );
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 type ApiOptions = Omit<RequestInit, 'body'> & {
   body?: unknown;
@@ -70,46 +87,69 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
   if (token && !isPublicAuthPath(path)) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
 
   const url = `${API_URL}${path}`;
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeoutId = timeout > 0 && controller
-    ? setTimeout(() => controller.abort(), timeout)
-    : null;
-  const signal = userSignal ?? controller?.signal;
+  const maxAttempts = isProductionApi() && method === 'GET' ? 2 : 1;
 
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      ...rest,
-      method,
-      headers,
-      signal,
-      ...(hasBody && { body: JSON.stringify(body) }),
-    });
-    if (timeoutId) clearTimeout(timeoutId);
-  } catch (err) {
-    if (timeoutId) clearTimeout(timeoutId);
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Kërkesa u anulua ose kaloi koha.');
-    }
-    if (err instanceof TypeError && err.message === 'Failed to fetch') {
-      throw new Error('Nuk mund të lidhet me serverin. Nisni backend-in: cd backend && npm run start');
-    }
-    throw err;
-  }
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = timeout > 0 && controller
+      ? setTimeout(() => controller.abort(), timeout)
+      : null;
+    const signal = userSignal ?? controller?.signal;
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg = getErrorMessage(data, res.status, path);
-    if (typeof window !== 'undefined' && !isPublicAuthPath(path)) {
-      if (res.status === 401) {
-        clearAuthSession('session');
-      } else if (res.status === 403 && /bllokuar/i.test(msg)) {
-        clearAuthSession('forbidden');
+    try {
+      const res = await fetch(url, {
+        ...rest,
+        method,
+        headers,
+        signal,
+        ...(hasBody && { body: JSON.stringify(body) }),
+      });
+      if (timeoutId) clearTimeout(timeoutId);
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = getErrorMessage(data, res.status, path);
+        if (typeof window !== 'undefined' && !isPublicAuthPath(path)) {
+          if (res.status === 401) {
+            clearAuthSession('session');
+          } else if (res.status === 403 && /bllokuar/i.test(msg)) {
+            clearAuthSession('forbidden');
+          }
+        }
+        throw new Error(msg);
       }
+      return data as T;
+    } catch (err) {
+      if (timeoutId) clearTimeout(timeoutId);
+      const isLast = attempt >= maxAttempts;
+      const retryable =
+        err instanceof Error &&
+        (err.name === 'AbortError' || err.message === 'Failed to fetch');
+
+      if (!isLast && retryable) {
+        await sleep(4000);
+        continue;
+      }
+
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error(
+          isProductionApi()
+            ? 'Serveri po zgjohet. Prisni pak dhe provoni përsëri.'
+            : 'Kërkesa u anulua ose kaloi koha.'
+        );
+      }
+      if (err instanceof TypeError && err.message === 'Failed to fetch') {
+        throw new Error(
+          isProductionApi()
+            ? 'Nuk u lidh me serverin. Render po zgjohet — prisni 30–60s dhe rifresko.'
+            : 'Nuk mund të lidhet me serverin. Nisni backend-in: cd backend && npm run start'
+        );
+      }
+      throw err;
     }
-    throw new Error(msg);
   }
-  return data as T;
+
+  throw new Error('Kërkesa dështoi.');
 }
 
 export async function apiUpload<T>(
