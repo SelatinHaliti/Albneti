@@ -168,7 +168,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex justify-center items-center min-h-[52px] text-[14px] font-semibold text-[var(--text)]">
               {pathname === '/feed' && feedMode === 'following' ? 'Ndiqet' : ''}
             </div>
-            <div className="flex items-center justify-end gap-0">
+            <div className="flex items-center justify-end gap-0 mobile-header-actions">
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}

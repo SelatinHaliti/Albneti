@@ -8,12 +8,20 @@ function getToken(): string | null {
 }
 
 /** Nxjerr mesazhin e gabimit nga përgjigja e API */
+function sanitizeServerMessage(msg: string): string {
+  const t = msg.trim();
+  if (/is not defined|ReferenceError|Cannot read propert/i.test(t)) {
+    return 'Gabim në server. Provo përsëri ose rifresko faqen.';
+  }
+  return t;
+}
+
 function getErrorMessage(data: unknown, status: number, path?: string): string {
   const d = data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
   if (d) {
-    if (typeof d.message === 'string' && d.message.trim()) return d.message.trim();
-    if (typeof d.error === 'string' && d.error.trim()) return d.error.trim();
-    if (typeof d.msg === 'string' && d.msg.trim()) return d.msg.trim();
+    if (typeof d.message === 'string' && d.message.trim()) return sanitizeServerMessage(d.message);
+    if (typeof d.error === 'string' && d.error.trim()) return sanitizeServerMessage(d.error);
+    if (typeof d.msg === 'string' && d.msg.trim()) return sanitizeServerMessage(d.msg);
     if (Array.isArray(d.errors) && d.errors.length > 0) {
       const first = d.errors[0];
       if (typeof first === 'string') return first;

@@ -278,7 +278,7 @@ export default function ChatGlobalPage() {
   }, []);
 
   return (
-    <div className="max-w-[700px] mx-auto flex flex-col h-[calc(100vh-44px)] md:h-screen bg-[var(--bg)]">
+    <div className="mobile-page max-w-[700px] mx-auto flex flex-col mobile-chat-shell md:h-screen bg-[var(--bg)]">
       {/* Header */}
       <header className="flex-shrink-0 px-4 py-3 border-b border-[var(--border)] bg-[var(--bg-card)]">
         <div className="flex items-center justify-between gap-2">

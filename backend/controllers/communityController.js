@@ -1,4 +1,5 @@
 import Event from '../models/Event.js';
+import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import { emitNotification } from '../sockets/io.js';
 import { distributeEventPromos } from '../services/eventAdsService.js';
@@ -161,6 +162,8 @@ export const toggleInterest = async (req, res) => {
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ message: 'Eventi nuk u gjet.' });
 
+    if (!Array.isArray(event.interested)) event.interested = [];
+
     const idx = event.interested.findIndex((i) => String(i.user) === String(userId));
     let interested = false;
 
@@ -183,7 +186,7 @@ export const toggleInterest = async (req, res) => {
       await User.findByIdAndUpdate(userId, {
         $addToSet: { eventCategoryInterests: event.category },
         lastActiveAt: new Date(),
-      });
+      }).catch(() => {});
 
       const msUntil = new Date(event.startAt).getTime() - Date.now();
       await sendEventNotification(userId, {

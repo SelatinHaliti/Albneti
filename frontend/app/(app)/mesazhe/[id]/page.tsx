@@ -132,21 +132,21 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)]">
-      <header className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <Link href="/mesazhe" className="text-xl">←</Link>
-        <Link href={`/profili/${other?.username}`} className="flex items-center gap-3 flex-1">
+    <div className="mobile-page max-w-2xl mx-auto flex flex-col mobile-chat-shell md:h-[calc(100dvh-2rem)]">
+      <header className="flex items-center gap-3 p-3 sm:p-4 border-b border-[var(--border)] liquid-glass-strong flex-shrink-0">
+        <Link href="/mesazhe" className="ig-touch text-xl text-[var(--text)]">←</Link>
+        <Link href={`/profili/${other?.username}`} className="flex items-center gap-3 flex-1 min-w-0">
           <img
             src={other?.avatar || ''}
             alt=""
-            className="w-10 h-10 rounded-full object-cover bg-gray-200"
+            className="w-10 h-10 rounded-full object-cover bg-[var(--border)] flex-shrink-0"
             onError={(e) => {
               (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + other?.username;
             }}
           />
-          <span className="font-semibold dark:text-white">{other?.username}</span>
+          <span className="font-semibold text-[var(--text)] truncate">{other?.username}</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button
             type="button"
             onClick={() => startCall('audio')}
