@@ -105,6 +105,36 @@ export async function createCheckoutSession(user, plan) {
   };
 }
 
+export async function fulfillCheckoutSession(sessionId, userId) {
+  const stripe = getStripe();
+  if (!stripe) throw new Error('Stripe nuk është konfiguruar.');
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const paid = session.payment_status === 'paid' || session.status === 'complete';
+  if (!paid) throw new Error('Pagesa nuk u përfundua ende. Prisni pak dhe provoni përsëri.');
+
+  if (String(session.metadata?.userId) !== String(userId)) {
+    throw new Error('Sesioni i pagesës nuk i përket këtij përdoruesi.');
+  }
+
+  const plan = session.metadata?.plan;
+  if (!['monthly', 'yearly'].includes(plan)) {
+    throw new Error('Plan i pavlefshëm në sesionin e pagesës.');
+  }
+
+  let expiresAt;
+  if (session.subscription) {
+    const sub = await stripe.subscriptions.retrieve(String(session.subscription));
+    expiresAt = new Date(sub.current_period_end * 1000);
+  }
+
+  return activateSubscription(userId, plan, {
+    stripeCustomerId: session.customer ? String(session.customer) : undefined,
+    stripeSubscriptionId: session.subscription ? String(session.subscription) : undefined,
+    expiresAt,
+  });
+}
+
 export async function cancelStripeSubscription(user) {
   const subId = user?.verifiedSubscription?.stripeSubscriptionId;
   if (!subId || !isStripeConfigured()) return;

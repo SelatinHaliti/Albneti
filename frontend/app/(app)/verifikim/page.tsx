@@ -57,11 +57,24 @@ export default function VerifikimPage() {
 
   useEffect(() => {
     if (searchParams.get('success') === '1') {
-      refreshStatus()
-        .then(() => toast('Pagesa u krye! Je i verifikuar.'))
-        .catch(() => toast('Pagesa u krye. Duke përditësuar statusin...'))
+      const sessionId = searchParams.get('session_id');
+      const confirm = sessionId
+        ? api<{ success: boolean; message: string }>('/api/verification/confirm-checkout', {
+            method: 'POST',
+            body: { sessionId },
+          })
+        : Promise.resolve(null);
+
+      confirm
+        .then((res) => {
+          if (res?.message) toast(res.message);
+          else toast('Pagesa u krye! Je i verifikuar.');
+        })
+        .catch((err) => toastError(err instanceof Error ? err.message : 'Gabim gjatë konfirmimit.'))
         .finally(() => {
-          window.history.replaceState({}, '', '/verifikim');
+          refreshStatus().finally(() => {
+            window.history.replaceState({}, '', '/verifikim');
+          });
         });
     }
     if (searchParams.get('cancelled') === '1') {

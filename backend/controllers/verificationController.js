@@ -3,6 +3,7 @@ import {
   isStripeConfigured,
   activateSubscription,
   createCheckoutSession,
+  fulfillCheckoutSession,
   cancelStripeSubscription,
   constructWebhookEvent,
   handleStripeWebhookEvent,
@@ -120,6 +121,30 @@ export const createCheckout = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim gjatë pagesës.' });
+  }
+};
+
+/** Konfirmon pagesën pas kthimit nga Stripe (funksionon edhe pa webhook) */
+export const confirmCheckout = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId || typeof sessionId !== 'string') {
+      return res.status(400).json({ message: 'Mungon sessionId i pagesës.' });
+    }
+
+    if (!isStripeConfigured()) {
+      return res.status(400).json({ message: 'Stripe nuk është konfiguruar në server.' });
+    }
+
+    const subscription = await fulfillCheckoutSession(sessionId.trim(), req.user.id);
+    res.json({
+      success: true,
+      message: 'Pagesa u konfirmua! Je i verifikuar.',
+      isVerified: true,
+      subscription,
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message || 'Gabim gjatë konfirmimit të pagesës.' });
   }
 };
 
