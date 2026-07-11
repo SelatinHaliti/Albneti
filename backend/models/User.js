@@ -23,9 +23,23 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Fjalëkalimi është i detyrueshëm'],
       minlength: [6, 'Fjalëkalimi duhet të ketë të paktën 6 karaktere'],
       select: false,
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+    appleId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google', 'apple'],
+      default: 'local',
     },
     fullName: {
       type: String,
@@ -90,8 +104,15 @@ userSchema.index({ username: 'text', fullName: 'text' });
 userSchema.index({ createdAt: -1 });
 
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+userSchema.pre('validate', function (next) {
+  if (!this.password && !this.googleId && !this.appleId) {
+    this.invalidate('password', 'Fjalëkalimi është i detyrueshëm');
+  }
   next();
 });
 

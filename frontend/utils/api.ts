@@ -30,6 +30,9 @@ function getErrorMessage(data: unknown, status: number, path?: string): string {
 const PUBLIC_AUTH_PATHS = [
   '/api/auth/regjistrohu',
   '/api/auth/kycu',
+  '/api/auth/google',
+  '/api/auth/apple',
+  '/api/auth/oauth-status',
   '/api/auth/harruar-fjalekalimin',
   '/api/auth/rifresko-fjalekalimin',
   '/api/auth/verifiko-email',

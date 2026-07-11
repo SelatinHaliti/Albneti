@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { AppLogo } from '@/components/AppLogo';
+import { SocialLoginButtons } from '@/components/SocialLoginButtons';
 import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/utils/api';
 
@@ -134,6 +135,10 @@ export default function RegisterPage() {
           <button type="submit" disabled={loading} className="auth-btn">
             {loading ? 'Duke u regjistruar...' : 'Regjistrohu'}
           </button>
+        </motion.div>
+
+        <motion.div variants={item}>
+          <SocialLoginButtons onError={setError} />
         </motion.div>
       </motion.form>
 

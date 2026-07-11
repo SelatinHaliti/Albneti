@@ -2,6 +2,13 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { isSmtpConfigured, sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
+import {
+  verifyGoogleToken,
+  verifyAppleToken,
+  findOrCreateOAuthUser,
+  isGoogleOAuthConfigured,
+  isAppleOAuthConfigured,
+} from '../utils/oauth.js';
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -110,6 +117,10 @@ export const login = async (req, res) => {
     if (user.isBlocked) {
       return res.status(403).json({ message: 'Llogaria juaj është bllokuar.' });
     }
+    if (!user.password) {
+      const provider = user.googleId ? 'Google' : user.appleId ? 'Apple' : 'Google ose Apple';
+      return res.status(401).json({ message: `Kyçuni me ${provider}.` });
+    }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
@@ -207,6 +218,76 @@ export const resetPassword = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }
+};
+
+/**
+ * Kyçje me Google (ID token nga frontend)
+ */
+export const googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ message: 'Mungon token-i i Google.' });
+    }
+    if (!isGoogleOAuthConfigured()) {
+      return res.status(503).json({ message: 'Kyçja me Google nuk është aktivizuar ende.' });
+    }
+    const profile = await verifyGoogleToken(credential);
+    const user = await findOrCreateOAuthUser({
+      provider: 'google',
+      providerId: profile.providerId,
+      email: profile.email,
+      name: profile.name,
+      avatar: profile.avatar,
+    });
+    sendTokenResponse(user, res);
+  } catch (err) {
+    res.status(401).json({ message: err.message || 'Kyçja me Google dështoi.' });
+  }
+};
+
+/**
+ * Kyçje me Apple (identity token nga frontend)
+ */
+export const appleLogin = async (req, res) => {
+  try {
+    const { identityToken, fullName } = req.body;
+    if (!identityToken) {
+      return res.status(400).json({ message: 'Mungon token-i i Apple.' });
+    }
+    if (!isAppleOAuthConfigured()) {
+      return res.status(503).json({ message: 'Kyçja me Apple nuk është aktivizuar ende.' });
+    }
+    const profile = await verifyAppleToken(identityToken);
+    const name = fullName
+      ? [
+          fullName.givenName || fullName.firstName,
+          fullName.familyName || fullName.lastName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      : '';
+    const user = await findOrCreateOAuthUser({
+      provider: 'apple',
+      providerId: profile.providerId,
+      email: profile.email,
+      name,
+      avatar: '',
+    });
+    sendTokenResponse(user, res);
+  } catch (err) {
+    res.status(401).json({ message: err.message || 'Kyçja me Apple dështoi.' });
+  }
+};
+
+/**
+ * Status i OAuth providers (për frontend)
+ */
+export const oauthStatus = async (_req, res) => {
+  res.json({
+    google: isGoogleOAuthConfigured(),
+    apple: isAppleOAuthConfigured(),
+  });
 };
 
 /**
