@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { GoogleLogin } from '@react-oauth/google';
 import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -16,20 +17,11 @@ type Props = {
 
 declare global {
   interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: Record<string, unknown>) => void;
-          renderButton: (el: HTMLElement, config: Record<string, unknown>) => void;
-          prompt: () => void;
-        };
-      };
-    };
     AppleID?: {
       auth: {
         init: (config: Record<string, unknown>) => void;
         signIn: () => Promise<{
-          authorization: { id_token: string; code?: string };
+          authorization: { id_token: string };
           user?: { name?: { firstName?: string; lastName?: string } };
         }>;
       };
@@ -47,9 +39,8 @@ function loadScript(src: string, id: string): Promise<void> {
     script.id = id;
     script.src = src;
     script.async = true;
-    script.defer = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Nuk u ngarkua: ${src}`));
+    script.onerror = () => reject(new Error('Script load failed'));
     document.head.appendChild(script);
   });
 }
@@ -57,10 +48,12 @@ function loadScript(src: string, id: string): Promise<void> {
 export function SocialLoginButtons({ onError }: Props) {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
-  const googleRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<OAuthStatus>({ google: false, apple: false });
+  const [backendStatus, setBackendStatus] = useState<OAuthStatus>({ google: false, apple: false });
+  const [appleReady, setAppleReady] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
-  const [ready, setReady] = useState(false);
+
+  const googleEnabled = Boolean(GOOGLE_CLIENT_ID);
+  const appleEnabled = Boolean(APPLE_CLIENT_ID);
 
   const handleAuthSuccess = useCallback(
     (data: { user: unknown; token: string }) => {
@@ -71,17 +64,25 @@ export function SocialLoginButtons({ onError }: Props) {
     [setAuth, router]
   );
 
-  const handleGoogleCredential = useCallback(
-    async (response: { credential?: string }) => {
-      if (!response.credential) return;
+  const handleGoogleSuccess = useCallback(
+    async (credentialResponse: { credential?: string }) => {
+      if (!credentialResponse.credential) {
+        onError?.('Google nuk dha token. Provoni përsëri.');
+        return;
+      }
       try {
         const data = await api<{ user: unknown; token: string }>('/api/auth/google', {
           method: 'POST',
-          body: { credential: response.credential },
+          body: { credential: credentialResponse.credential },
         });
         handleAuthSuccess(data);
       } catch (err) {
-        onError?.(err instanceof Error ? err.message : 'Kyçja me Google dështoi.');
+        const msg = err instanceof Error ? err.message : 'Kyçja me Google dështoi.';
+        if (msg.includes('nuk është aktivizuar')) {
+          onError?.('Google login nuk është konfiguruar në server. Kontaktoni administratorin.');
+        } else {
+          onError?.(msg);
+        }
       }
     },
     [handleAuthSuccess, onError]
@@ -89,7 +90,7 @@ export function SocialLoginButtons({ onError }: Props) {
 
   const handleAppleLogin = useCallback(async () => {
     if (!window.AppleID?.auth) {
-      onError?.('Apple Sign In nuk është i disponueshëm.');
+      onError?.('Apple Sign In nuk u ngarkua. Rifreskoni faqen.');
       return;
     }
     setAppleLoading(true);
@@ -98,10 +99,7 @@ export function SocialLoginButtons({ onError }: Props) {
       const identityToken = response.authorization?.id_token;
       if (!identityToken) throw new Error('Token Apple mungon.');
       const fullName = response.user?.name
-        ? {
-            firstName: response.user.name.firstName,
-            lastName: response.user.name.lastName,
-          }
+        ? { firstName: response.user.name.firstName, lastName: response.user.name.lastName }
         : undefined;
       const data = await api<{ user: unknown; token: string }>('/api/auth/apple', {
         method: 'POST',
@@ -110,8 +108,12 @@ export function SocialLoginButtons({ onError }: Props) {
       handleAuthSuccess(data);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Kyçja me Apple dështoi.';
-      if (!msg.includes('popup_closed') && !msg.includes('user_cancelled')) {
-        onError?.(msg);
+      if (!msg.toLowerCase().includes('popup_closed') && !msg.toLowerCase().includes('cancel')) {
+        if (msg.includes('nuk është aktivizuar')) {
+          onError?.('Apple login nuk është konfiguruar në server.');
+        } else {
+          onError?.(msg);
+        }
       }
     } finally {
       setAppleLoading(false);
@@ -120,68 +122,39 @@ export function SocialLoginButtons({ onError }: Props) {
 
   useEffect(() => {
     api<OAuthStatus>('/api/auth/oauth-status')
-      .then(setStatus)
-      .catch(() => setStatus({
-        google: Boolean(GOOGLE_CLIENT_ID),
-        apple: Boolean(APPLE_CLIENT_ID),
-      }));
+      .then(setBackendStatus)
+      .catch(() => setBackendStatus({ google: false, apple: false }));
   }, []);
 
   useEffect(() => {
-    if (!status.google && !status.apple) return;
-
-    const init = async () => {
-      try {
-        if (status.google && GOOGLE_CLIENT_ID) {
-          await loadScript('https://accounts.google.com/gsi/client', 'google-gsi');
-          if (window.google?.accounts?.id && googleRef.current) {
-            window.google.accounts.id.initialize({
-              client_id: GOOGLE_CLIENT_ID,
-              callback: handleGoogleCredential,
-              auto_select: false,
-              cancel_on_tap_outside: true,
-              context: 'signin',
-              itp_support: true,
-              locale: 'sq',
-            });
-            googleRef.current.innerHTML = '';
-            window.google.accounts.id.renderButton(googleRef.current, {
-              type: 'standard',
-              theme: 'outline',
-              size: 'large',
-              text: 'continue_with',
-              shape: 'rectangular',
-              logo_alignment: 'left',
-              width: 320,
-              locale: 'sq',
-            });
-          }
+    if (!appleEnabled) return;
+    loadScript(
+      'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js',
+      'apple-auth'
+    )
+      .then(() => {
+        if (window.AppleID?.auth) {
+          window.AppleID.auth.init({
+            clientId: APPLE_CLIENT_ID,
+            scope: 'name email',
+            redirectURI: typeof window !== 'undefined' ? window.location.origin : 'https://albneti.vercel.app',
+            usePopup: true,
+          });
+          setAppleReady(true);
         }
+      })
+      .catch(() => onError?.('Apple Sign In nuk u ngarkua.'));
+  }, [appleEnabled, onError]);
 
-        if (status.apple && APPLE_CLIENT_ID) {
-          await loadScript(
-            'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js',
-            'apple-auth'
-          );
-          if (window.AppleID?.auth) {
-            window.AppleID.auth.init({
-              clientId: APPLE_CLIENT_ID,
-              scope: 'name email',
-              redirectURI: window.location.origin,
-              usePopup: true,
-            });
-          }
-        }
-        setReady(true);
-      } catch {
-        onError?.('Nuk u ngarkuan butonat social. Provoni përsëri.');
-      }
-    };
-
-    init();
-  }, [status, handleGoogleCredential, onError]);
-
-  if (!status.google && !status.apple) return null;
+  if (!googleEnabled && !appleEnabled) {
+    return (
+      <div className="text-center py-2">
+        <p className="text-[11px] text-[var(--text-muted)]">
+          Kyçja me Google/Apple aktivizohet së shpejti.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -189,25 +162,62 @@ export function SocialLoginButtons({ onError }: Props) {
         <span>ose</span>
       </div>
 
-      {status.google && GOOGLE_CLIENT_ID && (
-        <div
-          ref={googleRef}
-          className={`social-google-btn flex justify-center min-h-[44px] ${ready ? '' : 'opacity-50'}`}
-        />
+      {googleEnabled && (
+        <div className="social-google-btn flex justify-center w-full">
+          {backendStatus.google ? (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => onError?.('Google u anulua ose dështoi.')}
+              text="continue_with"
+              shape="rectangular"
+              theme="outline"
+              size="large"
+              width="320"
+              locale="sq"
+            />
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="social-oauth-disabled"
+              title="Backend nuk është konfiguruar"
+            >
+              <GoogleIcon />
+              <span>Vazhdo me Google</span>
+            </button>
+          )}
+        </div>
       )}
 
-      {status.apple && APPLE_CLIENT_ID && (
+      {appleEnabled && (
         <button
           type="button"
           onClick={handleAppleLogin}
-          disabled={appleLoading || !ready}
+          disabled={appleLoading || !appleReady || !backendStatus.apple}
           className="social-apple-btn"
         >
           <AppleIcon />
-          <span>{appleLoading ? 'Duke u kyçur...' : 'Vazhdo me Apple'}</span>
+          <span>
+            {appleLoading
+              ? 'Duke u kyçur...'
+              : backendStatus.apple
+                ? 'Vazhdo me Apple'
+                : 'Apple – duke u aktivizuar...'}
+          </span>
         </button>
       )}
     </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+    </svg>
   );
 }
 

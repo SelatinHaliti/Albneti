@@ -279,6 +279,22 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 .social-apple-btn:hover:not(:disabled) { opacity: 0.92; }
 .social-apple-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.social-oauth-disabled {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .dark .social-apple-btn {
   background: #fff;
   color: #000;

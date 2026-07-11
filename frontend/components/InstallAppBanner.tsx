@@ -56,8 +56,8 @@ export function InstallAppBanner() {
   return (
     <div className="install-banner animate-fade-in">
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-10 h-10 rounded-xl bg-[var(--albanian-gradient)] flex items-center justify-center text-white font-bold text-sm shrink-0">
-          A
+        <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 ring-1 ring-[var(--border)]">
+          <img src="/icon" alt="AlbNet" className="w-full h-full object-cover" />
         </div>
         <div className="min-w-0">
           <p className="text-[13px] font-semibold text-[var(--text)] truncate">Instalo AlbNet</p>

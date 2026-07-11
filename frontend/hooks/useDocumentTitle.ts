@@ -4,12 +4,9 @@ import { useEffect } from 'react';
 
 const APP_TITLE = 'AlbNet';
 
-export function useDocumentTitle(title: string | null) {
+/** Tab-i i shfletuesit mbetet gjithmonë "AlbNet" */
+export function useDocumentTitle(_title?: string | null) {
   useEffect(() => {
-    const full = title ? `${title} • ${APP_TITLE}` : APP_TITLE;
-    document.title = full;
-    return () => {
-      document.title = APP_TITLE;
-    };
-  }, [title]);
+    document.title = APP_TITLE;
+  }, []);
 }

@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'AlbNet – Rrjeti Social Shqiptar',
+    name: 'AlbNet',
     short_name: 'AlbNet',
     description: 'Platforma sociale shqiptare – postime, story, reels, chat global dhe diaspora.',
     start_url: '/feed',

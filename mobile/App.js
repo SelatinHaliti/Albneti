@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   Animated,
+  Image,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as SplashScreen from 'expo-splash-screen';
@@ -142,9 +143,10 @@ export default function App() {
       {loading && (
         <Animated.View style={[styles.loadingOverlay, { opacity: fadeAnim }]} pointerEvents="none">
           <View style={styles.loadingContent}>
-            <View style={styles.logoShield}>
-              <Text style={styles.shieldText}>A</Text>
-            </View>
+            <Image
+              source={{ uri: 'https://albneti.vercel.app/icon' }}
+              style={styles.logoImage}
+            />
             <Text style={styles.logoTitle}>
               <Text style={styles.logoAlb}>ALB</Text>
               <Text style={styles.logoNet}>NET</Text>
@@ -169,21 +171,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   loadingContent: { alignItems: 'center' },
-  logoShield: {
-    width: 80,
-    height: 80,
-    borderRadius: 22,
-    backgroundColor: ALBANIAN_RED,
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 20,
     marginBottom: 16,
-    shadowColor: ALBANIAN_RED,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
-  shieldText: { fontSize: 36, fontWeight: '800', color: '#fff' },
   logoTitle: { fontSize: 28, fontWeight: '800', letterSpacing: 3, marginBottom: 6 },
   logoAlb: { color: ALBANIAN_RED },
   logoNet: { color: '#fafafa' },

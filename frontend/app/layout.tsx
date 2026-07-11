@@ -4,8 +4,8 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { PWARegister } from '@/components/PWARegister';
 
 export const metadata: Metadata = {
-  title: 'AlbNet – Instagram Shqiptar',
-  description: 'Kyçu për të parë fotot, story-t dhe reels nga komuniteti shqiptar.',
+  title: 'AlbNet',
+  description: 'Rrjeti social shqiptar – postime, story, reels dhe chat global.',
   applicationName: 'AlbNet',
   appleWebApp: {
     capable: true,
