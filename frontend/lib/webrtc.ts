@@ -1,5 +1,11 @@
 /** ICE/STUN/TURN për thirrje audio/video – funksionon edhe midis rrjeteve të ndryshme */
-export function getIceServers(): RTCIceServer[] {
+import { api } from '@/utils/api';
+
+const ICE_CACHE_MS = 45 * 60 * 1000;
+let iceServersCache: RTCIceServer[] | null = null;
+let iceServersCacheAt = 0;
+
+function getFallbackIceServers(): RTCIceServer[] {
   const customTurn = process.env.NEXT_PUBLIC_TURN_URL;
   const customUser = process.env.NEXT_PUBLIC_TURN_USERNAME;
   const customCred = process.env.NEXT_PUBLIC_TURN_CREDENTIAL;
@@ -17,7 +23,6 @@ export function getIceServers(): RTCIceServer[] {
     servers.push({ urls, username: customUser, credential: customCred });
   }
 
-  // TURN falas për testim – ndihmon kur STUN nuk mjafton (NAT të rreptë)
   servers.push({
     urls: [
       'turn:openrelay.metered.ca:80',
@@ -34,9 +39,36 @@ export function getIceServers(): RTCIceServer[] {
   return servers;
 }
 
-export function getPeerConnectionConfig(): RTCConfiguration {
+/** Merr ICE servers nga backend (Metered.ca) ose fallback lokal */
+export async function resolveIceServers(): Promise<RTCIceServer[]> {
+  if (iceServersCache && Date.now() - iceServersCacheAt < ICE_CACHE_MS) {
+    return iceServersCache;
+  }
+
+  try {
+    const res = await api<{ iceServers: RTCIceServer[]; source?: string }>('/api/calls/ice-servers');
+    if (res.iceServers?.length) {
+      iceServersCache = res.iceServers;
+      iceServersCacheAt = Date.now();
+      return iceServersCache;
+    }
+  } catch {
+    /* përdor fallback nëse API dështon */
+  }
+
+  iceServersCache = getFallbackIceServers();
+  iceServersCacheAt = Date.now();
+  return iceServersCache;
+}
+
+/** @deprecated Përdor resolveIceServers() për thirrje */
+export function getIceServers(): RTCIceServer[] {
+  return iceServersCache ?? getFallbackIceServers();
+}
+
+export async function getPeerConnectionConfig(): Promise<RTCConfiguration> {
   return {
-    iceServers: getIceServers(),
+    iceServers: await resolveIceServers(),
     iceCandidatePoolSize: 10,
     bundlePolicy: 'max-bundle',
     rtcpMuxPolicy: 'require',
@@ -79,6 +111,7 @@ export function attachLocalTracks(pc: RTCPeerConnection, stream: MediaStream): v
     }
   }
 }
+
 export function stopMediaStream(stream: MediaStream | null): void {
   if (!stream) return;
   stream.getTracks().forEach((t) => {
@@ -119,4 +152,9 @@ export async function waitForIceGathering(pc: RTCPeerConnection, timeoutMs = 400
     };
     pc.addEventListener('icegatheringstatechange', onChange);
   });
+}
+
+export function clearIceServersCache(): void {
+  iceServersCache = null;
+  iceServersCacheAt = 0;
 }

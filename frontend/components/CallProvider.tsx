@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSocket } from '@/components/SocketProvider';
 import { useToastStore } from '@/store/useToastStore';
 import { CallModal } from '@/components/CallModal';
-import { acquireLocalMedia } from '@/lib/webrtc';
+import { acquireLocalMedia, resolveIceServers } from '@/lib/webrtc';
 
 export type CallMode = 'audio' | 'video';
 
@@ -178,6 +178,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const localStream = await acquireLocalMedia(opts.mode);
+        void resolveIceServers();
         setActiveCall({
           direction: 'outgoing',
           conversationId: opts.conversationId,
@@ -233,6 +234,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       signalingBridgeRef.current?.reset();
       signalingBridgeRef.current = createSignalingBridge();
       playRingtone(ringStopRef);
+      void resolveIceServers();
       setActiveCall({
         direction: 'incoming',
         conversationId: payload.conversationId,

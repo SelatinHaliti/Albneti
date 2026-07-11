@@ -82,7 +82,20 @@ Ky dokument përshkruan hapat për të vendosur AlbNet në production (Vercel + 
 
 ---
 
-## 5. Përdoruesi i parë admin
+## 5. Metered.ca (Thirrje audio/video)
+
+Për thirrje midis rrjeteve të ndryshme (WiFi / 4G), duhet **TURN server**. AlbNet përdor [Metered.ca](https://dashboard.metered.ca).
+
+1. Krijo credential në dashboard → **Instructions** → kopjo **App Name** dhe **API Key**
+2. Vendos në **Render** (backend):
+   - `METERED_APP_NAME`
+   - `METERED_TURN_API_KEY`
+   - `METERED_TURN_REGION=global` (ose `europe`)
+3. Udhëzime të plota: **`METERED-SETUP.md`**
+
+---
+
+## 6. Përdoruesi i parë admin
 
 Për të pasur një përdorues admin, në MongoDB (Atlas ose lokalisht) ndërroje fushën `role` të dokumentit të atij përdoruesi nga `user` në `admin`:
 

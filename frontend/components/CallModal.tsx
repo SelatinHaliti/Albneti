@@ -168,10 +168,11 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     [onConnected]
   );
 
-  const createPeer = useCallback(() => {
+  const createPeer = useCallback(async () => {
     if (pcRef.current) return pcRef.current;
 
-    const pc = new RTCPeerConnection(getPeerConnectionConfig());
+    const config = await getPeerConnectionConfig();
+    const pc = new RTCPeerConnection(config);
 
     pc.onicecandidate = (ev) => {
       if (!ev.candidate || endedRef.current) return;
@@ -259,7 +260,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     if (offerSentRef.current || endedRef.current) return;
     offerSentRef.current = true;
 
-    const pc = createPeer();
+    const pc = await createPeer();
     const stream = await getLocalStream();
     attachLocalTracks(pc, stream);
 
@@ -280,7 +281,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
     emitSignal('call:ringing', {});
 
-    const pc = createPeer();
+    const pc = await createPeer();
     const stream = await getLocalStream();
     attachLocalTracks(pc, stream);
 
