@@ -25,6 +25,7 @@ export default function EditProfilePage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
+  const logout = useAuthStore((s) => s.logout);
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
   const [website, setWebsite] = useState(user?.website ?? '');
@@ -113,7 +114,7 @@ export default function EditProfilePage() {
   const displayAvatar = avatarPreview || user.avatar || '';
 
   return (
-    <div className="max-w-[470px] mx-auto px-4 py-6">
+    <div className="mobile-page max-w-[470px] mx-auto py-6 overflow-x-hidden">
       <div className="flex items-center gap-4 mb-6">
         <Link href={`/profili/${user.username}`} className="text-[var(--text)] text-xl" aria-label="Kthehu">
           ←
@@ -239,6 +240,14 @@ export default function EditProfilePage() {
           className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-[var(--primary)] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
         >
           {loading ? 'Duke ruajtur...' : 'Ruaj ndryshimet'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { logout(); router.push('/'); }}
+          className="w-full py-3 rounded-xl text-sm font-semibold text-[var(--danger)] border border-[var(--border)] hover:bg-[var(--primary-soft)] transition-colors"
+        >
+          Dil nga llogaria
         </button>
       </motion.form>
     </div>

@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
+import { useRouter } from 'next/navigation';
 import { IconGrid } from '@/components/Icons';
 import { PostMediaThumb } from '@/components/PostMediaThumb';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
@@ -42,6 +43,8 @@ type ProfileTab = 'postime' | 'ruajturat' | 'tagged' | 'arkivuara';
 export default function ProfilePage() {
   const params = useParams();
   const currentUser = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const router = useRouter();
   const [profile, setProfile] = useState<{
     user: User;
     posts: Post[];
@@ -215,7 +218,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="max-w-[935px] mx-auto px-4 py-6 sm:py-8">
+    <div className="mobile-page max-w-[935px] mx-auto py-6 sm:py-8">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -429,6 +432,27 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {isOwnProfile && (
+        <div className="md:hidden mt-8 mb-4 space-y-2">
+          <p className="text-[12px] font-semibold text-[var(--text-muted)] uppercase tracking-wide px-1">Cilësimet</p>
+          <div className="liquid-glass-card rounded-2xl overflow-hidden divide-y divide-[var(--border)]">
+            <Link href="/verifikim" className="flex items-center justify-between px-4 py-3.5 text-[14px] font-medium text-[var(--text)]">
+              Verifikim <span className="text-[var(--ig-blue)]">→</span>
+            </Link>
+            <Link href="/komuniteti" className="flex items-center justify-between px-4 py-3.5 text-[14px] font-medium text-[var(--text)]">
+              Komuniteti <span className="text-[var(--text-muted)]">→</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => { logout(); router.push('/'); }}
+              className="w-full flex items-center justify-between px-4 py-3.5 text-[14px] font-semibold text-[var(--danger)]"
+            >
+              Dil nga llogaria <span>↩</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

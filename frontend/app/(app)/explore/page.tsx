@@ -124,7 +124,7 @@ export default function ExplorePage() {
   }, [pullY, onRefresh]);
 
   return (
-    <div className="max-w-[470px] md:max-w-4xl mx-auto px-0 md:px-4 py-4 bg-[var(--bg)] w-full min-h-screen">
+    <div className="mobile-page max-w-[470px] md:max-w-4xl mx-auto py-4 bg-[var(--bg)] w-full min-h-screen overflow-x-hidden">
       {pullY > 0 && (
         <div className="flex justify-center py-2 bg-[var(--bg)] sticky top-0 z-10" style={{ paddingTop: Math.min(pullY, 60) }}>
           <div className="w-7 h-7 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />

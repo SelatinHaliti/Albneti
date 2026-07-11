@@ -109,7 +109,7 @@ export default function NotificationsPage() {
     : notifications;
 
   return (
-    <div className="max-w-[560px] mx-auto min-h-screen bg-[var(--bg)]">
+    <div className="mobile-page max-w-[560px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 ig-nav-bar border-b border-[var(--border)] px-5 py-4">
         <div className="flex items-center justify-between">

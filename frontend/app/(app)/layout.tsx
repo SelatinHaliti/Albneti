@@ -25,6 +25,7 @@ import { Toaster } from '@/components/Toaster';
 import { CreateMenu } from '@/components/CreateMenu';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { InstallAppBanner } from '@/components/InstallAppBanner';
+import { MobileMenu } from '@/components/MobileMenu';
 
 const navItems = [
   { href: '/feed', label: 'Kryefaja', Icon: IconHome },
@@ -62,6 +63,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const feedMode = pathname === '/feed' ? (searchParams.get('feed') === 'following' ? 'following' : 'for_you') : null;
   const isReelsPage = pathname === '/reels';
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -130,7 +132,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-      <div className={`min-h-screen flex flex-col md:flex-row ${isReelsPage ? 'bg-black' : 'bg-[var(--bg)]'}`}>
+    <>
+      <div className={`min-h-screen flex flex-col md:flex-row overflow-x-hidden max-w-[100vw] ${isReelsPage ? 'bg-black' : 'bg-[var(--bg)]'}`}>
         {/* ── Mobile top bar ── */}
         {!isReelsPage && (
           <header className="md:hidden fixed top-0 left-0 right-0 h-[52px] px-4 grid grid-cols-3 items-center ig-nav-bar border-b z-50 safe-area-pt">
@@ -165,7 +168,19 @@ function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex justify-center items-center min-h-[52px] text-[14px] font-semibold text-[var(--text)]">
               {pathname === '/feed' && feedMode === 'following' ? 'Ndiqet' : ''}
             </div>
-            <div className="flex items-center justify-end gap-0.5">
+            <div className="flex items-center justify-end gap-0">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors"
+                aria-label="Hap menunë"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="4" y1="7" x2="20" y2="7" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="17" x2="20" y2="17" />
+                </svg>
+              </button>
               <Link href="/njoftime" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors relative" aria-label="Njoftime">
                 <IconHeart />
                 {totalUnread > 0 && (
@@ -308,6 +323,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => { logout(); router.push('/'); }}
               className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-[var(--text-muted)] hover:bg-[var(--primary-soft)] hover:text-[var(--danger)] transition-colors"
+              aria-label="Dil nga llogaria"
+              title="Dil"
             >
               <span className="flex-shrink-0"><IconLogout /></span>
               <span className="hidden lg:inline text-[15px]">Dil</span>
@@ -315,18 +332,18 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className={`flex-1 md:ml-[72px] lg:ml-[245px] ${isReelsPage ? 'pt-0 pb-0' : 'pt-[52px] md:pt-0 pb-[56px] md:pb-0'} min-h-screen`}>
+        <main className={`app-shell-main md:ml-[72px] lg:ml-[245px] md:pt-0 md:pb-0 ${isReelsPage ? 'app-shell-main--reels' : ''}`}>
           {!isReelsPage && (
-            <div className="md:hidden px-3 pt-2">
+            <div className="md:hidden px-3 pt-2 max-w-[100vw]">
               <InstallAppBanner />
             </div>
           )}
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
 
-        {/* ── Mobile bottom nav (Instagram style) ── */}
-        <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 safe-area-pb ${isReelsPage ? '' : 'pb-1'}`}>
-          <div className={`flex items-center justify-around h-[52px] ${isReelsPage ? 'bg-black/80 backdrop-blur-xl border-t border-white/10 mx-0 rounded-none' : 'liquid-nav-pill'}`}>
+        {/* ── Mobile bottom nav ── */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+          <div className={`pointer-events-auto flex items-center justify-around ${isReelsPage ? 'h-[56px] bg-black/85 backdrop-blur-xl border-t border-white/10 safe-area-pb px-2' : 'liquid-nav-pill'}`}>
           {bottomNavItems.map((item) => {
             const isActive = item.icon === 'avatar'
               ? pathname.startsWith('/profili')
@@ -336,7 +353,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 key="create"
                 type="button"
                 onClick={() => setCreateMenuOpen(true)}
-                className={`relative flex items-center justify-center flex-1 h-[50px] min-w-0 transition-colors ${isReelsPage ? 'text-white/80' : 'text-[var(--text)]'}`}
+                className={`relative flex items-center justify-center flex-1 min-h-[48px] min-w-0 transition-colors ${isReelsPage ? 'text-white/80' : 'text-[var(--text)]'}`}
                 aria-label="Krijo"
               >
                 <span className={`ig-create-btn ${isReelsPage ? 'border-white/80' : ''}`}>
@@ -348,7 +365,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? 'page' : undefined}
-                className={`relative flex items-center justify-center flex-1 h-[50px] min-w-0 transition-colors ${
+                className={`relative flex items-center justify-center flex-1 min-h-[48px] min-w-0 transition-colors ${
                   isActive ? 'text-[var(--text)]' : isReelsPage ? 'text-white/60' : 'text-[var(--text)]'
                 }`}
               >
@@ -372,6 +389,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
       </div>
+      <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} unreadCount={totalUnread} />
       <CreateMenu open={createMenuOpen} onClose={() => setCreateMenuOpen(false)} />
       <Toaster />
     </>

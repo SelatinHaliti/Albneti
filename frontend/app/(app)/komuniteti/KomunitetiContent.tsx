@@ -146,7 +146,7 @@ export default function KomunitetiContent() {
   const featured = events.filter((e) => e.featured && e.status !== 'past').slice(0, 3);
 
   return (
-    <div className="max-w-[630px] mx-auto px-4 py-6 pb-24 md:pb-6">
+    <div className="mobile-page max-w-[630px] mx-auto py-6 pb-4 overflow-x-hidden">
       <div className="mb-6">
         <h1 className="text-[22px] font-bold text-[var(--text)] mb-1">Komuniteti Shqiptar</h1>
         <p className="text-[13px] text-[var(--text-muted)]">

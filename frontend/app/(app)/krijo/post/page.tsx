@@ -94,7 +94,7 @@ export default function CreatePostPage() {
   const hasMusic = selectedLibraryTrack || musicFile;
 
   return (
-    <div className="max-w-[470px] mx-auto px-4 py-5 sm:py-6">
+    <div className="mobile-page max-w-[470px] mx-auto py-5 sm:py-6 overflow-x-hidden">
       {showMusicPicker && (
         <MusicPicker
           onSelect={handleSelectFromLibrary}

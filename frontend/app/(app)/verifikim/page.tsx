@@ -77,7 +77,7 @@ export default function VerifikimPage() {
   const isActive = status?.isVerified;
 
   return (
-    <div className="max-w-[520px] mx-auto px-4 py-6 sm:py-8">
+    <div className="mobile-page max-w-[520px] mx-auto py-6 sm:py-8 overflow-x-hidden">
       <div className="flex items-center gap-3 mb-6">
         <Link href={`/profili/${user?.username}`} className="ig-touch text-[var(--text)] -ml-2" aria-label="Mbrapsht">←</Link>
         <h1 className="text-[20px] font-semibold text-[var(--text)]">AlbNet Verifikuar</h1>

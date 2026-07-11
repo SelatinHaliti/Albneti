@@ -38,7 +38,7 @@ export default function MessagesPage() {
   const getOther = (c: Conversation) => c.participants?.find((p) => p._id !== user?.id);
 
   return (
-    <div className="max-w-[470px] mx-auto min-h-screen bg-[var(--bg)]">
+    <div className="mobile-page max-w-[470px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
       <div className="px-4 py-4 border-b border-[var(--border)] flex items-center justify-between">
         <h1 className="text-[18px] font-bold text-[var(--text)]">Mesazhe</h1>
         <Link href="/mesazhe/te-rinj" className="text-[var(--primary)] text-[14px] font-semibold hover:opacity-80">
