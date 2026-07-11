@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 type Conversation = {
   _id: string;
@@ -17,6 +18,8 @@ export default function MessagesPage() {
   const user = useAuthStore((s) => s.user);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useDocumentTitle('Mesazhe');
 
   useEffect(() => {
     if (!user) return;
@@ -35,55 +38,72 @@ export default function MessagesPage() {
   const getOther = (c: Conversation) => c.participants?.find((p) => p._id !== user?.id);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-4 dark:text-white">Mesazhe</h1>
+    <div className="max-w-[470px] mx-auto min-h-screen bg-[var(--bg)]">
+      <div className="px-4 py-4 border-b border-[var(--border)] flex items-center justify-between">
+        <h1 className="text-[18px] font-bold text-[var(--text)]">Mesazhe</h1>
+        <Link href="/mesazhe/te-rinj" className="text-[var(--primary)] text-[14px] font-semibold hover:opacity-80">
+          E re
+        </Link>
+      </div>
 
       {loading ? (
-        <div className="space-y-2">
+        <div className="divide-y divide-[var(--border)]">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+            <div key={i} className="flex items-center gap-3 px-4 py-3">
+              <div className="w-14 h-14 rounded-full bg-[var(--border)] animate-shimmer" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-24 bg-[var(--border)] rounded animate-shimmer" />
+                <div className="h-2.5 w-40 bg-[var(--border)] rounded animate-shimmer" />
+              </div>
+            </div>
           ))}
         </div>
       ) : conversations.length === 0 ? (
-        <motion.p
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-gray-500 dark:text-gray-400 text-center py-12"
+          className="flex flex-col items-center justify-center py-24 px-6 text-center"
         >
-          Ende nuk keni biseda. Kërko një përdorues dhe fillo një bisedë.
-        </motion.p>
+          <div className="w-16 h-16 rounded-full glass-card flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+            </svg>
+          </div>
+          <p className="text-[15px] font-semibold text-[var(--text)]">Nuk ka mesazhe</p>
+          <p className="text-[13px] text-[var(--text-muted)] mt-1">Fillo një bisedë të re me miqtë.</p>
+          <Link href="/mesazhe/te-rinj" className="mt-5 px-6 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold">
+            Bisedë e re
+          </Link>
+        </motion.div>
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y divide-[var(--border)]">
           {conversations.map((c) => {
             const other = getOther(c);
             return (
               <Link key={c._id} href={`/mesazhe/${c._id}`}>
                 <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--primary-soft)] transition-colors"
                 >
                   <img
                     src={other?.avatar || ''}
                     alt=""
-                    className="w-12 h-12 rounded-full object-cover bg-gray-200"
+                    className="w-14 h-14 rounded-full object-cover flex-shrink-0"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + other?.username;
                     }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white truncate">
+                    <p className="font-semibold text-[14px] text-[var(--text)] truncate">
                       {other?.username}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-[13px] text-[var(--text-muted)] truncate">
                       {c.lastMessage?.content || 'Bisedë e re'}
                     </p>
                   </div>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-[11px] text-[var(--text-secondary)] flex-shrink-0">
                     {c.lastMessageAt
-                      ? new Date(c.lastMessageAt).toLocaleDateString('sq-AL', {
-                          day: 'numeric',
-                          month: 'short',
-                        })
+                      ? new Date(c.lastMessageAt).toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' })
                       : ''}
                   </span>
                 </motion.div>
@@ -92,13 +112,6 @@ export default function MessagesPage() {
           })}
         </div>
       )}
-
-      <Link
-        href="/mesazhe/te-rinj"
-        className="fixed bottom-24 right-4 md:bottom-8 w-14 h-14 rounded-full bg-primary-500 text-white flex items-center justify-center text-2xl shadow-lg hover:bg-primary-600"
-      >
-        +
-      </Link>
     </div>
   );
 }

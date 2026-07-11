@@ -169,7 +169,7 @@ export function PostCard(props: {
   const handleMusicEnded = () => setMusicPlaying(false);
 
   return (
-    <article className="post-block overflow-hidden relative">
+    <article className="post-block overflow-hidden relative border-b border-[var(--border)] md:border-b-0 md:mb-4">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3">
         <Link href={`/profili/${post.user?.username}`} className="flex-shrink-0">
@@ -201,7 +201,7 @@ export function PostCard(props: {
             <IconMore />
           </button>
           {showOptionsMenu && (
-            <div className="absolute right-0 top-full mt-1 py-1.5 min-w-[200px] bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-lg)] z-50 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 py-1.5 min-w-[200px] ig-dropdown z-50">
               {isOwner && (
                 <>
                   <button type="button" onClick={() => { setShowOptionsMenu(false); onEdit?.(); }} className="w-full text-left px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)] transition-colors">
@@ -238,8 +238,8 @@ export function PostCard(props: {
 
       {/* Share modal */}
       {showShareModal && (
-        <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowShareModal(false)}>
-          <div className="w-full max-w-[400px] bg-[var(--bg-card)] rounded-t-2xl sm:rounded-2xl p-5 pb-8 safe-area-pb border border-[var(--border)] shadow-[var(--shadow-lg)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center ig-modal-overlay" onClick={() => setShowShareModal(false)}>
+          <div className="w-full max-w-[400px] liquid-glass-strong rounded-t-2xl sm:rounded-2xl p-5 pb-8 safe-area-pb" onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto mb-4 sm:hidden" />
             <p className="text-[15px] font-semibold text-[var(--text)] mb-4">Ndaj postimin</p>
             <div className="space-y-1">

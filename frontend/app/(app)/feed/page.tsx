@@ -173,7 +173,7 @@ export default function FeedPage() {
   }, [pullY, refreshFeed]);
 
   return (
-    <div className="max-w-[560px] mx-auto min-h-screen bg-[var(--bg)] w-full">
+    <div className="max-w-[470px] mx-auto min-h-screen bg-[var(--bg)] w-full">
       {pullY > 0 && (
         <div className="flex justify-center py-3 bg-[var(--bg)] sticky top-0 z-10" style={{ paddingTop: Math.min(pullY, 60) }}>
           <div className="w-7 h-7 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
@@ -182,9 +182,9 @@ export default function FeedPage() {
 
       {/* Story ring - only on "Kryefaja" */}
       {feedMode !== 'following' && (
-        <div className="bg-[var(--bg-card)] overflow-hidden border-b border-[var(--border)]">
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <span className="text-[14px] font-semibold text-[var(--text)]">Story</span>
+        <div className="overflow-hidden border-b border-[var(--border)]">
+          <div className="flex items-center justify-between px-4 pt-3 pb-1">
+            <span className="text-[13px] font-semibold text-[var(--text)]">Story</span>
             {!loading && stories.length > 0 && (
               <button
                 type="button"
@@ -248,7 +248,7 @@ export default function FeedPage() {
         </div>
       ) : (
         <>
-          <div className="space-y-5 pb-8 pt-4 px-3">
+          <div className="space-y-0 pb-8 pt-1">
             <AnimatePresence>
               {posts.map((post) => (
                 <PostCard key={post._id} post={post} />

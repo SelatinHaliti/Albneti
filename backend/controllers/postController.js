@@ -113,6 +113,49 @@ export const getFeed = async (req, res) => {
 };
 
 /**
+ * Merr reels (video postime) – si Instagram
+ */
+export const getReels = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 12, 30);
+    const cursorRaw = req.query.cursor != null ? parseInt(String(req.query.cursor), 10) : NaN;
+    const page = Number.isFinite(cursorRaw) && cursorRaw >= 1 ? cursorRaw : 1;
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      isArchived: false,
+      $or: [{ type: 'reel' }, { type: 'video' }],
+    };
+
+    const reels = await Post.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('user', 'username avatar fullName')
+      .populate('comments.user', 'username avatar')
+      .lean();
+
+    const savedSet = new Set((user.savedPosts || []).map((id) => id.toString()));
+    const followingSet = new Set((user.following || []).map((id) => id.toString()));
+
+    reels.forEach((r) => {
+      r.saved = savedSet.has(r._id.toString());
+      if (r.user) {
+        r.user.isFollowing = followingSet.has(r.user._id.toString());
+      }
+    });
+
+    const hasMore = reels.length === limit;
+    const nextCursor = hasMore ? String(page + 1) : null;
+
+    res.json({ reels, hasMore, nextCursor });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
  * Merr një postim me ID
  */
 export const getPost = async (req, res) => {

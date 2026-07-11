@@ -154,7 +154,7 @@ export default function ProfilePage() {
             <div className="h-3 w-48 bg-[var(--border)] animate-shimmer rounded" />
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-1 mt-10">
+        <div className="grid grid-cols-3 gap-[2px] mt-10">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="aspect-square bg-[var(--border)] animate-shimmer rounded-lg" />
           ))}
@@ -341,7 +341,7 @@ export default function ProfilePage() {
         </div>
 
         {isLoadingGrid ? (
-          <div className="grid grid-cols-3 gap-1 py-6">
+          <div className="grid grid-cols-3 gap-[2px] py-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="aspect-square bg-[var(--border)] animate-shimmer rounded-lg" />
             ))}
@@ -367,12 +367,12 @@ export default function ProfilePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-1 py-1">
+          <div className="grid grid-cols-3 gap-[2px] py-1">
             {displayPosts.map((post) => (
               <Link
                 key={post._id}
                 href={`/post/${post._id}`}
-                className="aspect-square block bg-[var(--border)] rounded-lg overflow-hidden relative group"
+                className="aspect-square block bg-[var(--border)] overflow-hidden relative group"
               >
                 <img
                   src={post.media?.[0]?.url || ''}

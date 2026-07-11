@@ -2,6 +2,7 @@ import express from 'express';
 import {
   createPost,
   getFeed,
+  getReels,
   getPost,
   getArchivedPosts,
   updatePost,
@@ -21,6 +22,7 @@ import { uploadPostWithMusic } from '../middleware/upload.js';
 const router = express.Router();
 
 router.get('/feed', protect, getFeed);
+router.get('/reels', protect, getReels);
 router.get('/arkivuara', protect, getArchivedPosts);
 router.get('/:id', optionalAuth, getPost);
 router.post('/', protect, uploadPostWithMusic, createPost);

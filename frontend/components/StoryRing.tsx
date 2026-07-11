@@ -17,7 +17,7 @@ export function StoryRing({ groups, currentUserId }: StoryRingProps) {
   const others = currentUserId ? groups.filter((g) => g.user._id !== currentUserId) : groups;
 
   return (
-    <div className="flex gap-6 overflow-x-auto py-4 px-5 bg-[var(--bg-card)] scrollbar-hide">
+    <div className="flex gap-4 overflow-x-auto py-3 px-4 scrollbar-hide">
       {/* Storya ime – si Instagram: së pari, + ose shiko */}
       {currentUserId && (
         <div className="flex flex-col items-center gap-1.5 flex-shrink-0">

@@ -98,7 +98,7 @@ export default function NotificationsPage() {
   return (
     <div className="max-w-[560px] mx-auto min-h-screen bg-[var(--bg)]">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[var(--bg)]/95 backdrop-blur-xl border-b border-[var(--border)] px-5 py-4">
+      <div className="sticky top-0 z-10 ig-nav-bar border-b border-[var(--border)] px-5 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-[22px] font-bold text-[var(--text)] tracking-tight">Njoftime</h1>
           {unreadCount > 0 && (
@@ -123,8 +123,8 @@ export default function NotificationsPage() {
               onClick={() => setFilter(f.key)}
               className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
                 filter === f.key
-                  ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20'
-                  : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text)] hover:border-[var(--text-secondary)]'
+                  ? 'bg-[var(--text)] text-[var(--bg)]'
+                  : 'glass-card text-[var(--text-muted)] hover:text-[var(--text)]'
               }`}
             >
               {f.label}

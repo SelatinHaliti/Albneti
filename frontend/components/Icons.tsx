@@ -40,9 +40,18 @@ export function IconAdd() {
 
 export function IconReels({ active }: { active?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke={stroke} strokeWidth={active ? 0 : strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="14" height="20" rx="2" ry="2" />
-      <polygon points="22 6 22 18 16 12 22 6" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke={active ? 'none' : stroke} strokeWidth={active ? 0 : strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {active ? (
+        <>
+          <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+          <path d="M10 8l6 4-6 4V8z" fill="white" />
+        </>
+      ) : (
+        <>
+          <rect x="2" y="4" width="14" height="16" rx="2" />
+          <path d="M16 8l6 4-6 4V8z" />
+        </>
+      )}
     </svg>
   );
 }

@@ -122,7 +122,7 @@ export default function ExplorePage() {
   }, [pullY, onRefresh]);
 
   return (
-    <div className="max-w-[560px] md:max-w-4xl mx-auto px-0 md:px-4 py-4 bg-[var(--bg)] w-full min-h-screen">
+    <div className="max-w-[470px] md:max-w-4xl mx-auto px-0 md:px-4 py-4 bg-[var(--bg)] w-full min-h-screen">
       {pullY > 0 && (
         <div className="flex justify-center py-2 bg-[var(--bg)] sticky top-0 z-10" style={{ paddingTop: Math.min(pullY, 60) }}>
           <div className="w-7 h-7 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
@@ -133,7 +133,7 @@ export default function ExplorePage() {
       <div className="px-4 mb-4">
         <Link
           href="/kerko"
-          className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] text-[14px] hover:border-[var(--text-secondary)] transition-colors shadow-[var(--shadow-sm)]"
+          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl glass-card text-[var(--text-muted)] text-[14px] hover:border-[var(--text-secondary)] transition-colors"
         >
           <span className="[&_svg]:w-5 [&_svg]:h-5 text-[var(--text-muted)] flex-shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -155,10 +155,10 @@ export default function ExplorePage() {
             key={t.key}
             type="button"
             onClick={() => setActiveTab(t.key as 'postime' | 'hashtag')}
-            className={`px-5 py-2.5 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all ${
+            className={`px-5 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all ${
               activeTab === t.key
-                ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20'
-                : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text)] hover:border-[var(--text-secondary)]'
+                ? 'bg-[var(--text)] text-[var(--bg)]'
+                : 'glass-card text-[var(--text-muted)] hover:text-[var(--text)]'
             }`}
           >
             {t.label}
@@ -204,7 +204,7 @@ export default function ExplorePage() {
         </div>
       ) : activeTab === 'postime' ? (
         <>
-          <div className="grid grid-cols-3 gap-1 px-1 md:px-0">
+          <div className="grid grid-cols-3 gap-[2px] px-0 md:px-0">
             {posts.map((post, i) => (
               <motion.div
                 key={post._id}
@@ -214,7 +214,7 @@ export default function ExplorePage() {
               >
                 <Link
                   href={`/post/${post._id}`}
-                  className="block aspect-square bg-[var(--border)] rounded-lg overflow-hidden relative group"
+                  className="block aspect-square bg-[var(--border)] overflow-hidden relative group"
                 >
                   <img src={post.media?.[0]?.url || ''} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
