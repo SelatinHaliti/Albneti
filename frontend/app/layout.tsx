@@ -10,7 +10,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'AlbNet - Platforma Sociale Shqiptare',
+  title: 'AlbNet – Instagram Shqiptar',
   description: 'Ndani momentet, lidhuni me miq dhe eksploroni përmbajtje në gjuhën shqipe.',
 };
 
