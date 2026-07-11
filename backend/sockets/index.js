@@ -118,6 +118,10 @@ export function setupSocketIO(io) {
       if (isUserBusy(userId) || isUserBusy(toUserId)) {
         return socket.emit('call:busy', { toUserId });
       }
+      const recipientSockets = userSockets.get(String(toUserId));
+      if (!recipientSockets || recipientSockets.size === 0) {
+        return socket.emit('call:offline', { toUserId });
+      }
       setCallActive(userId, toUserId, conversationId);
       const caller = await User.findById(userId).select('username').lean();
       io.to(`user:${toUserId}`).emit('call:offer', {
@@ -130,14 +134,16 @@ export function setupSocketIO(io) {
     });
 
     socket.on('call:answer', async ({ toUserId, conversationId, sdp }) => {
-      if (!toUserId || !sdp) return;
-      const ok = conversationId ? await validateCallPair(userId, toUserId, conversationId) : true;
+      if (!toUserId || !sdp || !conversationId) return;
+      const ok = await validateCallPair(userId, toUserId, conversationId);
       if (!ok) return;
       io.to(`user:${toUserId}`).emit('call:answer', { fromUserId: userId, conversationId, sdp });
     });
 
     socket.on('call:ice', async ({ toUserId, conversationId, candidate }) => {
-      if (!toUserId || !candidate) return;
+      if (!toUserId || !candidate || !conversationId) return;
+      const ok = await validateCallPair(userId, toUserId, conversationId);
+      if (!ok) return;
       io.to(`user:${toUserId}`).emit('call:ice', { fromUserId: userId, conversationId, candidate });
     });
 

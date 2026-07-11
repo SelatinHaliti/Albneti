@@ -5,31 +5,52 @@ export function getIceServers(): RTCIceServer[] {
   const customCred = process.env.NEXT_PUBLIC_TURN_CREDENTIAL;
 
   const servers: RTCIceServer[] = [
-    {
-      urls: [
-        'stun:stun.l.google.com:19302',
-        'stun:stun1.l.google.com:19302',
-        'stun:stun2.l.google.com:19302',
-      ],
-    },
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
   ];
 
   if (customTurn && customUser && customCred) {
-    servers.push({ urls: customTurn, username: customUser, credential: customCred });
-  } else {
-    // OpenRelay – falas për testim (ndihmon kur STUN nuk mjafton)
-    servers.push({
-      urls: [
-        'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443',
-        'turns:openrelay.metered.ca:443',
-      ],
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    });
+    const urls = customTurn.includes(',')
+      ? customTurn.split(',').map((u) => u.trim())
+      : customTurn;
+    servers.push({ urls, username: customUser, credential: customCred });
   }
 
+  // TURN falas për testim – ndihmon kur STUN nuk mjafton (NAT të rreptë)
+  servers.push({
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turns:openrelay.metered.ca:443',
+      'turn:global.relay.metered.ca:80',
+      'turn:global.relay.metered.ca:443',
+      'turns:global.relay.metered.ca:443',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  });
+
   return servers;
+}
+
+export function getPeerConnectionConfig(): RTCConfiguration {
+  return {
+    iceServers: getIceServers(),
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require',
+  };
+}
+
+export async function acquireLocalMedia(mode: 'audio' | 'video'): Promise<MediaStream> {
+  return navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    video:
+      mode === 'video'
+        ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+        : false,
+  });
 }
 
 export async function flushIceQueue(
@@ -58,7 +79,6 @@ export function attachLocalTracks(pc: RTCPeerConnection, stream: MediaStream): v
     }
   }
 }
-
 export function stopMediaStream(stream: MediaStream | null): void {
   if (!stream) return;
   stream.getTracks().forEach((t) => {
@@ -86,3 +106,17 @@ export function closePeerConnection(pc: RTCPeerConnection | null): void {
   }
 }
 
+export async function waitForIceGathering(pc: RTCPeerConnection, timeoutMs = 4000): Promise<void> {
+  if (pc.iceGatheringState === 'complete') return;
+  await new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, timeoutMs);
+    const onChange = () => {
+      if (pc.iceGatheringState === 'complete') {
+        clearTimeout(timer);
+        pc.removeEventListener('icegatheringstatechange', onChange);
+        resolve();
+      }
+    };
+    pc.addEventListener('icegatheringstatechange', onChange);
+  });
+}

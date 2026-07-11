@@ -95,9 +95,9 @@ export default function ChatPage() {
     typingTimeoutRef.current = setTimeout(() => emitTyping(false), 2000);
   };
 
-  const initiateCall = (mode: 'audio' | 'video') => {
+  const initiateCall = async (mode: 'audio' | 'video') => {
     if (!other?._id || !socket?.connected) return;
-    startCall({
+    await startCall({
       conversationId: id,
       otherUserId: String(other._id),
       otherUsername: other.username,

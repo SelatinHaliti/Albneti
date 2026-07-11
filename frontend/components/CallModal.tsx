@@ -2,12 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { Socket } from 'socket.io-client';
+import type { CallSignalingBridge } from '@/components/CallProvider';
 import {
-  getIceServers,
+  getPeerConnectionConfig,
   flushIceQueue,
   attachLocalTracks,
+  acquireLocalMedia,
   stopMediaStream,
   closePeerConnection,
+  waitForIceGathering,
 } from '@/lib/webrtc';
 
 type CallMode = 'audio' | 'video';
@@ -18,6 +21,7 @@ type CommonProps = {
   otherUserId: string;
   conversationId: string;
   otherUsername?: string;
+  signalingBridge: CallSignalingBridge;
   onClose: () => void;
   onConnected?: () => void;
 };
@@ -25,6 +29,7 @@ type CommonProps = {
 type OutgoingProps = CommonProps & {
   direction: 'outgoing';
   mode: CallMode;
+  localStream: MediaStream;
   offerSdp?: undefined;
 };
 
@@ -32,6 +37,7 @@ type IncomingProps = CommonProps & {
   direction: 'incoming';
   mode: CallMode;
   offerSdp: RTCSessionDescriptionInit;
+  localStream?: undefined;
 };
 
 const RING_TIMEOUT_MS = 45000;
@@ -43,14 +49,23 @@ function formatDuration(sec: number): string {
 }
 
 export function CallModal(props: OutgoingProps | IncomingProps) {
-  const { socket, otherUserId, conversationId, otherUsername, onClose, onConnected } = props;
+  const {
+    socket,
+    otherUserId,
+    conversationId,
+    otherUsername,
+    signalingBridge,
+    onClose,
+    onConnected,
+  } = props;
   const direction = props.direction;
   const mode = props.mode;
   const incomingOffer = direction === 'incoming' ? props.offerSdp : null;
+  const preAcquiredStream = direction === 'outgoing' ? props.localStream : null;
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const iceQueueRef = useRef<RTCIceCandidateInit[]>([]);
+  const localStreamRef = useRef<MediaStream | null>(preAcquiredStream);
+  const iceQueueRef = useRef<RTCIceCandidateInit[]>([...signalingBridge.iceCandidates]);
   const remoteReadyRef = useRef(false);
   const endedRef = useRef(false);
   const offerSentRef = useRef(false);
@@ -75,6 +90,15 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   useEffect(() => {
     connectedRef.current = hasRemote || status === 'connected';
   }, [hasRemote, status]);
+
+  // Shfaq video lokale nëse stream është marrë para mount
+  useEffect(() => {
+    const stream = localStreamRef.current;
+    if (stream && localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+      void localVideoRef.current.play().catch(() => {});
+    }
+  }, []);
 
   const title = useMemo(() => {
     const name = otherUsername ? `@${otherUsername}` : 'Përdoruesi';
@@ -101,14 +125,16 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   const cleanupLocal = useCallback(() => {
     closePeerConnection(pcRef.current);
     pcRef.current = null;
-    stopMediaStream(localStreamRef.current);
-    localStreamRef.current = null;
+    if (direction === 'incoming' || !preAcquiredStream) {
+      stopMediaStream(localStreamRef.current);
+    }
+    localStreamRef.current = direction === 'outgoing' ? preAcquiredStream : null;
     iceQueueRef.current = [];
     remoteReadyRef.current = false;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
-    if (localVideoRef.current) localVideoRef.current.srcObject = null;
-  }, []);
+    if (localVideoRef.current && direction === 'incoming') localVideoRef.current.srcObject = null;
+  }, [direction, preAcquiredStream]);
 
   const finishCall = useCallback(
     (reason: string, emitEvent?: 'end' | 'reject' | 'none') => {
@@ -125,19 +151,8 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     [cleanupLocal, emitSignal, onClose]
   );
 
-  const createPeer = useCallback(() => {
-    if (pcRef.current) return pcRef.current;
-
-    const pc = new RTCPeerConnection({ iceServers: getIceServers() });
-
-    pc.onicecandidate = (ev) => {
-      if (!ev.candidate || endedRef.current) return;
-      emitSignal('call:ice', { candidate: ev.candidate });
-    };
-
-    pc.ontrack = (ev) => {
-      const stream = ev.streams?.[0];
-      if (!stream) return;
+  const attachRemoteStream = useCallback(
+    (stream: MediaStream) => {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = stream;
         void remoteVideoRef.current.play().catch(() => {});
@@ -149,12 +164,30 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       setHasRemote(true);
       setStatus('connected');
       onConnected?.();
+    },
+    [onConnected]
+  );
+
+  const createPeer = useCallback(() => {
+    if (pcRef.current) return pcRef.current;
+
+    const pc = new RTCPeerConnection(getPeerConnectionConfig());
+
+    pc.onicecandidate = (ev) => {
+      if (!ev.candidate || endedRef.current) return;
+      emitSignal('call:ice', { candidate: ev.candidate });
+    };
+
+    pc.ontrack = (ev) => {
+      const stream = ev.streams?.[0];
+      if (!stream) return;
+      attachRemoteStream(stream);
     };
 
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
       if (state === 'connected') setStatus('connected');
-      if (state === 'failed') {
+      if (state === 'failed' && !endedRef.current) {
         setError('Lidhja dështoi. Kontrollo internetin dhe provo përsëri.');
         setStatus('error');
       }
@@ -164,44 +197,59 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     };
 
     pc.oniceconnectionstatechange = () => {
-      if (pc.iceConnectionState === 'failed' && !endedRef.current) {
-        setError('Nuk u arrit lidhja audio/video. Provo përsëri.');
+      const iceState = pc.iceConnectionState;
+      if (iceState === 'connected' || iceState === 'completed') {
+        setStatus('connected');
+      }
+      if (iceState === 'failed' && !endedRef.current) {
+        setError('Nuk u arrit lidhja audio/video. Kontrollo rrjetin ose provo përsëri.');
         setStatus('error');
       }
     };
 
     pcRef.current = pc;
     return pc;
-  }, [emitSignal, onConnected]);
+  }, [emitSignal, attachRemoteStream]);
 
   const getLocalStream = useCallback(async () => {
     if (localStreamRef.current) return localStreamRef.current;
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      video: showVideo
-        ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-        : false,
-    });
+    const stream = await acquireLocalMedia(mode);
     localStreamRef.current = stream;
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = stream;
       void localVideoRef.current.play().catch(() => {});
     }
     return stream;
-  }, [showVideo]);
+  }, [mode]);
 
-  const queueOrAddIce = useCallback(
-    async (candidate: RTCIceCandidateInit) => {
+  const queueOrAddIce = useCallback(async (candidate: RTCIceCandidateInit) => {
+    if (endedRef.current) return;
+    const pc = pcRef.current;
+    if (!pc || !remoteReadyRef.current || !pc.remoteDescription) {
+      iceQueueRef.current.push(candidate);
+      return;
+    }
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch {
+      iceQueueRef.current.push(candidate);
+    }
+  }, []);
+
+  const applyAnswer = useCallback(
+    async (sdp: RTCSessionDescriptionInit) => {
+      if (endedRef.current) return;
       const pc = pcRef.current;
-      if (!pc || endedRef.current) return;
-      if (!remoteReadyRef.current || !pc.remoteDescription) {
-        iceQueueRef.current.push(candidate);
-        return;
-      }
+      if (!pc) return;
+
       try {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch {
-        iceQueueRef.current.push(candidate);
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        remoteReadyRef.current = true;
+        await flushIceQueue(pc, iceQueueRef.current);
+        setStatus('connecting');
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Gabim në përgjigje.');
+        setStatus('error');
       }
     },
     []
@@ -215,14 +263,16 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     const stream = await getLocalStream();
     attachLocalTracks(pc, stream);
 
-    const offer = await pc.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: showVideo,
-    });
+    const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    emitSignal('call:offer', { mode, sdp: offer });
+    await waitForIceGathering(pc);
+
+    const localDesc = pc.localDescription;
+    if (!localDesc) throw new Error('Nuk u krijua oferta.');
+
+    emitSignal('call:offer', { mode, sdp: localDesc });
     setStatus('connecting');
-  }, [createPeer, getLocalStream, showVideo, emitSignal, mode]);
+  }, [createPeer, getLocalStream, emitSignal, mode]);
 
   const acceptCall = useCallback(async () => {
     if (!incomingOffer || acceptStartedRef.current || endedRef.current) return;
@@ -240,45 +290,37 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
-    emitSignal('call:answer', { sdp: answer });
+    await waitForIceGathering(pc);
+
+    const localDesc = pc.localDescription;
+    if (!localDesc) throw new Error('Nuk u krijua përgjigja.');
+
+    emitSignal('call:answer', { sdp: localDesc });
     setStatus('connecting');
-  }, [incomingOffer, createPeer, getLocalStream, emitSignal]);
+  }, [incomingOffer, createPeer, getLocalStream, emitSignal, mode]);
 
-  // Socket listeners
+  // ICE + answer nga signaling bridge (mos humb asnjë kandidat para mount)
   useEffect(() => {
-    const onAnswer = async (payload: {
-      fromUserId: string;
-      conversationId?: string;
-      sdp: RTCSessionDescriptionInit;
-    }) => {
-      if (endedRef.current) return;
-      if (String(payload.fromUserId) !== String(otherUserId)) return;
-      if (payload.conversationId && payload.conversationId !== conversationId) return;
+    const unsubIce = signalingBridge.onIce((candidate) => {
+      void queueOrAddIce(candidate);
+    });
 
-      const pc = pcRef.current;
-      if (!pc) return;
+    const unsubAnswer = signalingBridge.onAnswer((sdp) => {
+      if (direction === 'outgoing') void applyAnswer(sdp);
+    });
 
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-        remoteReadyRef.current = true;
-        await flushIceQueue(pc, iceQueueRef.current);
-        setStatus('connecting');
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Gabim në përgjigje.');
-        setStatus('error');
-      }
+    if (signalingBridge.pendingAnswer && direction === 'outgoing') {
+      void applyAnswer(signalingBridge.pendingAnswer);
+    }
+
+    return () => {
+      unsubIce();
+      unsubAnswer();
     };
+  }, [signalingBridge, direction, queueOrAddIce, applyAnswer]);
 
-    const onIce = async (payload: {
-      fromUserId: string;
-      conversationId?: string;
-      candidate: RTCIceCandidateInit;
-    }) => {
-      if (String(payload.fromUserId) !== String(otherUserId)) return;
-      if (payload.conversationId && payload.conversationId !== conversationId) return;
-      await queueOrAddIce(payload.candidate);
-    };
-
+  // Socket listeners për end/reject/ringing
+  useEffect(() => {
     const onRemoteEnd = (payload: { fromUserId: string; conversationId?: string; reason?: string }) => {
       if (String(payload.fromUserId) !== String(otherUserId)) return;
       if (payload.conversationId && payload.conversationId !== conversationId) return;
@@ -289,20 +331,16 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       if (direction === 'outgoing') setStatus('connecting');
     };
 
-    socket.on('call:answer', onAnswer);
-    socket.on('call:ice', onIce);
     socket.on('call:end', onRemoteEnd);
     socket.on('call:reject', onRemoteEnd);
     socket.on('call:ringing', onRinging);
 
     return () => {
-      socket.off('call:answer', onAnswer);
-      socket.off('call:ice', onIce);
       socket.off('call:end', onRemoteEnd);
       socket.off('call:reject', onRemoteEnd);
       socket.off('call:ringing', onRinging);
     };
-  }, [socket, otherUserId, conversationId, direction, queueOrAddIce, finishCall]);
+  }, [socket, otherUserId, conversationId, direction, finishCall]);
 
   // Outgoing: nis thirrjen një herë
   useEffect(() => {
@@ -328,6 +366,14 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
     return () => {
       clearTimeout(ringTimer);
+      if (!endedRef.current) {
+        endedRef.current = true;
+        socket.emit('call:end', {
+          toUserId: otherUserId,
+          conversationId,
+          reason: 'cancelled',
+        });
+      }
       cleanupLocal();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -346,17 +392,19 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   const onAccept = () => {
     if (accepting || acceptStartedRef.current) return;
     setAccepting(true);
-    acceptCall().catch((e) => {
-      acceptStartedRef.current = false;
-      setAccepting(false);
-      const msg = e instanceof Error ? e.message : 'Nuk u pranua thirrja.';
-      if (msg.includes('Permission') || msg.includes('NotAllowed')) {
-        setError('Lejo mikrofonin/kamerën për të pranuar.');
-      } else {
-        setError(msg);
-      }
-      setStatus('error');
-    });
+    acceptCall()
+      .then(() => setAccepting(false))
+      .catch((e) => {
+        acceptStartedRef.current = false;
+        setAccepting(false);
+        const msg = e instanceof Error ? e.message : 'Nuk u pranua thirrja.';
+        if (msg.includes('Permission') || msg.includes('NotAllowed')) {
+          setError('Lejo mikrofonin/kamerën për të pranuar.');
+        } else {
+          setError(msg);
+        }
+        setStatus('error');
+      });
   };
 
   const toggleMute = () => {
@@ -436,7 +484,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       <div className="call-controls flex-shrink-0 px-6 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
         {direction === 'incoming' && status === 'ringing' ? (
           <div className="flex flex-col items-center gap-6">
-            <p className="text-white/70 text-sm">Rrëshqit për të përgjigjur</p>
+            <p className="text-white/70 text-sm">Prek për të përgjigjur</p>
             <div className="flex items-center justify-center gap-10">
               <button
                 type="button"
