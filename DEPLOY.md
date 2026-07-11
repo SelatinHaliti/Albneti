@@ -61,6 +61,8 @@ Ky dokument përshkruan hapat për të vendosur AlbNet në production (Vercel + 
 
 ## 3. Pas deploy
 
+- **Root Directory:** Nëse shfaqet 404, vendosni `frontend` te Vercel → Settings → General → Root Directory → **Redeploy**.
+- **Cache në telefon:** Nëse nuk shihni ndryshime, bëni hard refresh ose çinstaloni PWA-n dhe hyni përsëri në https://albneti.vercel.app (service worker-i u përditësua për të marrë versionin e ri menjëherë).
 - **CORS:** Backend-i përdor `FRONTEND_URL` për CORS; sigurohu që është saktë (pa slash në fund).
 - **Cookies:** Në production, cookie për JWT duhet të jetë `secure: true` dhe `sameSite: 'lax'` (tashmë është në kod sipas `NODE_ENV`).
 - **Socket.io:** Klienti lidhet me `NEXT_PUBLIC_API_URL`; sigurohu që Render/Railway mbështet WebSockets (zakonisht po).

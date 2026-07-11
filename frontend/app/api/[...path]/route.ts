@@ -4,10 +4,11 @@
  */
 // BACKEND_API_URL = variabël server-side (vendose te Vercel env vars)
 // NEXT_PUBLIC_API_URL = fallback për zhvillim lokal
+const PRODUCTION_BACKEND = 'https://albneti-api.onrender.com';
 const BACKEND =
   process.env.BACKEND_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:5001';
+  (process.env.VERCEL ? PRODUCTION_BACKEND : 'http://localhost:5001');
 
 const PUBLIC_AUTH_PATHS = [
   'auth/regjistrohu',

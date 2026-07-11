@@ -1,5 +1,5 @@
-const CACHE = 'albnet-v1';
-const PRECACHE = ['/', '/feed', '/kycu'];
+const CACHE = 'albnet-v3-2026-07';
+const PRECACHE = ['/icon.png', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -17,20 +17,43 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+function isNavigation(request) {
+  return request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html');
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname === '/sw.js') return;
 
+  // HTML & JS chunks: network-first so deploy updates show immediately
+  if (isNavigation(event.request) || url.pathname.startsWith('/_next/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          if (res.ok && url.origin === self.location.origin && isNavigation(event.request)) {
+            const clone = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(event.request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Static assets: stale-while-revalidate
   event.respondWith(
-    fetch(event.request)
-      .then((res) => {
+    caches.match(event.request).then((cached) => {
+      const network = fetch(event.request).then((res) => {
         if (res.ok && url.origin === self.location.origin) {
           const clone = res.clone();
           caches.open(CACHE).then((cache) => cache.put(event.request, clone));
         }
         return res;
-      })
-      .catch(() => caches.match(event.request).then((r) => r || caches.match('/')))
+      });
+      return cached || network;
+    })
   );
 });
