@@ -1,4 +1,12 @@
 import User from '../models/User.js';
+import {
+  isStripeConfigured,
+  activateSubscription,
+  createCheckoutSession,
+  cancelStripeSubscription,
+  constructWebhookEvent,
+  handleStripeWebhookEvent,
+} from '../services/stripeService.js';
 
 const PLANS = {
   monthly: {
@@ -42,7 +50,11 @@ function isSubscriptionActive(user) {
 }
 
 export const getPlans = async (_req, res) => {
-  res.json({ plans: Object.values(PLANS) });
+  res.json({
+    plans: Object.values(PLANS),
+    stripeEnabled: isStripeConfigured(),
+    testMode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ?? false,
+  });
 };
 
 export const getStatus = async (req, res) => {
@@ -54,23 +66,64 @@ export const getStatus = async (req, res) => {
 
     const active = isSubscriptionActive(user);
     if (user.isVerified !== active) {
-      user.isVerified = active;
+      const updates = { isVerified: active };
       if (!active && user.verifiedSubscription?.status === 'active') {
-        user.verifiedSubscription.status = 'expired';
+        updates['verifiedSubscription.status'] = 'expired';
       }
-      await user.save();
+      await User.findByIdAndUpdate(req.user.id, { $set: updates });
+      user.isVerified = active;
     }
 
     res.json({
       isVerified: active,
       subscription: user.verifiedSubscription || { plan: 'none', status: 'none' },
       plans: Object.values(PLANS),
+      stripeEnabled: isStripeConfigured(),
+      testMode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ?? false,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }
 };
 
+export const createCheckout = async (req, res) => {
+  try {
+    const { plan } = req.body;
+    if (!['monthly', 'yearly'].includes(plan)) {
+      return res.status(400).json({ message: 'Zgjidhni planin monthly ose yearly.' });
+    }
+
+    const user = await User.findById(req.user.id).select('email username verifiedSubscription');
+    if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+
+    if (isSubscriptionActive(user)) {
+      return res.status(400).json({ message: 'Ke tashmë një abonim aktiv.' });
+    }
+
+    if (!isStripeConfigured()) {
+      const subscription = await activateSubscription(req.user.id, plan);
+      return res.json({
+        success: true,
+        simulated: true,
+        message: 'U verifikua! (Stripe nuk është aktiv – modalitet dev)',
+        isVerified: true,
+        subscription,
+      });
+    }
+
+    const checkout = await createCheckoutSession(user, plan);
+    res.json({
+      success: true,
+      url: checkout.url,
+      sessionId: checkout.sessionId,
+      testMode: checkout.testMode,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim gjatë pagesës.' });
+  }
+};
+
+/** Legacy direct subscribe – përdoret vetëm kur Stripe s'është aktiv */
 export const subscribe = async (req, res) => {
   try {
     const { plan } = req.body;
@@ -78,34 +131,19 @@ export const subscribe = async (req, res) => {
       return res.status(400).json({ message: 'Zgjidhni planin monthly ose yearly.' });
     }
 
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+    if (isStripeConfigured()) {
+      return res.status(400).json({
+        message: 'Përdorni pagesën me Stripe. Klikoni Abonohu për të vazhduar.',
+      });
+    }
 
-    const now = new Date();
-    const expiresAt = new Date(now);
-    if (plan === 'monthly') expiresAt.setMonth(expiresAt.getMonth() + 1);
-    else expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
-    user.verifiedSubscription = {
-      plan,
-      status: 'active',
-      subscribedAt: now,
-      expiresAt,
-    };
-    user.isVerified = true;
-    await user.save();
-
+    const subscription = await activateSubscription(req.user.id, plan);
     res.json({
       success: true,
       message: 'U verifikua! Badge-i yt është aktiv.',
       isVerified: true,
-      subscription: user.verifiedSubscription,
-      user: {
-        id: user._id,
-        username: user.username,
-        isVerified: true,
-        verifiedSubscription: user.verifiedSubscription,
-      },
+      subscription,
+      user: { id: req.user.id, isVerified: true, verifiedSubscription: subscription },
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
@@ -114,14 +152,14 @@ export const subscribe = async (req, res) => {
 
 export const cancelSubscription = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('verifiedSubscription');
     if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
 
-    if (user.verifiedSubscription) {
-      user.verifiedSubscription.status = 'cancelled';
-    }
-    user.isVerified = false;
-    await user.save();
+    await cancelStripeSubscription(user);
+
+    await User.findByIdAndUpdate(req.user.id, {
+      $set: { isVerified: false, 'verifiedSubscription.status': 'cancelled' },
+    });
 
     res.json({
       success: true,
@@ -130,6 +168,20 @@ export const cancelSubscription = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+export const stripeWebhook = async (req, res) => {
+  const signature = req.headers['stripe-signature'];
+  if (!signature) return res.status(400).send('Mungon stripe-signature');
+
+  try {
+    const event = constructWebhookEvent(req.body, signature);
+    await handleStripeWebhookEvent(event);
+    res.json({ received: true });
+  } catch (err) {
+    console.error('Stripe webhook:', err.message);
+    res.status(400).send(`Webhook Error: ${err.message}`);
   }
 };
 

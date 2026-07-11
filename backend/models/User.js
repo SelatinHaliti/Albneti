@@ -80,6 +80,8 @@ const userSchema = new mongoose.Schema(
       status: { type: String, enum: ['none', 'active', 'expired', 'cancelled'], default: 'none' },
       subscribedAt: Date,
       expiresAt: Date,
+      stripeCustomerId: String,
+      stripeSubscriptionId: String,
     },
     followRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     eventPromoOptOut: { type: Boolean, default: false },
@@ -120,6 +122,7 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.pre('validate', function (next) {
+  if (!this.isNew && !this.isModified('password')) return next();
   if (!this.password && !this.googleId && !this.appleId) {
     this.invalidate('password', 'Fjalëkalimi është i detyrueshëm');
   }

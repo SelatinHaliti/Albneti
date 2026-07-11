@@ -3,6 +3,7 @@ import {
   getPlans,
   getStatus,
   subscribe,
+  createCheckout,
   cancelSubscription,
   getVerifiedCreators,
 } from '../controllers/verificationController.js';
@@ -13,6 +14,7 @@ const router = express.Router();
 router.get('/plans', getPlans);
 router.get('/creators', getVerifiedCreators);
 router.get('/status', protect, getStatus);
+router.post('/create-checkout', protect, createCheckout);
 router.post('/subscribe', protect, subscribe);
 router.post('/cancel', protect, cancelSubscription);
 

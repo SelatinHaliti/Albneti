@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -23,6 +24,8 @@ type SubStatus = {
   isVerified: boolean;
   subscription: { plan: string; status: string; expiresAt?: string };
   plans: Plan[];
+  stripeEnabled?: boolean;
+  testMode?: boolean;
 };
 
 export default function VerifikimPage() {
@@ -30,30 +33,63 @@ export default function VerifikimPage() {
   const updateUser = useAuthStore((s) => s.updateUser);
   const toast = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState<SubStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
 
   useDocumentTitle('Verifikim');
 
+  const refreshStatus = useCallback(async () => {
+    const fresh = await api<SubStatus>('/api/verification/status');
+    setStatus(fresh);
+    if (fresh.isVerified) {
+      updateUser({ isVerified: true, verifiedPlan: fresh.subscription?.plan });
+    }
+    return fresh;
+  }, [updateUser]);
+
   useEffect(() => {
-    api<SubStatus>('/api/verification/status')
-      .then(setStatus)
+    refreshStatus()
       .catch(() => setStatus(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshStatus]);
+
+  useEffect(() => {
+    if (searchParams.get('success') === '1') {
+      refreshStatus()
+        .then(() => toast('Pagesa u krye! Je i verifikuar.'))
+        .catch(() => toast('Pagesa u krye. Duke përditësuar statusin...'))
+        .finally(() => {
+          window.history.replaceState({}, '', '/verifikim');
+        });
+    }
+    if (searchParams.get('cancelled') === '1') {
+      toastError('Pagesa u anulua.');
+      window.history.replaceState({}, '', '/verifikim');
+    }
+  }, [searchParams, refreshStatus, toast, toastError]);
 
   const handleSubscribe = async (planId: string) => {
     setSubscribing(planId);
     try {
-      const res = await api<{ success: boolean; message: string; isVerified: boolean }>(
-        '/api/verification/subscribe',
-        { method: 'POST', body: { plan: planId } }
-      );
+      const res = await api<{
+        success: boolean;
+        message?: string;
+        url?: string;
+        simulated?: boolean;
+        isVerified?: boolean;
+        testMode?: boolean;
+      }>('/api/verification/create-checkout', { method: 'POST', body: { plan: planId } });
+
+      if (res.url) {
+        window.location.href = res.url;
+        return;
+      }
+
       toast(res.message || 'U verifikua!');
       updateUser({ isVerified: true, verifiedPlan: planId });
-      const fresh = await api<SubStatus>('/api/verification/status');
-      setStatus(fresh);
+      await refreshStatus();
     } catch (err) {
       toastError(err instanceof Error ? err.message : 'Gabim gjatë abonimit.');
     } finally {
@@ -62,12 +98,12 @@ export default function VerifikimPage() {
   };
 
   const handleCancel = async () => {
+    if (!confirm('Anuloni abonimin? Badge verifikimi do të hiqet.')) return;
     try {
       await api('/api/verification/cancel', { method: 'POST' });
       toast('Abonimi u anulua.');
       updateUser({ isVerified: false, verifiedPlan: undefined });
-      const fresh = await api<SubStatus>('/api/verification/status');
-      setStatus(fresh);
+      await refreshStatus();
     } catch (err) {
       toastError(err instanceof Error ? err.message : 'Gabim.');
     }
@@ -75,34 +111,36 @@ export default function VerifikimPage() {
 
   const plans = status?.plans || [];
   const isActive = status?.isVerified;
+  const stripeOn = status?.stripeEnabled;
+  const testMode = status?.testMode;
 
   return (
-    <div className="mobile-page max-w-[520px] mx-auto py-6 sm:py-8 overflow-x-hidden">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href={`/profili/${user?.username}`} className="ig-touch text-[var(--text)] -ml-2" aria-label="Mbrapsht">←</Link>
-        <h1 className="text-[20px] font-semibold text-[var(--text)]">AlbNet Verifikuar</h1>
+    <div className="mobile-page verify-page max-w-[520px] mx-auto py-4 sm:py-8 overflow-x-hidden">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 px-1">
+        <Link href={`/profili/${user?.username}`} className="ig-touch text-[var(--text)] -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Mbrapsht">←</Link>
+        <h1 className="text-[18px] sm:text-[20px] font-semibold text-[var(--text)] truncate">AlbNet Verifikuar</h1>
       </div>
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="liquid-glass-ultra rounded-3xl p-6 sm:p-8 mb-6 text-center relative overflow-hidden"
+        className="liquid-glass-ultra rounded-2xl sm:rounded-3xl p-5 sm:p-8 mb-4 sm:mb-6 text-center relative overflow-hidden"
       >
         <div className="liquid-shine" aria-hidden />
         <div className="relative z-10">
-          <div className="flex justify-center mb-4">
-            {isActive ? <VerifiedBadgeGold size={48} /> : <VerifiedBadge size={48} />}
+          <div className="flex justify-center mb-3 sm:mb-4">
+            {isActive ? <VerifiedBadgeGold size={44} /> : <VerifiedBadge size={44} />}
           </div>
-          <h2 className="text-[22px] font-bold text-[var(--text)] mb-2">
+          <h2 className="text-[20px] sm:text-[22px] font-bold text-[var(--text)] mb-2">
             {isActive ? 'Je i verifikuar!' : 'Verifiko llogarinë tënde'}
           </h2>
-          <p className="text-[14px] text-[var(--text-muted)] leading-relaxed max-w-[340px] mx-auto">
+          <p className="text-[13px] sm:text-[14px] text-[var(--text-muted)] leading-relaxed max-w-[340px] mx-auto px-1">
             {isActive
               ? 'Badge-i yt blu shfaqet kudo. Krijuesit e verifikuar marrin prioritet në feed dhe promovim në komunitet.'
               : 'Si Instagram Meta Verified – merr badge blu, mbrojtje identiteti dhe përparësi në algoritëm.'}
           </p>
           {isActive && status?.subscription?.expiresAt && (
-            <p className="text-[12px] text-[var(--text-muted)] mt-3">
+            <p className="text-[11px] sm:text-[12px] text-[var(--text-muted)] mt-3">
               Aktiv deri më {new Date(status.subscription.expiresAt).toLocaleDateString('sq-AL')}
             </p>
           )}
@@ -110,43 +148,47 @@ export default function VerifikimPage() {
       </motion.div>
 
       {loading ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="h-40 liquid-glass rounded-2xl animate-shimmer" />
+            <div key={i} className="h-36 sm:h-40 liquid-glass rounded-2xl animate-shimmer" />
           ))}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {plans.map((plan) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`liquid-glass-card rounded-2xl p-5 border ${
+              className={`verify-plan-card liquid-glass-card rounded-2xl p-4 sm:p-5 border ${
                 plan.id === 'yearly' ? 'border-[var(--ig-blue)]/40 ring-1 ring-[var(--ig-blue)]/20' : 'border-[var(--border)]'
               }`}
             >
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div>
-                  <h3 className="text-[17px] font-bold text-[var(--text)] flex items-center gap-2">
+              <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[15px] sm:text-[17px] font-bold text-[var(--text)] flex flex-wrap items-center gap-1.5 sm:gap-2">
                     {plan.name}
-                    {plan.id === 'yearly' && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--ig-blue)] text-white">POPULLOR</span>}
+                    {plan.id === 'yearly' && (
+                      <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--ig-blue)] text-white shrink-0">POPULLOR</span>
+                    )}
                   </h3>
-                  <p className="text-[28px] font-bold text-[var(--text)] mt-1">
+                  <p className="text-[24px] sm:text-[28px] font-bold text-[var(--text)] mt-1">
                     €{plan.price}
-                    <span className="text-[14px] font-medium text-[var(--text-muted)]">/{plan.period}</span>
+                    <span className="text-[13px] sm:text-[14px] font-medium text-[var(--text-muted)]">/{plan.period}</span>
                   </p>
                   {plan.savings && (
-                    <p className="text-[12px] text-[var(--success)] font-semibold">Kursen {plan.savings}</p>
+                    <p className="text-[11px] sm:text-[12px] text-[var(--success)] font-semibold">Kursen {plan.savings}</p>
                   )}
                 </div>
-                {plan.id === 'yearly' ? <VerifiedBadgeGold size={28} /> : <VerifiedBadge size={28} />}
+                <div className="shrink-0 pt-1">
+                  {plan.id === 'yearly' ? <VerifiedBadgeGold size={24} /> : <VerifiedBadge size={24} />}
+                </div>
               </div>
-              <ul className="space-y-2 mb-5">
+              <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-5">
                 {plan.benefits.map((b) => (
-                  <li key={b} className="text-[13px] text-[var(--text-muted)] flex items-start gap-2">
-                    <span className="text-[var(--ig-blue)] mt-0.5">✓</span>
-                    {b}
+                  <li key={b} className="text-[12px] sm:text-[13px] text-[var(--text-muted)] flex items-start gap-2">
+                    <span className="text-[var(--ig-blue)] mt-0.5 shrink-0">✓</span>
+                    <span>{b}</span>
                   </li>
                 ))}
               </ul>
@@ -155,9 +197,13 @@ export default function VerifikimPage() {
                   type="button"
                   disabled={!!subscribing}
                   onClick={() => handleSubscribe(plan.id)}
-                  className="w-full py-3 rounded-xl font-semibold text-[14px] text-white bg-[var(--ig-blue)] hover:bg-[var(--ig-blue-hover)] transition-colors disabled:opacity-50"
+                  className="verify-cta-btn w-full py-3.5 sm:py-3 rounded-xl font-semibold text-[14px] text-white bg-[var(--ig-blue)] hover:bg-[var(--ig-blue-hover)] transition-colors disabled:opacity-50 min-h-[48px]"
                 >
-                  {subscribing === plan.id ? 'Duke aktivizuar...' : `Abonohu – €${plan.price}/${plan.period}`}
+                  {subscribing === plan.id
+                    ? 'Duke hapur pagesën...'
+                    : stripeOn
+                      ? `Paguaj me Stripe – €${plan.price}/${plan.period}`
+                      : `Abonohu – €${plan.price}/${plan.period}`}
                 </button>
               ) : status?.subscription?.plan === plan.id ? (
                 <div className="text-center text-[13px] font-semibold text-[var(--success)] py-2">Plani aktiv</div>
@@ -169,15 +215,24 @@ export default function VerifikimPage() {
             <button
               type="button"
               onClick={handleCancel}
-              className="w-full py-3 rounded-xl text-[14px] font-medium text-[var(--danger)] border border-[var(--border)] hover:bg-[var(--primary-soft)] transition-colors"
+              className="w-full py-3.5 sm:py-3 rounded-xl text-[14px] font-medium text-[var(--danger)] border border-[var(--border)] hover:bg-[var(--primary-soft)] transition-colors min-h-[48px]"
             >
               Anulo abonimin
             </button>
           )}
 
-          <p className="text-[11px] text-center text-[var(--text-muted)] px-4">
-            Pagesa simulohet për MVP. Së shpejti: Stripe &amp; Apple Pay për abonime reale.
-          </p>
+          <div className="verify-footer-note text-[10px] sm:text-[11px] text-center text-[var(--text-muted)] px-2 sm:px-4 space-y-1 pb-2">
+            {stripeOn ? (
+              <>
+                <p>Pagesë e sigurt me Stripe{testMode ? ' (modalitet test)' : ''}.</p>
+                {testMode && (
+                  <p className="opacity-80">Test kartë: 4242 4242 4242 4242 · data e ardhshme · CVC 123</p>
+                )}
+              </>
+            ) : (
+              <p>Stripe nuk është aktiv në server – abonimi aktivizohet menjëherë (dev).</p>
+            )}
+          </div>
         </div>
       )}
     </div>

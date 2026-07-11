@@ -69,7 +69,20 @@ Ky dokument përshkruan hapat për të vendosur AlbNet në production (Vercel + 
 
 ---
 
-## 4. Përdoruesi i parë admin
+## 4. Stripe (Verifikim / Abonim)
+
+1. Krijo llogari në [Stripe Dashboard](https://dashboard.stripe.com) (modalitet **Test**).
+2. Merr **Secret key** (`sk_test_...`) dhe vendose në Render si `STRIPE_SECRET_KEY`.
+3. **Webhook** për prod:
+   - Stripe Dashboard → Developers → Webhooks → Add endpoint
+   - URL: `https://albneti-api.onrender.com/api/verification/stripe-webhook`
+   - Events: `checkout.session.completed`, `customer.subscription.deleted`
+   - Kopjo **Signing secret** (`whsec_...`) → `STRIPE_WEBHOOK_SECRET` në Render
+4. **Test kartë:** `4242 4242 4242 4242` · data e ardhshme · CVC `123`
+
+---
+
+## 5. Përdoruesi i parë admin
 
 Për të pasur një përdorues admin, në MongoDB (Atlas ose lokalisht) ndërroje fushën `role` të dokumentit të atij përdoruesi nga `user` në `admin`:
 

@@ -22,6 +22,7 @@ import musicRoutes from './routes/music.js';
 import globalChatRoutes from './routes/globalChat.js';
 import communityRoutes from './routes/community.js';
 import verificationRoutes from './routes/verification.js';
+import { stripeWebhook } from './controllers/verificationController.js';
 import { setupSocketIO } from './sockets/index.js';
 import { setIO } from './sockets/io.js';
 import { seedCommunityEvents } from './services/eventSeed.js';
@@ -81,6 +82,14 @@ app.use(
   })
 );
 app.use(cookieParser());
+
+// Stripe webhook – duhet raw body, para express.json()
+app.post(
+  '/api/verification/stripe-webhook',
+  express.raw({ type: 'application/json' }),
+  stripeWebhook
+);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(mongoSanitize());
