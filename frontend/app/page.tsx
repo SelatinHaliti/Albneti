@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AppLogo } from '@/components/AppLogo';
+import { LandingHeroVisual } from '@/components/LandingHeroVisual';
 
 const FEATURES = [
   { icon: '📸', label: 'Postime' },
@@ -15,31 +16,22 @@ const FEATURES = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex bg-[var(--bg)]">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[var(--bg)]">
       {/* Left hero – desktop */}
       <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(228,30,38,0.06) 0%, rgba(26,26,26,0.04) 50%, rgba(237,73,86,0.05) 100%)' }} />
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full opacity-20 blur-3xl" style={{ background: 'var(--ig-gradient)' }} />
+        <div className="absolute inset-0 hero-glow" />
+        <div
+          className="absolute top-1/3 left-1/3 w-72 h-72 rounded-full opacity-15 blur-3xl pointer-events-none"
+          style={{ background: 'var(--albanian-red)' }}
+        />
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
-          className="relative flex flex-col items-center gap-8 p-12 max-w-[420px]"
+          className="relative flex flex-col items-center gap-6 p-10 max-w-[480px]"
         >
-          <div className="relative">
-            <div className="absolute -inset-4 rounded-3xl opacity-30 blur-2xl" style={{ background: 'var(--albanian-gradient)' }} />
-            <div className="relative grid grid-cols-2 gap-3 rotate-[-4deg]">
-              {[
-                'linear-gradient(135deg,#e41e26 0%,#ff6b6b 100%)',
-                'linear-gradient(135deg,#1a1a1a 0%,#444 100%)',
-                'linear-gradient(135deg,#f09433 0%,#dc2743 100%)',
-                'linear-gradient(135deg,#962fbf 0%,#4f5bd5 100%)',
-              ].map((bg, i) => (
-                <div key={i} className="w-36 h-44 rounded-2xl liquid-glass shadow-xl" style={{ background: bg, opacity: 0.85 }} />
-              ))}
-            </div>
-          </div>
-          <div className="text-center">
+          <LandingHeroVisual />
+          <div className="text-center mt-2">
             <span className="albanian-badge mb-3 inline-flex">🇦🇱 Platforma #1 Shqiptare</span>
             <p className="text-[20px] font-semibold text-[var(--text)] leading-snug">
               Ku shqiptarët ndajnë momentet, lidhen dhe rriten bashkë.
@@ -49,6 +41,11 @@ export default function HomePage() {
             </p>
           </div>
         </motion.div>
+      </div>
+
+      {/* Mobile hero – compact */}
+      <div className="lg:hidden w-full flex justify-center pt-8 pb-2 px-4">
+        <LandingHeroVisual />
       </div>
 
       {/* Right – login */}

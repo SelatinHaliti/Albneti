@@ -551,6 +551,133 @@ body.is-native-app {
 }
 body.is-desktop-app .install-banner { display: none; }
 
+/* ─── Landing hero (phone mockup) ─── */
+.landing-hero-wrap {
+  position: relative;
+  width: 280px;
+  margin: 0 auto;
+}
+.landing-phone {
+  width: 240px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(228, 30, 38, 0.12);
+}
+.landing-phone-notch {
+  width: 80px;
+  height: 22px;
+  background: var(--bg);
+  border-radius: 0 0 14px 14px;
+  margin: 0 auto;
+}
+.landing-phone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.landing-stories-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.landing-story-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.landing-story-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  padding: 2px;
+  background: var(--ig-gradient-ring);
+}
+.landing-story-ring.yours {
+  background: var(--border);
+  padding: 1px;
+}
+.landing-story-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+}
+.landing-feed { padding-bottom: 8px; }
+.landing-post { border-bottom: 1px solid var(--border); }
+.landing-post-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+.landing-post-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--albanian-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.landing-post-media {
+  width: 100%;
+  height: 140px;
+}
+.landing-post-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.landing-float-card {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--bg-glass-strong);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-md);
+}
+.landing-stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+}
+.landing-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
 /* ─── Refined gradients ─── */
 .hero-glow {
   background:
