@@ -10,6 +10,12 @@ const storySchema = new mongoose.Schema(
     },
     mediaUrl: { type: String, required: true },
     publicId: String,
+    music: {
+      url: String,
+      publicId: String,
+      title: { type: String, default: 'Muzikë' },
+      artist: { type: String, default: '' },
+    },
     views: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     expiresAt: { type: Date, required: true },
   },

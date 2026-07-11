@@ -8,6 +8,7 @@ import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
 import { IconGrid } from '@/components/Icons';
+import { PostMediaThumb } from '@/components/PostMediaThumb';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 type User = {
@@ -374,10 +375,11 @@ export default function ProfilePage() {
                 href={`/post/${post._id}`}
                 className="aspect-square block bg-[var(--border)] overflow-hidden relative group"
               >
-                <img
-                  src={post.media?.[0]?.url || ''}
-                  alt=""
-                  className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                <PostMediaThumb
+                  url={post.media?.[0]?.url || ''}
+                  type={post.media?.[0]?.type}
+                  postType={post.type}
+                  className="group-hover:opacity-80 transition-opacity"
                 />
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">

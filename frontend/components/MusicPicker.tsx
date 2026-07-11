@@ -10,9 +10,13 @@ export type MusicTrack = {
   url: string;
   category?: string;
   duration?: number;
+  image?: string;
+  source?: 'jamendo' | 'itunes' | 'local';
+  preview?: boolean;
 };
 
-const DEFAULT_CATEGORIES = [
+const FALLBACK_CATEGORIES = [
+  { id: 'shqip', label: '🇦🇱 Shqip' },
   { id: 'all', label: 'Të gjitha' },
   { id: 'pop', label: 'Pop' },
   { id: 'hiphop', label: 'Hip-Hop' },
@@ -21,6 +25,12 @@ const DEFAULT_CATEGORIES = [
   { id: 'rnb', label: 'R&B' },
   { id: 'folk', label: 'Folk' },
   { id: 'ambient', label: 'Ambient' },
+  { id: 'dance', label: 'Dance' },
+  { id: 'chill', label: 'Chill' },
+  { id: 'latin', label: 'Latin' },
+  { id: 'jazz', label: 'Jazz' },
+  { id: 'summer', label: 'Verë' },
+  { id: 'trending', label: 'Trending' },
 ];
 
 type MusicPickerProps = {
@@ -30,33 +40,43 @@ type MusicPickerProps = {
 
 export function MusicPicker({ onSelect, onClose }: MusicPickerProps) {
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
-  const [categories] = useState<{ id: string; label: string }[]>(DEFAULT_CATEGORIES);
+  const [categories, setCategories] = useState<{ id: string; label: string }[]>(FALLBACK_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [category, setCategory] = useState('shqip');
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const fetchTracks = useCallback(async () => {
     setError(null);
     setLoading(true);
     const params = new URLSearchParams();
-    if (search) params.set('q', search);
-    if (category && category !== 'all') params.set('category', category);
+    if (debouncedSearch) params.set('q', debouncedSearch);
+    if (category) params.set('category', category);
     const query = params.toString();
     try {
       const data = await api<{ tracks: MusicTrack[]; categories?: { id: string; label: string }[] }>(
-        query ? `/api/music?${query}` : '/api/music'
+        query ? `/api/music?${query}` : '/api/music?category=shqip',
+        { timeout: 60000 }
       );
       setTracks(Array.isArray(data.tracks) ? data.tracks : []);
+      if (Array.isArray(data.categories) && data.categories.length > 0) {
+        setCategories(data.categories);
+      }
     } catch (e) {
       setTracks([]);
       setError(e instanceof Error ? e.message : 'Nuk u ngarkuan këngët. Provoni përsëri.');
     } finally {
       setLoading(false);
     }
-  }, [search, category]);
+  }, [debouncedSearch, category]);
 
   useEffect(() => {
     fetchTracks();
@@ -92,15 +112,11 @@ export function MusicPicker({ onSelect, onClose }: MusicPickerProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg)]">
       <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3 bg-[var(--bg-card)]">
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-1 text-[var(--text)]"
-          aria-label="Mbyll"
-        >
+        <button type="button" onClick={onClose} className="p-1 text-[var(--text)]" aria-label="Mbyll">
           <span className="text-xl">←</span>
         </button>
         <h2 className="text-lg font-semibold text-[var(--text)] flex-1">Zgjidh muzikë</h2>
+        <span className="text-[11px] text-[var(--text-muted)]">iTunes · Shqip</span>
       </div>
 
       <div className="p-4 border-b border-[var(--border)] bg-[var(--bg-card)]">
@@ -108,7 +124,7 @@ export function MusicPicker({ onSelect, onClose }: MusicPickerProps) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Kërko këngë ose artist..."
+          placeholder="Kërko: Capital T, Noizy, Dafina..."
           className="auth-input w-full"
         />
         <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide pb-1">
@@ -131,52 +147,46 @@ export function MusicPicker({ onSelect, onClose }: MusicPickerProps) {
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
             <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
+            <p className="text-[12px] text-[var(--text-muted)]">Duke ngarkuar këngët...</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
             <p className="text-[var(--text-muted)] text-sm mb-4">{error}</p>
-            <button
-              type="button"
-              onClick={fetchTracks}
-              className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-sm font-medium"
-            >
+            <button type="button" onClick={fetchTracks} className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-sm font-medium">
               Provoni përsëri
             </button>
           </div>
         ) : tracks.length === 0 ? (
-          <p className="text-center text-[var(--text-muted)] py-12 text-sm">Nuk u gjet asnjë këngë.</p>
+          <div className="text-center py-12 px-4">
+            <p className="text-[var(--text-muted)] text-sm">Nuk u gjet asnjë këngë.</p>
+            <p className="text-[12px] text-[var(--text-muted)] mt-2">Provo kërkimin: Capital T, Noizy, Tallava</p>
+          </div>
         ) : (
           <ul className="divide-y divide-[var(--border)]">
             {tracks.map((track) => (
               <li key={track.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg)]">
-                <button
-                  type="button"
-                  onClick={() => playPreview(track)}
-                  className="w-10 h-10 rounded-full bg-[var(--border)] flex items-center justify-center text-[var(--text)] flex-shrink-0"
-                  aria-label={playingId === track.id ? 'Ndalo' : 'Luaj'}
-                >
-                  {playingId === track.id ? (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="4" width="4" height="16" rx="1" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </button>
-                <div className="flex-1 min-w-0">
+                {track.image ? (
+                  <img src={track.image} alt="" className="w-11 h-11 rounded-md object-cover flex-shrink-0" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => playPreview(track)}
+                    className="w-11 h-11 rounded-full bg-[var(--border)] flex items-center justify-center text-[var(--text)] flex-shrink-0"
+                    aria-label={playingId === track.id ? 'Ndalo' : 'Luaj'}
+                  >
+                    {playingId === track.id ? '⏸' : '▶'}
+                  </button>
+                )}
+                <button type="button" onClick={() => playPreview(track)} className="flex-1 min-w-0 text-left">
                   <p className="text-[var(--text)] font-medium text-sm truncate">{track.title}</p>
-                  <p className="text-[var(--text-muted)] text-xs truncate">{track.artist}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleSelect(track)}
-                  className="text-sm font-semibold text-[var(--primary)]"
-                >
+                  <p className="text-[var(--text-muted)] text-xs truncate">
+                    {track.artist}
+                    {track.preview && <span className="ml-1 opacity-70">· Preview 30s</span>}
+                  </p>
+                </button>
+                <button type="button" onClick={() => handleSelect(track)} className="text-sm font-semibold text-[var(--primary)] px-2 py-1">
                   Zgjidh
                 </button>
               </li>

@@ -1,5 +1,7 @@
 'use client';
 
+import { PostMediaThumb } from '@/components/PostMediaThumb';
+
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -216,7 +218,12 @@ export default function ExplorePage() {
                   href={`/post/${post._id}`}
                   className="block aspect-square bg-[var(--border)] overflow-hidden relative group"
                 >
-                  <img src={post.media?.[0]?.url || ''} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <PostMediaThumb
+                    url={post.media?.[0]?.url || ''}
+                    type={post.media?.[0]?.type}
+                    postType={post.type}
+                    className="group-hover:scale-105 transition-transform duration-300"
+                  />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <div className="flex items-center gap-3 text-white text-[13px] font-semibold">
                       <span className="flex items-center gap-1">

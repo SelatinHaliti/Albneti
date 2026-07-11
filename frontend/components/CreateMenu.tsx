@@ -20,7 +20,7 @@ export function CreateMenu({ open, onClose }: { open: boolean; onClose: () => vo
   const items = [
     { href: '/krijo/post', label: 'Postim', desc: 'Ndaj foto ose video', icon: '📷' },
     { href: '/krijo/story', label: 'Story', desc: '24 orë në profil', icon: '⭕' },
-    { href: '/reels', label: 'Reel', desc: 'Video vertikale', icon: '🎬' },
+    { href: '/krijo/reel', label: 'Reel', desc: 'Video vertikale me muzikë', icon: '🎬' },
   ];
 
   return (

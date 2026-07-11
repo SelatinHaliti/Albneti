@@ -7,6 +7,7 @@ import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
 import { IconHeart, IconComment, IconShare, IconBookmark, IconMore } from '@/components/Icons';
+import { MusicSticker } from '@/components/MusicSticker';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 type Reel = {
@@ -53,6 +54,7 @@ export default function ReelsPage() {
   const [showHeart, setShowHeart] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const musicRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
   const touchStartTime = useRef(0);
@@ -131,21 +133,33 @@ export default function ReelsPage() {
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-    video.currentTime = 0;
-    video.play().catch(() => {});
-  }, [currentIndex]);
+    const music = musicRef.current;
+    if (video) {
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    }
+    if (music && currentReel?.music?.url) {
+      music.currentTime = 0;
+      if (!muted) music.play().catch(() => {});
+      else music.pause();
+    }
+  }, [currentIndex, currentReel?.music?.url, muted]);
 
   useEffect(() => {
     const onVisibility = () => {
       const video = videoRef.current;
-      if (!video) return;
-      if (document.hidden) video.pause();
-      else video.play().catch(() => {});
+      const music = musicRef.current;
+      if (document.hidden) {
+        video?.pause();
+        music?.pause();
+      } else {
+        video?.play().catch(() => {});
+        if (music && currentReel?.music?.url && !muted) music.play().catch(() => {});
+      }
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, []);
+  }, [currentReel?.music?.url, muted]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -202,7 +216,7 @@ export default function ReelsPage() {
       return { ...r, user: { ...r.user, isFollowing: !isFollowing } };
     }));
     try {
-      await api(`/api/users/${currentReel.user.username}/ndiq`, { method: 'POST' });
+      await api(`/api/users/${currentReel.user._id}/ndiq`, { method: 'POST' });
     } catch (_) {
       setReels((rs) => rs.map((r, i) => {
         if (i !== currentIndex) return r;
@@ -276,9 +290,9 @@ export default function ReelsPage() {
     return (
       <div className="reels-container flex flex-col items-center justify-center text-white gap-4 px-6 text-center">
         <p className="text-[17px] font-semibold">Ende nuk ka reels</p>
-        <p className="text-[14px] text-white/60">Posto video për të parë këtu.</p>
-        <Link href="/krijo/post" className="px-6 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold">
-          Krijo postim
+        <p className="text-[14px] text-white/60">Krijo një Reel me muzikë për të parë këtu.</p>
+        <Link href="/krijo/reel" className="px-6 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold">
+          Krijo Reel
         </Link>
       </div>
     );
@@ -305,6 +319,9 @@ export default function ReelsPage() {
       </div>
 
       {/* Video */}
+      {currentReel.music?.url && (
+        <audio ref={musicRef} key={`music-${currentReel._id}`} src={currentReel.music.url} loop preload="auto" />
+      )}
       <video
         ref={videoRef}
         key={currentReel._id}
@@ -312,7 +329,7 @@ export default function ReelsPage() {
         className="absolute inset-0 w-full h-full object-contain bg-black"
         playsInline
         loop
-        muted={muted}
+        muted={muted || !!currentReel.music?.url}
         preload="auto"
         onTimeUpdate={(e) => {
           const v = e.currentTarget;
@@ -387,9 +404,13 @@ export default function ReelsPage() {
           <p className="text-white text-[13px] leading-snug line-clamp-2">{currentReel.caption}</p>
         )}
         {currentReel.music?.title && (
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-white/70 text-xs">♪</span>
-            <span className="text-white text-[12px] truncate">{currentReel.music.title}{currentReel.music.artist ? ` · ${currentReel.music.artist}` : ''}</span>
+          <div className="mt-2 max-w-[85%]">
+            <MusicSticker
+              title={currentReel.music.title}
+              artist={currentReel.music.artist}
+              playing={!muted}
+              onClick={() => setMuted((m) => !m)}
+            />
           </div>
         )}
         {commentsCount > 0 && (

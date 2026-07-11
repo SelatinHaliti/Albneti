@@ -1,15 +1,23 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/utils/api';
+import { MusicSticker } from '@/components/MusicSticker';
 
 const IMAGE_DURATION_MS = 5000;
+const IMAGE_WITH_MUSIC_MS = 15000;
 const HOLD_MS = 180;
 
-type Story = { _id: string; mediaUrl: string; type: string; user?: { username: string; avatar?: string } };
+type Story = {
+  _id: string;
+  mediaUrl: string;
+  type: string;
+  music?: { url: string; title?: string; artist?: string };
+  user?: { username: string; avatar?: string };
+};
 type StoryGroup = { user: { _id: string; username: string; avatar?: string }; stories: Story[] };
 
 export default function StoryViewPage() {
@@ -22,11 +30,14 @@ export default function StoryViewPage() {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [musicMuted, setMusicMuted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goNextRef = useRef<() => void>(() => {});
   const videoRef = useRef<HTMLVideoElement>(null);
+  const musicRef = useRef<HTMLAudioElement>(null);
+  const musicUnlockedRef = useRef(false);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tapXRef = useRef(0);
   const imageElapsedRef = useRef(0);
   const touchStartY = useRef(0);
   const touchStartX = useRef(0);
@@ -50,18 +61,42 @@ export default function StoryViewPage() {
 
   const group = groups[currentGroupIndex];
   const story = group?.stories?.[currentStoryIndex];
-  const totalInGroup = group?.stories?.length ?? 0;
+  const hasMusic = !!story?.music?.url;
 
   useEffect(() => {
     if (!story) return;
     api(`/api/stories/${story._id}/shiko`, { method: 'POST' }).catch(() => {});
   }, [story?._id]);
 
+  const stopMusic = useCallback(() => {
+    const audio = musicRef.current;
+    if (audio) audio.pause();
+    setMusicPlaying(false);
+  }, []);
+
+  const tryPlayMusic = useCallback(() => {
+    const audio = musicRef.current;
+    if (!audio || !hasMusic || paused || musicMuted) return;
+    audio.play()
+      .then(() => {
+        musicUnlockedRef.current = true;
+        setMusicPlaying(true);
+      })
+      .catch(() => setMusicPlaying(false));
+  }, [hasMusic, paused, musicMuted]);
+
+  const startMusic = useCallback(() => {
+    tryPlayMusic();
+  }, [tryPlayMusic]);
+
   const goNext = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    stopMusic();
+    musicUnlockedRef.current = false;
+    setMusicMuted(false);
     imageElapsedRef.current = 0;
     setProgress(0);
     setPaused(false);
@@ -81,6 +116,9 @@ export default function StoryViewPage() {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    stopMusic();
+    musicUnlockedRef.current = false;
+    setMusicMuted(false);
     imageElapsedRef.current = 0;
     setProgress(0);
     setPaused(false);
@@ -96,6 +134,15 @@ export default function StoryViewPage() {
   };
 
   useEffect(() => {
+    musicUnlockedRef.current = false;
+    setMusicPlaying(false);
+    setMusicMuted(false);
+    if (!story || !hasMusic) return;
+    const t = setTimeout(() => tryPlayMusic(), 120);
+    return () => clearTimeout(t);
+  }, [story?._id, hasMusic, tryPlayMusic]);
+
+  useEffect(() => {
     if (!story || story.type === 'video') {
       if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
       return;
@@ -104,8 +151,8 @@ export default function StoryViewPage() {
       if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
       return;
     }
+    const duration = hasMusic ? IMAGE_WITH_MUSIC_MS : IMAGE_DURATION_MS;
     const start = Date.now() - imageElapsedRef.current;
-    const duration = IMAGE_DURATION_MS;
     const tick = () => {
       const elapsed = Date.now() - start;
       imageElapsedRef.current = Math.min(elapsed, duration);
@@ -117,17 +164,28 @@ export default function StoryViewPage() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [story?._id, currentGroupIndex, currentStoryIndex, paused]);
+  }, [story?._id, currentGroupIndex, currentStoryIndex, paused, hasMusic]);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    tapXRef.current = e.clientX;
+  useEffect(() => {
+    if (paused) {
+      stopMusic();
+      videoRef.current?.pause();
+    } else {
+      startMusic();
+      if (story?.type === 'video') videoRef.current?.play().catch(() => {});
+    }
+  }, [paused, startMusic, stopMusic, story?.type]);
+
+  const handlePointerDown = () => {
+    if (hasMusic && !musicUnlockedRef.current && !paused) tryPlayMusic();
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     holdTimerRef.current = setTimeout(() => {
       holdTimerRef.current = null;
       setPaused(true);
-      imageElapsedRef.current = (progress / 100) * IMAGE_DURATION_MS;
+      imageElapsedRef.current = (progress / 100) * (hasMusic ? IMAGE_WITH_MUSIC_MS : IMAGE_DURATION_MS);
       if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
       videoRef.current?.pause();
+      stopMusic();
     }, HOLD_MS);
   };
 
@@ -141,7 +199,6 @@ export default function StoryViewPage() {
       else goNext();
     } else if (paused) {
       setPaused(false);
-      videoRef.current?.play().catch(() => {});
     }
   };
 
@@ -164,19 +221,35 @@ export default function StoryViewPage() {
     if (dy > SWIPE_DOWN_CLOSE && dy > dx) router.back();
   };
 
+  const toggleMusicMute = () => {
+    const audio = musicRef.current;
+    if (!audio) return;
+    if (musicPlaying) {
+      audio.pause();
+      setMusicPlaying(false);
+      setMusicMuted(true);
+    } else {
+      setMusicMuted(false);
+      audio.play().then(() => {
+        musicUnlockedRef.current = true;
+        setMusicPlaying(true);
+      }).catch(() => {});
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
-        <p className="text-white">Duke ngarkuar...</p>
+        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!group || !story) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white gap-3">
         <p>Story nuk u gjet.</p>
-        <Link href="/feed" className="text-[var(--primary)] mt-2">Kthehu në feed</Link>
+        <Link href="/feed" className="text-[var(--ig-blue)] font-semibold">Kthehu në feed</Link>
       </div>
     );
   }
@@ -187,7 +260,17 @@ export default function StoryViewPage() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Progress bars – si Instagram */}
+      {hasMusic && story.music?.url && (
+        <audio
+          key={story._id}
+          ref={musicRef}
+          src={story.music.url}
+          loop
+          preload="auto"
+          playsInline
+        />
+      )}
+
       <div className="absolute top-0 left-0 right-0 flex gap-0.5 p-2 pt-6 z-20">
         {group.stories.map((_, i) => (
           <div key={i} className="flex-1 h-0.5 rounded-full bg-white/30 overflow-hidden">
@@ -203,7 +286,6 @@ export default function StoryViewPage() {
         ))}
       </div>
 
-      {/* Zona: tap majtas/djathtas = para/pas; mbaj = pause (si Instagram) */}
       <div
         className="absolute inset-0 flex items-center justify-center cursor-default select-none"
         role="button"
@@ -232,13 +314,13 @@ export default function StoryViewPage() {
                 className="max-w-full max-h-full object-contain"
                 autoPlay
                 playsInline
-                muted={false}
+                muted={hasMusic}
                 onEnded={goNext}
                 onTimeUpdate={(e) => {
                   const v = e.currentTarget;
                   if (v.duration && Number.isFinite(v.duration)) setProgress((v.currentTime / v.duration) * 100);
                 }}
-                onLoadedMetadata={(e) => setProgress(0)}
+                onLoadedMetadata={() => setProgress(0)}
               />
             ) : (
               <img src={story.mediaUrl} alt="" className="max-w-full max-h-full object-contain" />
@@ -246,6 +328,17 @@ export default function StoryViewPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {hasMusic && story.music && (
+        <div className="absolute bottom-8 left-4 right-4 z-20 flex justify-center pointer-events-auto">
+          <MusicSticker
+            title={story.music.title || 'Muzikë'}
+            artist={story.music.artist}
+            playing={musicPlaying && !paused}
+            onClick={toggleMusicMute}
+          />
+        </div>
+      )}
 
       <header className="absolute top-0 left-0 right-0 p-4 pt-12 flex items-center gap-3 text-white bg-gradient-to-b from-black/60 to-transparent z-10 pointer-events-none">
         <Link
@@ -262,6 +355,7 @@ export default function StoryViewPage() {
             }}
           />
           <span className="font-semibold">{group.user.username}</span>
+          {hasMusic && <span className="text-white/70 text-xs">♪</span>}
         </Link>
       </header>
     </div>

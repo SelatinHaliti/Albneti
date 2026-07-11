@@ -48,3 +48,12 @@ export const uploadPostWithMusic = multer({
   { name: 'media', maxCount: 10 },
   { name: 'music', maxCount: 1 },
 ]);
+
+export const uploadStoryWithMusic = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 100 * 1024 * 1024 },
+}).fields([
+  { name: 'media', maxCount: 1 },
+  { name: 'music', maxCount: 1 },
+]);

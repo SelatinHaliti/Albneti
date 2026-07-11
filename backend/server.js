@@ -20,10 +20,12 @@ import reportRoutes from './routes/reports.js';
 import adminRoutes from './routes/admin.js';
 import musicRoutes from './routes/music.js';
 import globalChatRoutes from './routes/globalChat.js';
+import communityRoutes from './routes/community.js';
 import { setupSocketIO } from './sockets/index.js';
 import { setIO } from './sockets/io.js';
+import { seedCommunityEvents } from './services/eventSeed.js';
 
-connectDB();
+connectDB().then(() => seedCommunityEvents());
 
 const app = express();
 const httpServer = createServer(app);
@@ -98,6 +100,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/music', musicRoutes);
 app.use('/api/global-chat', globalChatRoutes);
+app.use('/api/community', communityRoutes);
 
 // Health check – përfshirë gjendjen e DB (për load balancer / monitoring)
 app.get('/api/health', async (req, res) => {

@@ -6,6 +6,8 @@ import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
 import { IconHeart, IconComment, IconShare, IconBookmark, IconMore } from '@/components/Icons';
+import { MusicSticker } from '@/components/MusicSticker';
+import { PostMediaFrame } from '@/components/PostMediaFrame';
 import { ReportButton } from '@/components/ReportButton';
 
 type Post = {
@@ -53,10 +55,14 @@ export function PostCard(props: {
   const [currentMedia, setCurrentMedia] = useState(0);
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
   const [musicPlaying, setMusicPlaying] = useState(false);
+  const [userPausedMusic, setUserPausedMusic] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [inViewport, setInViewport] = useState(false);
   const lastTapRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const articleRef = useRef<HTMLElement | null>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,6 +104,40 @@ export function PostCard(props: {
 
   const media = post.media && post.media[0];
   const isVideo = (media && media.type === 'video') || post.type === 'reel';
+  const hasMusic = !!post.music?.url;
+
+  useEffect(() => {
+    const el = articleRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInViewport(entry.isIntersecting && entry.intersectionRatio >= 0.45),
+      { threshold: [0, 0.45, 0.6] }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    const video = videoRef.current;
+    if (!inViewport) {
+      audio?.pause();
+      video?.pause();
+      setMusicPlaying(false);
+      return;
+    }
+    if (isVideo && video) {
+      video.play().catch(() => {});
+    }
+    if (hasMusic && audio && !userPausedMusic) {
+      audio.play().then(() => setMusicPlaying(true)).catch(() => setMusicPlaying(false));
+    }
+  }, [inViewport, hasMusic, userPausedMusic, isVideo, post._id]);
+
+  useEffect(() => {
+    setUserPausedMusic(false);
+    setMusicPlaying(false);
+  }, [post._id]);
 
   const setAvatarError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const t = e.currentTarget;
@@ -161,15 +201,17 @@ export function PostCard(props: {
     if (musicPlaying) {
       audio.pause();
       setMusicPlaying(false);
+      setUserPausedMusic(true);
     } else {
-      audio.play().then(() => setMusicPlaying(true)).catch(() => {});
+      audio.play().then(() => {
+        setMusicPlaying(true);
+        setUserPausedMusic(false);
+      }).catch(() => {});
     }
   };
 
-  const handleMusicEnded = () => setMusicPlaying(false);
-
   return (
-    <article className="post-block overflow-hidden relative border-b border-[var(--border)] md:border-b-0 md:mb-4">
+    <article ref={articleRef} className="post-block overflow-hidden relative border-b border-[var(--border)] md:border-b-0 md:mb-4">
       {/* Header */}
       <header className="flex items-center gap-3 px-3 py-2.5">
         <Link href={`/profili/${post.user?.username}`} className="flex-shrink-0">
@@ -259,9 +301,9 @@ export function PostCard(props: {
         </div>
       )}
 
-      {/* Media */}
+      {/* Media – raport dinamik, foto e plotë pa prerje */}
       <div
-        className="relative aspect-square bg-black cursor-pointer select-none"
+        className="relative w-full bg-black cursor-pointer select-none"
         onDoubleClick={handleDoubleTap}
         onPointerUp={handleMediaPointerUp}
         role="button"
@@ -277,19 +319,23 @@ export function PostCard(props: {
           </div>
         )}
         {isVideo ? (
-          <video
-            src={media?.url}
-            controls
-            playsInline
-            className="w-full h-full object-contain"
-            preload="metadata"
+          <PostMediaFrame
+            ref={videoRef}
+            src={media?.url || ''}
+            type="video"
+            videoProps={{
+              controls: !hasMusic,
+              playsInline: true,
+              loop: hasMusic,
+              muted: hasMusic,
+              preload: 'metadata',
+            }}
           />
         ) : (
           <>
-            <img
+            <PostMediaFrame
               src={(post.media && post.media[currentMedia]?.url) || media?.url || ''}
-              alt=""
-              className="w-full h-full object-cover"
+              type="image"
             />
             {post.media && post.media.length > 1 && (
               <>
@@ -319,35 +365,16 @@ export function PostCard(props: {
             )}
           </>
         )}
-        {/* Music bar */}
-        {post.music?.url && (
+        {hasMusic && (
           <>
-            <audio
-              ref={audioRef}
-              src={post.music.url}
-              onEnded={handleMusicEnded}
-              preload="metadata"
-            />
-            <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 px-4 py-3 bg-gradient-to-t from-black/80 to-transparent">
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); toggleMusic(); }}
-                className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center text-white flex-shrink-0 hover:bg-white/25 transition-colors"
-                aria-label={musicPlaying ? 'Ndalo muzikën' : 'Luaj muzikën'}
-              >
-                {musicPlaying ? (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
-                ) : (
-                  <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                )}
-              </button>
-              <div className="flex-1 min-w-0 flex items-center gap-2">
-                <span className="text-white/80 text-xs">♪</span>
-                <span className="text-white text-[13px] truncate font-medium">
-                  {post.music.title || 'Muzikë'}
-                  {post.music.artist ? ` · ${post.music.artist}` : ''}
-                </span>
-              </div>
+            <audio ref={audioRef} src={post.music!.url} loop preload="metadata" />
+            <div className="absolute bottom-3 left-3 right-3 z-[5] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+              <MusicSticker
+                title={post.music!.title || 'Muzikë'}
+                artist={post.music!.artist}
+                playing={musicPlaying}
+                onClick={toggleMusic}
+              />
             </div>
           </>
         )}

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { apiUpload } from '@/utils/api';
 import { MusicPicker } from '@/components/MusicPicker';
+import { MusicSticker } from '@/components/MusicSticker';
+import { PostMediaFrame } from '@/components/PostMediaFrame';
 
 type LibraryTrack = { url: string; title: string; artist: string } | null;
 
@@ -23,8 +25,10 @@ export default function CreatePostPage() {
   const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [previewPlaying, setPreviewPlaying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const musicInputRef = useRef<HTMLInputElement>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
@@ -131,16 +135,27 @@ export default function CreatePostPage() {
             Kliko për të zgjedhur foto ose video
           </button>
           {previews.length > 0 && (
-            <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-              {previews.map((url, i) => (
-                <div key={i} className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-[var(--border)]">
-                  {files[i]?.type.startsWith('video') ? (
-                    <video src={url} className="w-full h-full object-cover" muted />
-                  ) : (
-                    <img src={url} alt="" className="w-full h-full object-cover" />
-                  )}
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-black">
+                <PostMediaFrame
+                  src={previews[0]}
+                  type={files[0]?.type.startsWith('video') ? 'video' : 'image'}
+                  videoProps={{ muted: true, playsInline: true }}
+                />
+              </div>
+              {previews.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                  {previews.map((url, i) => (
+                    <div key={i} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-black border border-[var(--border)]">
+                      {files[i]?.type.startsWith('video') ? (
+                        <video src={url} className="w-full h-full object-contain" muted />
+                      ) : (
+                        <img src={url} alt="" className="w-full h-full object-contain" />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -152,19 +167,31 @@ export default function CreatePostPage() {
             Shto muzikë (opsional)
           </p>
           {hasMusic ? (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
-              <span className="text-[var(--primary)] text-lg">♪</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[var(--text)] truncate">
-                  {selectedLibraryTrack?.title || musicTitle || 'Muzikë'}
-                </p>
-                <p className="text-xs text-[var(--text-muted)] truncate">
-                  {selectedLibraryTrack?.artist || musicArtist || '—'}
-                </p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
+                <MusicSticker
+                  title={selectedLibraryTrack?.title || musicTitle || 'Muzikë'}
+                  artist={selectedLibraryTrack?.artist || musicArtist || undefined}
+                  playing={previewPlaying}
+                  onClick={() => {
+                    if (!selectedLibraryTrack?.url) return;
+                    const audio = previewAudioRef.current;
+                    if (!audio) return;
+                    if (previewPlaying) {
+                      audio.pause();
+                      setPreviewPlaying(false);
+                    } else {
+                      audio.play().then(() => setPreviewPlaying(true)).catch(() => {});
+                    }
+                  }}
+                />
+                <button type="button" onClick={() => { clearMusic(); setPreviewPlaying(false); }} className="text-sm text-[var(--text-muted)] hover:text-[var(--danger)] ml-auto">
+                  Hiq
+                </button>
               </div>
-              <button type="button" onClick={clearMusic} className="text-sm text-[var(--text-muted)] hover:text-[var(--danger)]">
-                Hiq
-              </button>
+              {selectedLibraryTrack?.url && (
+                <audio ref={previewAudioRef} src={selectedLibraryTrack.url} loop onPause={() => setPreviewPlaying(false)} />
+              )}
             </div>
           ) : (
             <>

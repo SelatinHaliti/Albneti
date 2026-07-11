@@ -12,9 +12,12 @@ type Notification = {
   isRead: boolean;
   sender?: { _id: string; username: string; avatar?: string; fullName?: string };
   post?: string | { _id: string };
+  event?: string;
   text?: string;
   createdAt: string;
 };
+
+const EVENT_TYPES = ['event_interest', 'event_reminder', 'event_update'];
 
 const typeLabels: Record<string, string> = {
   like: 'pelqeu postimin tënd',
@@ -24,6 +27,9 @@ const typeLabels: Record<string, string> = {
   share: 'ndau postimin tënd',
   story_view: 'shikoi story-n tënd',
   message: 'dërgoi një mesazh',
+  event_interest: 'regjistrim eventi',
+  event_reminder: 'kujtesë eventi',
+  event_update: 'përditësim eventi',
 };
 
 const typeIcons: Record<string, string> = {
@@ -34,6 +40,9 @@ const typeIcons: Record<string, string> = {
   share: '↗️',
   story_view: '👁',
   message: '✉️',
+  event_interest: '✅',
+  event_reminder: '🔔',
+  event_update: '📅',
 };
 
 function timeAgo(date: string): string {
@@ -222,12 +231,15 @@ export default function NotificationsPage() {
                         }}
                       />
                     </Link>
+                  ) : EVENT_TYPES.includes(n.type) ? (
+                    <div className="w-12 h-12 rounded-full bg-[var(--albanian-red)]/15 flex items-center justify-center text-xl">
+                      {typeIcons[n.type] || '📅'}
+                    </div>
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-[var(--border)] flex items-center justify-center text-[var(--text-muted)] text-sm font-medium">
                       ?
                     </div>
                   )}
-                  {/* Type icon badge */}
                   <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center text-[10px]">
                     {typeIcons[n.type] || '🔔'}
                   </span>
@@ -236,22 +248,29 @@ export default function NotificationsPage() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] text-[var(--text)] leading-snug">
-                    {n.sender ? (
+                    {EVENT_TYPES.includes(n.type) ? (
+                      <span className="font-semibold text-[var(--text)]">AlbNet Komuniteti</span>
+                    ) : n.sender ? (
                       <Link href={`/profili/${n.sender.username}`} className="font-semibold hover:underline" onClick={() => markOneRead(n._id)}>
                         {n.sender.username}
                       </Link>
                     ) : (
                       <span className="font-semibold">Dikush</span>
-                    )}{' '}
-                    <span className="text-[var(--text-muted)]">{typeLabels[n.type] || n.type}</span>
-                    {n.text && <span className="text-[var(--text-muted)]"> — {n.text}</span>}
+                    )}
+                    {!EVENT_TYPES.includes(n.type) && (
+                      <>
+                        {' '}
+                        <span className="text-[var(--text-muted)]">{typeLabels[n.type] || n.type}</span>
+                      </>
+                    )}
+                    {n.text && <span className="text-[var(--text-muted)]">{EVENT_TYPES.includes(n.type) ? n.text : ` — ${n.text}`}</span>}
                   </p>
                   <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">
                     {timeAgo(n.createdAt)}
                   </p>
                 </div>
 
-                {/* Post link or unread dot */}
+                {/* Post / event link or unread dot */}
                 {n.post ? (
                   <Link
                     href={`/post/${typeof n.post === 'object' && n.post && '_id' in n.post ? n.post._id : n.post}`}
@@ -259,6 +278,14 @@ export default function NotificationsPage() {
                     onClick={() => markOneRead(n._id)}
                   >
                     Shiko
+                  </Link>
+                ) : EVENT_TYPES.includes(n.type) ? (
+                  <Link
+                    href="/komuniteti"
+                    className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[var(--primary)] bg-[var(--primary-soft)] hover:bg-[var(--primary)]/15 transition-colors"
+                    onClick={() => markOneRead(n._id)}
+                  >
+                    Evente
                   </Link>
                 ) : !n.isRead ? (
                   <span className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-[var(--primary)]" />

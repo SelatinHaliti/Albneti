@@ -5,28 +5,67 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.j
 
 const STORY_EXPIRY_HOURS = 24;
 
+function parseMusicFromRequest(req) {
+  const { music, musicData, musicUrl, musicTitle, musicArtist } = req.body;
+  const musicFile = req.files?.music?.[0];
+  if (musicFile) {
+    return uploadToCloudinary(musicFile.buffer, 'music', 'raw').then((result) => ({
+      url: result.secure_url,
+      publicId: result.public_id,
+      title: (musicTitle || 'Muzikë').toString().trim().slice(0, 200) || 'Muzikë',
+      artist: (musicArtist || '').toString().trim().slice(0, 200) || '',
+    }));
+  }
+  const directUrl = musicUrl ? String(musicUrl).trim() : '';
+  if (directUrl.startsWith('http')) {
+    return Promise.resolve({
+      url: directUrl.slice(0, 2000),
+      title: (musicTitle || 'Muzikë').toString().trim().slice(0, 200) || 'Muzikë',
+      artist: (musicArtist || '').toString().trim().slice(0, 200) || '',
+    });
+  }
+  const raw = musicData || music;
+  if (raw) {
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (parsed?.url) {
+        return Promise.resolve({
+          url: String(parsed.url).trim().slice(0, 2000),
+          title: (parsed.title || musicTitle || 'Muzikë').toString().trim().slice(0, 200) || 'Muzikë',
+          artist: (parsed.artist || musicArtist || '').toString().trim().slice(0, 200) || '',
+        });
+      }
+    } catch (_) {}
+  }
+  return Promise.resolve(undefined);
+}
+
 /**
- * Krijo story (zhduket pas 24 orësh)
+ * Krijo story (zhduket pas 24 orësh) me muzikë opsionale
  */
 export const createStory = async (req, res) => {
   try {
-    if (!req.file?.buffer) {
+    const mediaFile = req.files?.media?.[0] || req.file;
+    if (!mediaFile?.buffer) {
       return res.status(400).json({ message: 'Ngarkoni një foto ose video.' });
     }
-    const type = req.file.mimetype.startsWith('video') ? 'video' : 'image';
+    const type = mediaFile.mimetype.startsWith('video') ? 'video' : 'image';
     const result = await uploadToCloudinary(
-      req.file.buffer,
+      mediaFile.buffer,
       'stories',
       type === 'video' ? 'video' : 'image'
     );
+    const musicData = await parseMusicFromRequest(req);
     const expiresAt = new Date(Date.now() + STORY_EXPIRY_HOURS * 60 * 60 * 1000);
-    const story = await Story.create({
+    const storyPayload = {
       user: req.user.id,
       type,
       mediaUrl: result.secure_url,
       publicId: result.public_id,
       expiresAt,
-    });
+    };
+    if (musicData?.url) storyPayload.music = musicData;
+    const story = await Story.create(storyPayload);
     const populated = await Story.findById(story._id).populate(
       'user',
       'username avatar fullName'
@@ -109,6 +148,11 @@ export const deleteStory = async (req, res) => {
           story.publicId,
           story.type === 'video' ? 'video' : 'image'
         );
+      } catch (_) {}
+    }
+    if (story.music?.publicId) {
+      try {
+        await deleteFromCloudinary(story.music.publicId, 'raw');
       } catch (_) {}
     }
     await story.deleteOne();

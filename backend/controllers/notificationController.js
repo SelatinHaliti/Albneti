@@ -1,4 +1,5 @@
 import Notification from '../models/Notification.js';
+import { processEventReminders } from './communityController.js';
 
 /**
  * Merr njoftimet e përdoruesit
@@ -9,6 +10,7 @@ export const getNotifications = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit, 10) || 20, 50);
     const skip = (page - 1) * limit;
     const recipientId = req.user._id ?? req.user.id;
+    await processEventReminders(recipientId);
     const notifications = await Notification.find({ recipient: recipientId })
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -23,6 +25,7 @@ export const getNotifications = async (req, res) => {
     const list = notifications.map((n) => ({
       ...n,
       post: n.post ? String(n.post) : undefined,
+      event: n.event ? String(n.event) : undefined,
     }));
     res.json({ notifications: list, unreadCount });
   } catch (err) {

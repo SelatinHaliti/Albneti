@@ -74,6 +74,17 @@ async function proxy(
     ? await (rawParams as Promise<{ path: string[] }>)
     : (rawParams as { path: string[] });
   const path = Array.isArray(params.path) ? params.path.join('/') : '';
+
+  // Muzika merret nga Next.js /api/music (iTunes), jo nga Render
+  if (method === 'GET' && path === 'music') {
+    const { searchMusic, CATEGORIES } = await import('@/lib/musicApi');
+    const { searchParams } = new URL(request.url);
+    const q = (searchParams.get('q') || '').trim();
+    const category = (searchParams.get('category') || 'shqip').trim().toLowerCase();
+    const tracks = await searchMusic(q, category);
+    return Response.json({ tracks, categories: CATEGORIES, providers: { itunes: true, local: true } });
+  }
+
   const search = request.url.includes('?') ? new URL(request.url).search : '';
   const url = `${BACKEND}/api/${path}${search}`;
   const headers = forwardHeaders(request, path);

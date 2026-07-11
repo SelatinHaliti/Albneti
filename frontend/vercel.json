@@ -3,7 +3,7 @@
   "buildCommand": "next build",
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/((?!music$).*)",
       "destination": "https://albneti-api.onrender.com/api/$1"
     }
   ]
