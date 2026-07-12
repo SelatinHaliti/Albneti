@@ -108,13 +108,8 @@ export const createCheckout = async (req, res) => {
     }
 
     if (!isStripeConfigured()) {
-      const subscription = await activateSubscription(req.user.id, plan);
-      return res.json({
-        success: true,
-        simulated: true,
-        message: 'U verifikua! (Stripe nuk është aktiv – modalitet dev)',
-        isVerified: true,
-        subscription,
+      return res.status(503).json({
+        message: 'Pagesa me Stripe nuk është e disponueshme për momentin. Provoni përsëri së shpejti.',
       });
     }
 

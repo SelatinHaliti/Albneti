@@ -34,6 +34,7 @@ import { seedCommunityEvents } from './services/eventSeed.js';
 import { runScheduledEventPromos } from './services/eventAdsService.js';
 import { runWeeklyMarketingEmails, resetStuckMarketingRuns } from './services/marketingEmailService.js';
 import { isSmtpConfigured } from './utils/email.js';
+import { isStripeConfigured } from './services/stripeService.js';
 
 connectDB().then(() => {
   void initMonitoring();
@@ -145,6 +146,7 @@ app.get('/api/health', async (req, res) => {
     message: dbOk ? 'AlbNet API është aktiv' : 'Baza e të dhënave nuk është e lidhur',
     db: dbOk ? 'connected' : 'disconnected',
     smtpConfigured: isSmtpConfigured(),
+    stripeConfigured: isStripeConfigured(),
     timestamp: new Date().toISOString(),
   });
 });

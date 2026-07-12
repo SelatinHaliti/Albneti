@@ -120,10 +120,8 @@ function VerifikimContent() {
 
   const plans = status?.plans || [];
   const isActive = status?.isVerified;
-  const stripeOn = status?.stripeEnabled;
   const testMode = status?.testMode;
-  const regionNote = status?.regionNote;
-  const currentStep = isActive ? 3 : stripeOn ? 1 : 1;
+  const currentStep = isActive ? 3 : 1;
 
   return (
     <>
@@ -192,17 +190,11 @@ function VerifikimContent() {
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
-            {!stripeOn && !isActive && (
-              <div className="liquid-glass-card rounded-xl p-4 border border-amber-500/30 bg-amber-500/5 text-[12px] text-[var(--text-muted)]">
-                ⚠️ Stripe nuk është aktiv në server. Vendos <code className="text-[11px]">STRIPE_SECRET_KEY</code> në Render, pastaj Redeploy.
-              </div>
-            )}
-
-            {stripeOn && testMode && regionNote && (
+            {testMode && !isActive && (
               <div className="liquid-glass-card rounded-xl p-4 border border-[var(--ig-blue)]/30 bg-[var(--ig-blue)]/5 text-[12px] text-[var(--text-muted)] leading-relaxed">
-                <p className="font-semibold text-[var(--text)] mb-1">🇽🇰 Modalitet test për Kosovën</p>
-                <p>{regionNote}</p>
-                <p className="mt-2 text-[11px]">Për testim përdorni kartën Stripe: <code>4242 4242 4242 4242</code></p>
+                <p className="font-semibold text-[var(--text)] mb-1">Modalitet test Stripe</p>
+                <p>Paguaj me kartë test: <code className="text-[11px]">4242 4242 4242 4242</code> · skadencë e ardhshme · CVC <code>123</code></p>
+                <p className="mt-2 text-[11px]">Pas pagesës kthehesh automatikisht në AlbNet të verifikuar.</p>
               </div>
             )}
 
@@ -252,9 +244,7 @@ function VerifikimContent() {
                   >
                     {subscribing === plan.id
                       ? 'Duke hapur Stripe...'
-                      : stripeOn
-                        ? `Verifikohu – €${plan.price}/${plan.period}`
-                        : `Abonohu (dev) – €${plan.price}/${plan.period}`}
+                      : `Verifikohu – €${plan.price}/${plan.period}`}
                   </button>
                 ) : status?.subscription?.plan === plan.id ? (
                   <div className="text-center text-[13px] font-semibold text-[var(--success)] py-2">✓ Plani aktiv</div>
@@ -273,15 +263,9 @@ function VerifikimContent() {
             )}
 
             <div className="verify-footer-note text-[10px] sm:text-[11px] text-center text-[var(--text-muted)] px-2 sm:px-4 space-y-1 pb-2">
-              {stripeOn ? (
-                <>
-                  <p>🔒 Pagesë e sigurt me Stripe{testMode ? ' (test)' : ''}. Kthehesh automatikisht në AlbNet pas pagesës.</p>
-                  {testMode && (
-                    <p className="opacity-90 font-medium">Kartë test: 4242 4242 4242 4242 · skadencë e ardhshme · CVC 123</p>
-                  )}
-                </>
-              ) : (
-                <p>Pa Stripe në Render, verifikimi aktivizohet menjëherë (vetëm dev).</p>
+              <p>🔒 Pagesë e sigurt me Stripe{testMode ? ' (test)' : ''}. Kthehesh automatikisht në AlbNet pas pagesës.</p>
+              {testMode && (
+                <p className="opacity-90 font-medium">Kartë test: 4242 4242 4242 4242 · skadencë e ardhshme · CVC 123</p>
               )}
             </div>
           </div>
