@@ -4,11 +4,11 @@ import Post from '../models/Post.js';
 import Event from '../models/Event.js';
 import LiveStream from '../models/LiveStream.js';
 import MarketingRun from '../models/MarketingRun.js';
-import { sendAlbnetAdsEmail, isSmtpConfigured, verifySmtpConnection } from '../utils/email.js';
+import { sendAlbnetAdsEmail, isSmtpConfigured, resetSmtpTransporter } from '../utils/email.js';
 import { generateMarketingTheme, getAiMarketingStatus } from './aiMarketingService.js';
 
-const BATCH_SIZE = 25;
-const BATCH_DELAY_MS = 2000;
+const BATCH_SIZE = 8;
+const BATCH_DELAY_MS = 4000;
 const ACTIVE_DAYS = 60;
 const MIN_DAYS_BETWEEN_EMAILS = 6;
 const SYSTEM_USERNAME = 'albnet_official';
@@ -154,27 +154,23 @@ export async function cancelStuckMarketingRuns() {
 }
 
 async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey, runType, force }) {
-  const smtpCheck = await verifySmtpConnection();
-  if (!smtpCheck.ok) {
+  if (!isSmtpConfigured()) {
+    const err = 'SMTP nuk është konfiguruar në server.';
     await MarketingRun.findOneAndUpdate(
       { weekKey: runKey, runType },
-      {
-        $set: {
-          status: 'failed',
-          errorMessage: smtpCheck.error,
-          completedAt: new Date(),
-          failedCount: users.length,
-        },
-      }
+      { $set: { status: 'failed', errorMessage: err, completedAt: new Date(), failedCount: users.length } }
     );
-    return { sent: 0, failed: users.length, skipped: 0, total: users.length, lastError: smtpCheck.error };
+    return { sent: 0, failed: users.length, skipped: 0, total: users.length, lastError: err };
   }
+
+  resetSmtpTransporter();
 
   const minEmailGap = new Date(Date.now() - MIN_DAYS_BETWEEN_EMAILS * 86400000);
   let sent = 0;
   let failed = 0;
   let skipped = 0;
   let lastError = null;
+  let consecutiveFails = 0;
 
   for (let i = 0; i < users.length; i += BATCH_SIZE) {
     const batch = users.slice(i, i + BATCH_SIZE);
@@ -195,12 +191,20 @@ async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey
       });
       if (result.ok) {
         sent++;
+        consecutiveFails = 0;
         await User.findByIdAndUpdate(u._id, { $set: { lastMarketingEmailAt: new Date() } });
       } else {
         failed++;
+        consecutiveFails++;
         if (!lastError) lastError = result.error;
+        if (consecutiveFails >= 5 && sent === 0) {
+          lastError = result.error || 'SMTP dështoi pas 5 përpjekjeve radhazi.';
+          break;
+        }
       }
     }
+    if (consecutiveFails >= 5 && sent === 0) break;
+
     if (i + BATCH_SIZE < users.length) await sleep(BATCH_DELAY_MS);
 
     await MarketingRun.findOneAndUpdate(

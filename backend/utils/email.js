@@ -15,14 +15,17 @@ const createTransporter = () => {
   const isGmail = host === 'smtp.gmail.com' || user.endsWith('@gmail.com');
   if (isGmail) {
     return nodemailer.createTransport({
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 100,
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
       requireTLS: true,
       auth: { user, pass },
-      connectionTimeout: 25000,
-      greetingTimeout: 25000,
-      socketTimeout: 35000,
+      connectionTimeout: 60000,
+      greetingTimeout: 30000,
+      socketTimeout: 90000,
     });
   }
 
@@ -48,11 +51,29 @@ function getTransporter() {
   return cachedTransporter;
 }
 
+export function resetSmtpTransporter() {
+  if (cachedTransporter?.close) {
+    try { cachedTransporter.close(); } catch { /* ignore */ }
+  }
+  cachedTransporter = null;
+  verifyPromise = null;
+  smtpVerifyCache = null;
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function isRetryableSmtpError(err) {
+  const msg = normalizeMailerError(err);
+  return /timeout|ETIMEDOUT|ECONNECTION|ECONNRESET|ENOTFOUND|socket/i.test(msg);
+}
+
 /** Verifikon SMTP një herë (për test/diagnostikë) */
 let smtpVerifyCache = null;
 const SMTP_VERIFY_CACHE_MS = 5 * 60 * 1000;
 
-export async function verifySmtpConnection({ timeoutMs = 8000, useCache = true } = {}) {
+export async function verifySmtpConnection({ timeoutMs = 45000, useCache = true } = {}) {
   const transporter = getTransporter();
   if (!transporter) return { ok: false, error: 'SMTP nuk është konfiguruar.' };
 
@@ -101,26 +122,38 @@ function normalizeMailerError(err) {
 }
 
 async function sendMail({ to, subject, html, skipVerify = true }) {
-  const transporter = getTransporter();
-  if (!transporter) {
-    return { ok: false, error: 'SMTP nuk është konfiguruar në server.' };
+  const smtpUser = (process.env.SMTP_USER || '').trim();
+  const from =
+    process.env.SMTP_FROM ||
+    (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
+
+  const mailOptions = { from, to, subject, html };
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const transporter = getTransporter();
+    if (!transporter) {
+      return { ok: false, error: 'SMTP nuk është konfiguruar në server.' };
+    }
+    try {
+      if (!skipVerify && attempt === 1) await verifySmtpConnection({ timeoutMs: 45000 });
+      const sendTask = transporter.sendMail(mailOptions);
+      const timeoutTask = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('send timeout')), 90000);
+      });
+      await Promise.race([sendTask, timeoutTask]);
+      return { ok: true };
+    } catch (err) {
+      const error = normalizeMailerError(err);
+      if (attempt < maxAttempts && isRetryableSmtpError(err)) {
+        resetSmtpTransporter();
+        await sleep(1500 * attempt);
+        continue;
+      }
+      return { ok: false, error };
+    }
   }
-  try {
-    if (!skipVerify) await verifySmtpConnection();
-    const smtpUser = (process.env.SMTP_USER || '').trim();
-    const from =
-      process.env.SMTP_FROM ||
-      (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
-    await transporter.sendMail({
-      from,
-      to,
-      subject,
-      html,
-    });
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: normalizeMailerError(err) };
-  }
+  return { ok: false, error: 'Dërgimi i email-it dështoi pas disa përpjekjeve.' };
 }
 
 /* Brand colors – përputhen me app (primary #0095f6, theks i kuq) */
