@@ -15,6 +15,7 @@ import {
   toggleCommentLike,
   toggleSave,
   sharePost,
+  createDuet,
 } from '../controllers/postController.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import { uploadPostWithMusic } from '../middleware/upload.js';
@@ -36,5 +37,6 @@ router.put('/:id/koment/:commentId', protect, updateComment);
 router.post('/:id/koment/:commentId/pelqim', protect, toggleCommentLike);
 router.post('/:id/ruaj', protect, toggleSave);
 router.post('/:id/ndaj', protect, sharePost);
+router.post('/:id/duet', protect, uploadPostWithMusic, createDuet);
 
 export default router;

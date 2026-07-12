@@ -182,6 +182,10 @@ export const getReels = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .populate('user', 'username avatar fullName isVerified')
+      .populate({
+        path: 'duetOf',
+        populate: { path: 'user', select: 'username avatar fullName' },
+      })
       .populate('comments.user', 'username avatar')
       .lean();
 
@@ -498,6 +502,55 @@ export const sharePost = async (req, res) => {
       await post.save();
     }
     res.json({ success: true, sharesCount: post.shares.length });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Krijo duet/remix nga një reel ekzistues
+ */
+export const createDuet = async (req, res) => {
+  try {
+    const original = await Post.findById(req.params.id);
+    if (!original) return res.status(404).json({ message: 'Reel nuk u gjet.' });
+    if (!['reel', 'video'].includes(original.type)) {
+      return res.status(400).json({ message: 'Vetëm reel/video mund të duetohen.' });
+    }
+
+    const mediaFile = req.files?.media?.[0] || req.file;
+    if (!mediaFile?.buffer) {
+      return res.status(400).json({ message: 'Ngarkoni videon tuaj për duet.' });
+    }
+    const result = await uploadToCloudinary(mediaFile.buffer, 'posts', 'video');
+    const { caption } = req.body;
+
+    const post = await Post.create({
+      user: req.user.id,
+      type: 'reel',
+      media: [{ url: result.secure_url, publicId: result.public_id, type: 'video' }],
+      caption: String(caption || '').trim().slice(0, 2200),
+      duetOf: original._id,
+    });
+
+    const populated = await Post.findById(post._id)
+      .populate('user', 'username avatar fullName isVerified')
+      .populate({
+        path: 'duetOf',
+        populate: { path: 'user', select: 'username avatar fullName' },
+      });
+
+    if (original.user.toString() !== req.user.id) {
+      void dispatchSocialNotification({
+        recipientId: original.user,
+        senderId: req.user.id,
+        type: 'share',
+        post: post._id,
+        text: 'krijoi një duet me reel-in tënd',
+      });
+    }
+
+    res.status(201).json({ success: true, post: populated });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

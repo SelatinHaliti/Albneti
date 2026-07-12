@@ -1,5 +1,9 @@
 import User from '../models/User.js';
 import Post from '../models/Post.js';
+import Story from '../models/Story.js';
+import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
+import Notification from '../models/Notification.js';
 import { dispatchSocialNotification } from '../services/notificationService.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.js';
 
@@ -514,6 +518,103 @@ export const toggleBlock = async (req, res) => {
     }
     await user.save();
     res.json({ success: true, isBlocked: !isBlocked });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Merr listën e miqve të ngushtë
+ */
+export const getCloseFriends = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate('closeFriends', USER_LIST_FIELDS)
+      .lean();
+    res.json({
+      closeFriends: (user?.closeFriends || []).map((u) => ({
+        _id: String(u._id),
+        username: u.username,
+        fullName: u.fullName,
+        avatar: u.avatar,
+        isVerified: !!u.isVerified,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Shto / hiq mik të ngushtë
+ */
+export const toggleCloseFriend = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (userId === req.user.id) {
+      return res.status(400).json({ message: 'Nuk mund të shtoni veten.' });
+    }
+    const user = await User.findById(req.user.id);
+    const target = await User.findById(userId);
+    if (!target) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+
+    const isClose = (user.closeFriends || []).some((id) => id.toString() === userId);
+    if (isClose) {
+      user.closeFriends = user.closeFriends.filter((id) => id.toString() !== userId);
+    } else {
+      user.closeFriends = user.closeFriends || [];
+      user.closeFriends.push(userId);
+    }
+    await user.save();
+    res.json({ success: true, isCloseFriend: !isClose });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Eksport të dhënash GDPR (JSON)
+ */
+export const exportUserData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId)
+      .select('-password -verificationToken -resetPasswordToken -avatarPublicId')
+      .lean();
+    const posts = await Post.find({ user: userId }).lean();
+    const stories = await Story.find({ user: userId }).lean();
+    const conversations = await Conversation.find({ participants: userId }).lean();
+    const convIds = conversations.map((c) => c._id);
+    const messages = convIds.length
+      ? await Message.find({ conversation: { $in: convIds }, sender: userId }).lean()
+      : [];
+    const notifications = await Notification.find({ recipient: userId })
+      .sort({ createdAt: -1 })
+      .limit(500)
+      .lean();
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      profile: user,
+      posts,
+      stories,
+      conversations: conversations.map((c) => ({
+        _id: c._id,
+        type: c.type,
+        name: c.name,
+        participants: c.participants,
+        createdAt: c.createdAt,
+      })),
+      messagesSent: messages,
+      notificationsReceived: notifications,
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="albneti-data-${user.username}-${Date.now()}.json"`
+    );
+    res.json(exportData);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

@@ -23,8 +23,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary:', error, errorInfo);
+    if (typeof window !== 'undefined') {
+      import('@/lib/monitoring').then(({ captureError }) => captureError(error, { componentStack: errorInfo.componentStack }));
     }
   }
 

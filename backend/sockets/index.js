@@ -92,7 +92,9 @@ export function setupSocketIO(io) {
           media: media || undefined,
           status: 'sent',
         });
-        const recipientId = conversation.participants.find((p) => p.toString() !== userId);
+        const recipients = conversation.participants.filter(
+          (p) => p.toString() !== userId
+        );
         conversation.lastMessage = message._id;
         conversation.lastMessageAt = new Date();
         await conversation.save();
@@ -102,13 +104,22 @@ export function setupSocketIO(io) {
         const senderName = populated?.sender?.username || 'Dikush';
         const preview =
           (content || '').slice(0, 80) ||
-          (type === 'video' ? '🎬 Video' : type === 'image' ? '📷 Foto' : 'Mesazh i ri');
-        void notifyDmInbox(recipientId, {
-          conversationId,
-          message: populated,
-          senderUsername: senderName,
-          preview,
-        });
+          (type === 'video'
+            ? '🎬 Video'
+            : type === 'image'
+              ? '📷 Foto'
+              : type === 'audio'
+                ? '🎤 Mesazh zëri'
+                : 'Mesazh i ri');
+        const groupName = conversation.type === 'group' ? conversation.name : null;
+        for (const recipientId of recipients) {
+          void notifyDmInbox(recipientId, {
+            conversationId,
+            message: populated,
+            senderUsername: senderName,
+            preview: groupName ? `${groupName}: ${preview}` : preview,
+          });
+        }
       } catch (err) {
         socket.emit('error', { message: err.message });
       }
@@ -128,6 +139,33 @@ export function setupSocketIO(io) {
       );
       emitInboxUpdated(userId);
       io.to(`conv:${conversationId}`).emit('messages_read', { userId, conversationId });
+    });
+
+    // ——— Live streaming rooms ———
+    socket.on('live:join', (liveId) => {
+      if (!liveId) return;
+      socket.join(`live:${liveId}`);
+    });
+
+    socket.on('live:leave', (liveId) => {
+      if (!liveId) return;
+      socket.leave(`live:${liveId}`);
+    });
+
+    // WebRTC signaling për live broadcast (host → viewers)
+    socket.on('live:offer', ({ liveId, toUserId, sdp }) => {
+      if (!liveId || !toUserId || !sdp) return;
+      io.to(`user:${toUserId}`).emit('live:offer', { liveId, fromUserId: userId, sdp });
+    });
+
+    socket.on('live:answer', ({ liveId, toUserId, sdp }) => {
+      if (!liveId || !toUserId || !sdp) return;
+      io.to(`user:${toUserId}`).emit('live:answer', { liveId, fromUserId: userId, sdp });
+    });
+
+    socket.on('live:ice', ({ liveId, toUserId, candidate }) => {
+      if (!liveId || !toUserId || !candidate) return;
+      io.to(`user:${toUserId}`).emit('live:ice', { liveId, fromUserId: userId, candidate });
     });
 
     // ——— WebRTC Call signaling (audio/video) ———

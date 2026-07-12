@@ -42,6 +42,7 @@ const postSchema = new mongoose.Schema(
     shares: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     viewCount: { type: Number, default: 0 },
     isArchived: { type: Boolean, default: false },
+    duetOf: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
   },
   { timestamps: true }
 );

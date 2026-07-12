@@ -2,6 +2,13 @@ import mongoose from 'mongoose';
 
 const conversationSchema = new mongoose.Schema(
   {
+    type: {
+      type: String,
+      enum: ['direct', 'group'],
+      default: 'direct',
+    },
+    name: { type: String, default: '', maxlength: 100 },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     participants: [
       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     ],

@@ -41,7 +41,7 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       router.replace('/kycu');
       return;
     }
@@ -243,6 +243,40 @@ export default function EditProfilePage() {
           className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-[var(--primary)] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
         >
           {loading ? 'Duke ruajtur...' : 'Ruaj ndryshimet'}
+        </button>
+
+        <Link
+          href="/profili/miq-te-ngushte"
+          className="block w-full py-3 rounded-xl text-sm font-semibold text-center text-[var(--text)] border border-[var(--border)] hover:bg-[var(--primary-soft)] transition-colors"
+        >
+          Miq të ngushtë (Close Friends)
+        </Link>
+
+        <button
+          type="button"
+          onClick={async () => {
+            if (!user) return;
+            try {
+              const token = localStorage.getItem('token');
+              const res = await fetch('/api/users/me/eksport', {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+              });
+              if (!res.ok) throw new Error('Eksporti dështoi');
+              const data = await res.json();
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `albneti-data-${user.username}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            } catch (_) {
+              setError('Nuk u eksportuan të dhënat.');
+            }
+          }}
+          className="w-full py-3 rounded-xl text-sm font-semibold text-[var(--text)] border border-[var(--border)] hover:bg-[var(--primary-soft)] transition-colors"
+        >
+          Eksporto të dhënat (GDPR)
         </button>
 
         <button

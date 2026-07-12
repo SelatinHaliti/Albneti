@@ -40,6 +40,8 @@ export default function StoryViewPage() {
   const [viewersOpen, setViewersOpen] = useState(false);
   const [viewers, setViewers] = useState<StoryViewer[]>([]);
   const [viewersLoading, setViewersLoading] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [replying, setReplying] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goNextRef = useRef<() => void>(() => {});
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -71,6 +73,20 @@ export default function StoryViewPage() {
   const story = group?.stories?.[currentStoryIndex];
   const hasMusic = !!story?.music?.url;
   const isOwnStory = !!authUser && String(group?.user?._id) === String(authUser.id);
+
+  const sendStoryReply = async () => {
+    if (!story || isOwnStory || !replyText.trim() || replying) return;
+    setReplying(true);
+    try {
+      const res = await api<{ conversationId: string }>(`/api/messages/story/${story._id}/pergjigje`, {
+        method: 'POST',
+        body: { content: replyText.trim() },
+      });
+      setReplyText('');
+      router.push(`/mesazhe/${res.conversationId}`);
+    } catch (_) {}
+    setReplying(false);
+  };
 
   const openViewers = async () => {
     if (!story || !isOwnStory) return;
@@ -353,13 +369,39 @@ export default function StoryViewPage() {
       </div>
 
       {hasMusic && story.music && (
-        <div className="absolute bottom-8 left-4 right-4 z-20 flex justify-center pointer-events-auto">
+        <div className="absolute bottom-24 left-4 right-4 z-20 flex justify-center pointer-events-auto">
           <MusicSticker
             title={story.music.title || 'Muzikë'}
             artist={story.music.artist}
             playing={musicPlaying && !paused}
             onClick={toggleMusicMute}
           />
+        </div>
+      )}
+
+      {!isOwnStory && !viewersOpen && (
+        <div
+          className="absolute bottom-0 left-0 right-0 z-20 p-3 pb-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex gap-2 max-w-md mx-auto">
+            <input
+              type="text"
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void sendStoryReply(); }}
+              placeholder={`Përgjigju @${group.user.username}...`}
+              className="flex-1 px-4 py-2.5 rounded-full bg-white/15 border border-white/20 text-white placeholder-white/50 text-[14px]"
+            />
+            <button
+              type="button"
+              onClick={() => void sendStoryReply()}
+              disabled={replying || !replyText.trim()}
+              className="px-4 py-2.5 rounded-full bg-[var(--ig-blue)] text-white font-semibold text-[14px] disabled:opacity-50"
+            >
+              {replying ? '...' : 'Dërgo'}
+            </button>
+          </div>
         </div>
       )}
 

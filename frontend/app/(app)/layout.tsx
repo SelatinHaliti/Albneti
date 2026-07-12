@@ -34,6 +34,7 @@ const navItems = [
   { href: '/feed', label: 'Kryefaja', Icon: IconHome },
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
+  { href: '/live', label: 'Live', Icon: IconReels },
   { href: '/krijo/post', label: 'Krijo', Icon: IconAdd },
   { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage },
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart },
@@ -74,6 +75,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const isReelsPage = pathname === '/reels';
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    import('@/lib/monitoring').then(({ initMonitoring }) => initMonitoring());
+  }, []);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {

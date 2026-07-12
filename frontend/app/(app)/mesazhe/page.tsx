@@ -10,11 +10,24 @@ import { useSocket } from '@/components/SocketProvider';
 
 type Conversation = {
   _id: string;
+  type?: 'direct' | 'group';
+  name?: string;
   participants: { _id: string; username: string; avatar?: string; fullName?: string }[];
   lastMessageAt: string;
-  lastMessage?: { content: string; sender: string };
+  lastMessage?: { content: string; sender: string; type?: string };
   unreadCount?: number;
 };
+
+function convTitle(c: Conversation, userId?: string) {
+  if (c.type === 'group') return c.name || 'Grup';
+  const other = c.participants?.find((p) => String(p._id) !== String(userId));
+  return other?.username || 'Bisedë';
+}
+
+function convAvatar(c: Conversation, userId?: string) {
+  if (c.type === 'group') return null;
+  return c.participants?.find((p) => String(p._id) !== String(userId));
+}
 
 export default function MessagesPage() {
   const { ready, isAuthenticated, user } = useAuthReady();
@@ -110,26 +123,35 @@ export default function MessagesPage() {
         <div className="divide-y divide-[var(--border)]">
           {conversations.map((c) => {
             const other = getOther(c);
+            const title = convTitle(c, user?.id);
+            const isGroup = c.type === 'group';
             return (
               <Link key={c._id} href={`/mesazhe/${c._id}`}>
                 <motion.div
                   whileTap={{ scale: 0.98 }}
                   className={`conversation-row flex items-center gap-3 px-4 py-3 ${c.unreadCount ? 'conversation-row--unread' : ''}`}
                 >
-                  <img
-                    src={other?.avatar || ''}
-                    alt=""
-                    className="w-14 h-14 rounded-full object-cover flex-shrink-0"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + other?.username;
-                    }}
-                  />
+                  {isGroup ? (
+                    <div className="w-14 h-14 rounded-full bg-[var(--primary-soft)] flex items-center justify-center flex-shrink-0 text-[var(--primary)] font-bold text-lg">
+                      {title.charAt(0).toUpperCase()}
+                    </div>
+                  ) : (
+                    <img
+                      src={other?.avatar || ''}
+                      alt=""
+                      className="w-14 h-14 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + other?.username;
+                      }}
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className={`text-[14px] truncate ${c.unreadCount ? 'font-bold text-[var(--text)]' : 'font-semibold text-[var(--text)]'}`}>
-                      {other?.username}
+                      {title}
+                      {isGroup && <span className="text-[var(--text-muted)] font-normal ml-1">({c.participants.length})</span>}
                     </p>
                     <p className={`text-[13px] truncate ${c.unreadCount ? 'text-[var(--text)] font-medium' : 'text-[var(--text-muted)]'}`}>
-                      {c.lastMessage?.content || 'Bisedë e re'}
+                      {c.lastMessage?.type === 'audio' ? '🎤 Mesazh zëri' : c.lastMessage?.content || 'Bisedë e re'}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">

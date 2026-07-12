@@ -95,6 +95,8 @@ export function buildPushFromNotification(notif, senderUsername) {
     mention: { title: 'Përmendje', body: `${user} të përmendi`, url: '/njoftime' },
     share: { title: 'Ndarje', body: `${user} ndau postimin tënd`, url: '/njoftime' },
     story_view: { title: 'Story', body: `${user} shikoi story-n tënde`, url: '/njoftime' },
+    story_reply: { title: 'Përgjigje story', body: `${user} përgjigjoi story-s tënde`, url: '/mesazhe' },
+    live: { title: 'Live', body: `${user} filloi një transmetim live`, url: '/live' },
     verification: { title: 'Verifikim', body: notif.text || 'Llogaria jote u verifikua!', url: '/verifikim' },
     event_interest: { title: 'Komuniteti', body: notif.text || 'Aktivitet i ri', url: '/komuniteti' },
     event_reminder: { title: 'Kujtesë eventi', body: notif.text || 'Event së shpejti', url: '/komuniteti' },

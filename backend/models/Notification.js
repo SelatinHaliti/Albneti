@@ -18,6 +18,7 @@ const notificationSchema = new mongoose.Schema(
         'mention',
         'share',
         'story_view',
+        'story_reply',
         'live',
         'message',
         'event_interest',

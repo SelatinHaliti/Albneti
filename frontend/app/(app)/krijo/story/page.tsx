@@ -19,6 +19,7 @@ export default function CreateStoryPage() {
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [audience, setAudience] = useState<'public' | 'close_friends'>('public');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -82,6 +83,7 @@ export default function CreateStoryPage() {
     try {
       const formData = new FormData();
       formData.append('media', file);
+      formData.append('audience', audience);
       if (selectedLibraryTrack) {
         formData.append('musicData', JSON.stringify(selectedLibraryTrack));
         formData.append('musicUrl', selectedLibraryTrack.url);
@@ -182,6 +184,26 @@ export default function CreateStoryPage() {
               <span className="text-[12px] opacity-70">Zhduket pas 24 orësh</span>
             </button>
           )}
+        </div>
+
+        <div className="border-t border-[var(--border)] pt-4">
+          <p className="text-[14px] font-semibold mb-3">Kush e shikon?</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAudience('public')}
+              className={`flex-1 py-2.5 rounded-xl text-[13px] font-semibold ${audience === 'public' ? 'bg-[var(--ig-blue)] text-white' : 'border border-[var(--border)]'}`}
+            >
+              Të gjithë
+            </button>
+            <button
+              type="button"
+              onClick={() => setAudience('close_friends')}
+              className={`flex-1 py-2.5 rounded-xl text-[13px] font-semibold ${audience === 'close_friends' ? 'bg-emerald-500 text-white' : 'border border-[var(--border)]'}`}
+            >
+              Miq të ngushtë
+            </button>
+          </div>
         </div>
 
         <div className="border-t border-[var(--border)] pt-4">

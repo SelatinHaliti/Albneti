@@ -4,7 +4,7 @@ import { notifyUser, buildPushFromNotification } from './pushService.js';
 
 /** Tipet që shfaqen te Zemra — jo mesazhet DM */
 export const SOCIAL_TYPES = [
-  'like', 'comment', 'follow', 'mention', 'share', 'story_view', 'live',
+  'like', 'comment', 'follow', 'mention', 'share', 'story_view', 'story_reply', 'live',
   'event_interest', 'event_reminder', 'event_update', 'event_promo', 'verification',
 ];
 

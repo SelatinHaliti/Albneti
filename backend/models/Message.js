@@ -14,9 +14,10 @@ const messageSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['text', 'image', 'video', 'emoji'],
+      enum: ['text', 'image', 'video', 'audio', 'emoji', 'story_reply'],
       default: 'text',
     },
+    story: { type: mongoose.Schema.Types.ObjectId, ref: 'Story' },
     content: {
       type: String,
       default: '',
@@ -24,6 +25,8 @@ const messageSchema = new mongoose.Schema(
     media: {
       url: String,
       publicId: String,
+      duration: Number,
+      mimeType: String,
     },
     status: {
       type: String,

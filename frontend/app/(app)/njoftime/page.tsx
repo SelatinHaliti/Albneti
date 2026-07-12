@@ -21,6 +21,8 @@ const typeLabels: Record<string, string> = {
   mention: 'të përmendi',
   share: 'ndau postimin tënd',
   story_view: 'shikoi story-n tënd',
+  story_reply: 'përgjigjoi story-s tënde',
+  live: 'filloi një transmetim live',
   event_interest: 'regjistrim eventi',
   event_reminder: 'kujtesë eventi',
   event_update: 'përditësim eventi',
@@ -35,6 +37,8 @@ const typeIcons: Record<string, string> = {
   mention: '@',
   share: '↗️',
   story_view: '👁',
+  story_reply: '↩️',
+  live: '🔴',
   event_interest: '✅',
   event_reminder: '🔔',
   event_update: '📅',
@@ -56,6 +60,7 @@ function timeAgo(date: string): string {
 function getActionLabel(n: Notification): string {
   if (n.type === 'follow' && n.text?.includes('kërkoi')) return 'kërkoi të të ndjekë';
   if (n.type === 'mention' && n.text) return n.text;
+  if (n.type === 'story_reply' && n.text) return `përgjigjoi: ${n.text}`;
   return typeLabels[n.type] || n.type;
 }
 
@@ -70,6 +75,8 @@ function getNotificationHref(n: Notification): string | null {
   if (postId) return `/post/${postId}`;
   if (EVENT_TYPES.includes(n.type)) return '/komuniteti';
   if (n.type === 'verification') return '/verifikim';
+  if (n.type === 'live') return '/live';
+  if (n.type === 'story_reply') return '/mesazhe';
   if (n.type === 'follow' && n.sender?.username) return `/profili/${n.sender.username}`;
   return null;
 }

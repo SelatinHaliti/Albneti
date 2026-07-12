@@ -21,10 +21,15 @@ const fileFilter = (req, file, cb) => {
     }
     return;
   }
-  if (allowedImages.includes(file.mimetype) || allowedVideos.includes(file.mimetype)) {
+  if (
+    allowedImages.includes(file.mimetype) ||
+    allowedVideos.includes(file.mimetype) ||
+    allowedAudio.includes(file.mimetype) ||
+    file.mimetype.startsWith('audio/')
+  ) {
     cb(null, true);
   } else {
-    cb(new Error('Lloji i file-it nuk lejohet. Përdorni foto (JPEG, PNG, GIF, WebP) ose video (MP4, WebM).'), false);
+    cb(new Error('Lloji i file-it nuk lejohet. Përdorni foto, video ose audio.'), false);
   }
 };
 

@@ -289,28 +289,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       stopCallRingtone();
     };
 
-    const onEnd = (payload: { fromUserId: string; conversationId?: string; reason?: string }) => {
-      setActiveCall((current) => {
-        if (!current) return null;
-        if (String(payload.fromUserId) !== String(current.otherUserId)) return current;
-        if (payload.conversationId && payload.conversationId !== current.conversationId) return current;
-        setRingPhase('idle');
-        stopCallRingtone();
-        signalingBridgeRef.current?.reset();
-        signalingBridgeRef.current = null;
-        if (current.direction === 'outgoing' && current.localStream) {
-          current.localStream.getTracks().forEach((t) => t.stop());
-        }
-        if (payload.reason === 'declined') {
-          toastError('Thirrja u refuzua.');
-        } else if (payload.reason === 'no_answer' || payload.reason === 'disconnect') {
-          toastError('Thirrja u mbyll.');
-        }
-        return null;
-      });
-    };
-
-    const onBusy = () => {
+    const onBusy = (payload: { fromUserId: string; conversationId?: string }) => {
+      if (!matchesActiveCall(payload.fromUserId, payload.conversationId)) return;
       setRingPhase('idle');
       stopCallRingtone();
       signalingBridgeRef.current?.reset();
@@ -324,7 +304,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       toastError('Përdoruesi është i zënë ose offline.');
     };
 
-    const onOffline = () => {
+    const onOffline = (payload: { fromUserId: string; conversationId?: string }) => {
+      if (!matchesActiveCall(payload.fromUserId, payload.conversationId)) return;
       setRingPhase('idle');
       stopCallRingtone();
       signalingBridgeRef.current?.reset();
@@ -356,8 +337,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     socket.on('call:ice', onIce);
     socket.on('call:answer', onAnswer);
     socket.on('call:ringing', onCalleeRinging);
-    socket.on('call:end', onEnd);
-    socket.on('call:reject', onEnd);
     socket.on('call:busy', onBusy);
     socket.on('call:offline', onOffline);
     socket.on('call:error', onCallError);
@@ -367,8 +346,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       socket.off('call:ice', onIce);
       socket.off('call:answer', onAnswer);
       socket.off('call:ringing', onCalleeRinging);
-      socket.off('call:end', onEnd);
-      socket.off('call:reject', onEnd);
       socket.off('call:busy', onBusy);
       socket.off('call:offline', onOffline);
       socket.off('call:error', onCallError);
@@ -393,17 +370,33 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   return (
     <CallContext.Provider value={{ activeCall, startCall, endCall, stopRing }}>
       {children}
-      {activeCall && user && signalingBridgeRef.current && callSocket && (
+      {activeCall && user && signalingBridgeRef.current && callSocket && activeCall.direction === 'incoming' && activeCall.offerSdp && (
         <CallModal
           socket={callSocket}
           selfUserId={user.id}
           otherUserId={activeCall.otherUserId}
           conversationId={activeCall.conversationId}
           otherUsername={activeCall.otherUsername}
-          direction={activeCall.direction}
+          direction="incoming"
           mode={activeCall.mode}
-          offerSdp={activeCall.direction === 'incoming' ? activeCall.offerSdp : undefined}
-          localStream={activeCall.direction === 'outgoing' ? activeCall.localStream : undefined}
+          offerSdp={activeCall.offerSdp}
+          signalingBridge={signalingBridgeRef.current}
+          onClose={endCall}
+          onStopRing={silenceRing}
+          onConnected={handleAcceptNavigate}
+          onEmitCallEnd={emitCallEnd}
+        />
+      )}
+      {activeCall && user && signalingBridgeRef.current && callSocket && activeCall.direction === 'outgoing' && activeCall.localStream && (
+        <CallModal
+          socket={callSocket}
+          selfUserId={user.id}
+          otherUserId={activeCall.otherUserId}
+          conversationId={activeCall.conversationId}
+          otherUsername={activeCall.otherUsername}
+          direction="outgoing"
+          mode={activeCall.mode}
+          localStream={activeCall.localStream}
           signalingBridge={signalingBridgeRef.current}
           onClose={endCall}
           onStopRing={silenceRing}

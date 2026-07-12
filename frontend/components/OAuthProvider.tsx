@@ -8,7 +8,7 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 export function OAuthProvider({ children }: { children: ReactNode }) {
   if (!GOOGLE_CLIENT_ID) return <>{children}</>;
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} locale="sq">
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       {children}
     </GoogleOAuthProvider>
   );

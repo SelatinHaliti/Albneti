@@ -2,10 +2,7 @@
 
 import Link from 'next/link';
 
-type StoryGroup = {
-  user: { _id: string; username: string; avatar?: string; fullName?: string };
-  stories: { _id: string; mediaUrl: string; type: string }[];
-};
+type StoryGroup = { user: { _id: string; username: string; avatar?: string; fullName?: string }; stories: { _id: string; mediaUrl: string; type: string }[]; hasCloseFriendsOnly?: boolean };
 
 type StoryRingProps = {
   groups: StoryGroup[];
@@ -56,7 +53,7 @@ export function StoryRing({ groups, currentUserId }: StoryRingProps) {
           href={`/story/${group.user._id}`}
           className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
         >
-          <div className="story-ring group-hover:opacity-90 transition-opacity">
+          <div className={`story-ring group-hover:opacity-90 transition-opacity ${group.hasCloseFriendsOnly ? 'story-ring--close-friends' : ''}`}>
             <div className="story-ring-inner w-full h-full flex items-center justify-center overflow-hidden">
               <img
                 src={group.user.avatar || ''}

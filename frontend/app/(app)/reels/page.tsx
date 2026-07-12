@@ -21,6 +21,11 @@ type Reel = {
   createdAt: string;
   saved?: boolean;
   music?: { url: string; title?: string; artist?: string };
+  duetOf?: {
+    _id: string;
+    media: { url: string; type: string }[];
+    user: { username: string; avatar?: string };
+  };
 };
 
 type ReelsResponse = { reels: Reel[]; hasMore: boolean; nextCursor: string | null };
@@ -326,7 +331,11 @@ export default function ReelsPage() {
         ref={videoRef}
         key={currentReel._id}
         src={media?.url}
-        className="absolute inset-0 w-full h-full object-contain bg-black"
+        className={`absolute bg-black object-contain ${
+          currentReel.duetOf
+            ? 'right-0 top-0 w-1/2 h-full'
+            : 'inset-0 w-full h-full'
+        }`}
         playsInline
         loop
         muted={muted || !!currentReel.music?.url}
@@ -337,6 +346,17 @@ export default function ReelsPage() {
         }}
         onLoadedData={(e) => { e.currentTarget.play().catch(() => {}); }}
       />
+      {currentReel.duetOf?.media?.[0]?.url && (
+        <video
+          key={`duet-${currentReel.duetOf._id}`}
+          src={currentReel.duetOf.media[0].url}
+          className="absolute left-0 top-0 w-1/2 h-full object-contain bg-black border-r border-white/20"
+          playsInline
+          loop
+          muted={muted || !!currentReel.music?.url}
+          autoPlay
+        />
+      )}
 
       {/* Double-tap heart */}
       {showHeart && (
@@ -356,6 +376,13 @@ export default function ReelsPage() {
         <Link href={`/post/${currentReel._id}`} className="flex flex-col items-center gap-1 text-white">
           <IconComment />
           {commentsCount > 0 && <span className="text-[11px] font-semibold">{commentsCount}</span>}
+        </Link>
+        <Link href={`/krijo/duet/${currentReel._id}`} className="flex flex-col items-center gap-1 text-white opacity-90" title="Krijo duet">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="4" width="9" height="16" rx="1" />
+            <rect x="13" y="4" width="9" height="16" rx="1" />
+          </svg>
+          <span className="text-[10px] font-semibold">Duet</span>
         </Link>
         <button type="button" onClick={handleSave} className={`text-white ${currentReel.saved ? 'opacity-100' : 'opacity-80'}`}>
           <IconBookmark filled={currentReel.saved} />

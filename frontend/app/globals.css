@@ -247,6 +247,11 @@ body {
 }
 .story-ring-inner img { width: 100%; height: 100%; object-fit: cover; }
 
+/* Miq të ngushtë — unazë jeshile si Instagram */
+.story-ring--close-friends {
+  background: linear-gradient(45deg, #1ed760, #00c853);
+}
+
 .logo-gradient {
   background: var(--ig-gradient);
   -webkit-background-clip: text;

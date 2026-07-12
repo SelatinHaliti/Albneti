@@ -16,6 +16,11 @@ const storySchema = new mongoose.Schema(
       title: { type: String, default: 'Muzikë' },
       artist: { type: String, default: '' },
     },
+    audience: {
+      type: String,
+      enum: ['public', 'close_friends'],
+      default: 'public',
+    },
     views: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     expiresAt: { type: Date, required: true },
   },

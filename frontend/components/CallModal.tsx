@@ -17,6 +17,7 @@ import {
   waitForIceGathering,
 } from '@/lib/webrtc';
 import { stopCallRingtone } from '@/lib/callRingtone';
+import { useToastStore } from '@/store/useToastStore';
 import { CallControlButton } from '@/components/CallControls';
 import {
   IconCallMic,
@@ -95,6 +96,8 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   const acceptStartedRef = useRef(false);
   const outgoingStartedRef = useRef<string | null>(null);
   const disconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasConnectedRef = useRef(false);
+  const toastError = useToastStore((s) => s.error);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -115,6 +118,9 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
   useEffect(() => {
     connectedRef.current = hasRemote || status === 'connected';
+    if (hasRemote || status === 'connected') {
+      wasConnectedRef.current = true;
+    }
   }, [hasRemote, status]);
 
   // Shfaq video lokale nëse stream është marrë para mount
@@ -218,7 +224,11 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       }
       setHasRemote(true);
       setStatus('connected');
-      onConnected?.();
+      wasConnectedRef.current = true;
+      // Mos navigo menjëherë në mobile — prit lidhjen të stabilizohet
+      window.setTimeout(() => {
+        if (!endedRef.current) onConnected?.();
+      }, 600);
     },
     [onConnected, onStopRing]
   );
@@ -248,22 +258,20 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
           disconnectTimerRef.current = null;
         }
         setStatus('connected');
+        wasConnectedRef.current = true;
       }
       if (state === 'failed' && !endedRef.current) {
         setError('Lidhja dështoi. Kontrollo internetin dhe provo përsëri.');
         setStatus('error');
       }
-      if (state === 'disconnected' && !endedRef.current) {
+      if (state === 'disconnected' && !endedRef.current && wasConnectedRef.current) {
         setError('Lidhja u ndërpre. Duke u rilidhur...');
         if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
         disconnectTimerRef.current = setTimeout(() => {
           if (!endedRef.current && pc.connectionState === 'disconnected') {
             finishCall('disconnect', 'end');
           }
-        }, 12000);
-      }
-      if (state === 'closed' && !endedRef.current) {
-        finishCall('closed', 'none');
+        }, 15000);
       }
     };
 
@@ -405,7 +413,9 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   useEffect(() => {
     const onRemoteEnd = (payload: { fromUserId: string; conversationId?: string; reason?: string }) => {
       if (String(payload.fromUserId) !== String(otherUserId)) return;
-      if (payload.conversationId && payload.conversationId !== conversationId) return;
+      if (payload.conversationId && String(payload.conversationId) !== String(conversationId)) return;
+      if (payload.reason === 'declined') toastError('Thirrja u refuzua.');
+      else if (payload.reason === 'no_answer' || payload.reason === 'disconnect') toastError('Thirrja u mbyll.');
       finishCall(payload.reason || 'remote_end', 'none');
     };
 
@@ -426,7 +436,15 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       socket.off('call:reject', onRemoteEnd);
       socket.off('call:ringing', onRinging);
     };
-  }, [socket, otherUserId, conversationId, direction, finishCall, onStopRing]);
+  }, [socket, otherUserId, conversationId, direction, finishCall, onStopRing, toastError]);
+
+  // Pastro WebRTC kur komponenti hiqet
+  useEffect(() => {
+    return () => {
+      if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
+      if (!endedRef.current) cleanupLocal();
+    };
+  }, [cleanupLocal]);
 
   // Ndal ringringun sapo nuk jemi më në pritje (prano/lidhur/gabim)
   useEffect(() => {

@@ -57,12 +57,14 @@ export const createStory = async (req, res) => {
     );
     const musicData = await parseMusicFromRequest(req);
     const expiresAt = new Date(Date.now() + STORY_EXPIRY_HOURS * 60 * 60 * 1000);
+    const audience = req.body.audience === 'close_friends' ? 'close_friends' : 'public';
     const storyPayload = {
       user: req.user.id,
       type,
       mediaUrl: result.secure_url,
       publicId: result.public_id,
       expiresAt,
+      audience,
     };
     if (musicData?.url) storyPayload.music = musicData;
     const story = await Story.create(storyPayload);
@@ -83,18 +85,38 @@ export const getActiveStories = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const followingIds = [...user.following.map((id) => id.toString()), user._id.toString()];
+
     const stories = await Story.find({
       user: { $in: followingIds },
       expiresAt: { $gt: new Date() },
     })
       .sort({ createdAt: -1 })
-      .populate('user', 'username avatar fullName')
+      .populate('user', 'username avatar fullName closeFriends')
       .lean();
 
+    const filtered = stories.filter((s) => {
+      const ownerId = s.user._id.toString();
+      if (ownerId === req.user.id) return true;
+      if (s.audience === 'close_friends') {
+        const ownerCloseFriends = (s.user.closeFriends || []).map((id) => id.toString());
+        return ownerCloseFriends.includes(req.user.id);
+      }
+      return true;
+    });
+
     const byUser = {};
-    for (const s of stories) {
+    for (const s of filtered) {
       const uid = s.user._id.toString();
-      if (!byUser[uid]) byUser[uid] = { user: s.user, stories: [] };
+      if (!byUser[uid]) {
+        const hasCloseFriendsOnly = filtered.some(
+          (st) => st.user._id.toString() === uid && st.audience === 'close_friends'
+        );
+        byUser[uid] = {
+          user: s.user,
+          stories: [],
+          hasCloseFriendsOnly,
+        };
+      }
       byUser[uid].stories.push(s);
     }
     const list = Object.values(byUser).map((g) => ({

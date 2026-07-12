@@ -12,6 +12,9 @@ import {
   getFollowRequests,
   acceptFollowRequest,
   declineFollowRequest,
+  getCloseFriends,
+  toggleCloseFriend,
+  exportUserData,
 } from '../controllers/userController.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import { uploadSingle } from '../middleware/upload.js';
@@ -22,6 +25,8 @@ router.get('/kerko', protect, searchUsers);
 router.get('/me/ruajturat', protect, getSavedPosts);
 router.get('/me/tagged', protect, getTaggedPosts);
 router.get('/me/kerkesa-ndjekje', protect, getFollowRequests);
+router.get('/me/miq-te-ngushte', protect, getCloseFriends);
+router.get('/me/eksport', protect, exportUserData);
 router.post('/me/kerkesa-ndjekje/:requesterId/prano', protect, acceptFollowRequest);
 router.post('/me/kerkesa-ndjekje/:requesterId/refuzo', protect, declineFollowRequest);
 router.get('/liste/:userId/ndjekesit', protect, getFollowers);
@@ -30,5 +35,6 @@ router.get('/:username', optionalAuth, getProfile);
 router.put('/profili', protect, uploadSingle, updateProfile);
 router.post('/:userId/ndiq', protect, toggleFollow);
 router.post('/:userId/blloko', protect, toggleBlock);
+router.post('/:userId/mik-i-ngushte', protect, toggleCloseFriend);
 
 export default router;

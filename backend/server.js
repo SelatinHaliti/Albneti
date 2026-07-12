@@ -24,13 +24,16 @@ import communityRoutes from './routes/community.js';
 import verificationRoutes from './routes/verification.js';
 import callRoutes from './routes/calls.js';
 import pushRoutes from './routes/push.js';
+import liveRoutes from './routes/live.js';
 import { stripeWebhook } from './controllers/verificationController.js';
 import { setupSocketIO } from './sockets/index.js';
 import { setIO } from './sockets/io.js';
+import { initMonitoring, errorHandler } from './middleware/monitoring.js';
 import { seedCommunityEvents } from './services/eventSeed.js';
 import { runScheduledEventPromos } from './services/eventAdsService.js';
 
 connectDB().then(() => {
+  void initMonitoring();
   seedCommunityEvents();
   setTimeout(() => runScheduledEventPromos().catch(() => {}), 15000);
   setInterval(() => runScheduledEventPromos().catch(() => {}), 6 * 60 * 60 * 1000);
@@ -76,7 +79,7 @@ app.use(
       if (/\.vercel\.app$/.test(origin)) return cb(null, true);
       // Lejo localhost me çdo port (zhvillim lokal)
       if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true);
-      return cb(null, true); // Në rast dyshimi lejo (mund ta bësh false për security strikte)
+      return cb(new Error('CORS: origin i palejuar'), false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -121,6 +124,7 @@ app.use('/api/community', communityRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/live', liveRoutes);
 
 // Health check – përfshirë gjendjen e DB (për load balancer / monitoring)
 app.get('/api/health', async (req, res) => {
@@ -136,6 +140,9 @@ app.get('/api/health', async (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Global error handler (monitoring) – duhet të jetë i fundit
+app.use(errorHandler);
 
 // Socket.io setup
 setupSocketIO(io);
