@@ -15,6 +15,9 @@ const createTransporter = () => {
   const isGmail = host === 'smtp.gmail.com' || user.endsWith('@gmail.com');
   if (isGmail) {
     return nodemailer.createTransport({
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 100,
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
@@ -39,13 +42,52 @@ const createTransporter = () => {
 
 export const isSmtpConfigured = () => Boolean(getTransporter());
 
-export function getEmailProvider() {
-  if (process.env.RESEND_API_KEY?.startsWith('re_')) return 'resend';
-  if (isSmtpConfigured()) return 'smtp';
-  return null;
+let resendSessionBlocked = false;
+
+export function isResendFromVerifiedDomain() {
+  const from = process.env.RESEND_FROM?.trim() || 'AlbNet <onboarding@resend.dev>';
+  return Boolean(process.env.RESEND_API_KEY?.trim().startsWith('re_')) && !/@resend\.dev/i.test(from);
 }
 
-export const isEmailConfigured = () => Boolean(getEmailProvider());
+function isResendDomainRestrictionError(result) {
+  const err = result?.error || '';
+  return /Resend 403/i.test(err) && /verify a domain|only send testing emails/i.test(err);
+}
+
+function shouldTryResend() {
+  if (!process.env.RESEND_API_KEY?.trim().startsWith('re_')) return false;
+  if (resendSessionBlocked) return false;
+  return isResendFromVerifiedDomain();
+}
+
+export function getEmailDeliveryInfo() {
+  const hasResendKey = Boolean(process.env.RESEND_API_KEY?.trim().startsWith('re_'));
+  const hasSmtp = isSmtpConfigured();
+  const resendNeedsDomain = hasResendKey && !isResendFromVerifiedDomain();
+  let provider = null;
+  if (shouldTryResend()) provider = 'resend';
+  else if (hasSmtp) provider = 'smtp';
+  else if (hasResendKey) provider = 'resend';
+
+  return {
+    provider,
+    resendNeedsDomain,
+    resendConfigured: hasResendKey,
+    smtpConfigured: hasSmtp,
+    deliveryNote: resendNeedsDomain
+      ? 'Resend onboarding@resend.dev dërgon vetëm te llogaria Resend. Blast përdor Gmail SMTP derisa të verifikosh domain.'
+      : null,
+  };
+}
+
+export function getEmailProvider() {
+  return getEmailDeliveryInfo().provider;
+}
+
+export const isEmailConfigured = () => {
+  const { smtpConfigured, resendConfigured } = getEmailDeliveryInfo();
+  return smtpConfigured || (resendConfigured && isResendFromVerifiedDomain());
+};
 
 /** Singleton – mos krijo transport të ri për çdo email */
 let cachedTransporter = null;
@@ -153,13 +195,22 @@ async function sendMail({ to, subject, html }) {
     process.env.SMTP_FROM ||
     (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
 
-  const resendResult = await sendViaResend({ to, subject, html });
-  if (resendResult?.ok) return resendResult;
+  let resendResult = null;
+  if (shouldTryResend()) {
+    resendResult = await sendViaResend({ to, subject, html });
+    if (resendResult?.ok) return resendResult;
+    if (isResendDomainRestrictionError(resendResult)) resendSessionBlocked = true;
+  }
 
-  const resendOnly =
-    process.env.RESEND_API_KEY?.trim().startsWith('re_') &&
-    process.env.EMAIL_USE_SMTP_FALLBACK !== 'true';
-  if (resendOnly) {
+  const canUseSmtp =
+    isSmtpConfigured() &&
+    (!process.env.RESEND_API_KEY?.trim().startsWith('re_') ||
+      process.env.EMAIL_USE_SMTP_FALLBACK === 'true' ||
+      !shouldTryResend() ||
+      isResendDomainRestrictionError(resendResult) ||
+      resendSessionBlocked);
+
+  if (!canUseSmtp) {
     return resendResult || { ok: false, error: 'Resend nuk u përgjigj.' };
   }
 
@@ -167,7 +218,6 @@ async function sendMail({ to, subject, html }) {
   const maxAttempts = 3;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    resetSmtpTransporter();
     const transporter = getTransporter();
     if (!transporter) {
       return resendResult || { ok: false, error: 'SMTP nuk është konfiguruar në server.' };
@@ -182,6 +232,7 @@ async function sendMail({ to, subject, html }) {
     } catch (err) {
       const error = normalizeMailerError(err);
       if (attempt < maxAttempts && isRetryableSmtpError(err)) {
+        resetSmtpTransporter();
         await sleep(2000 * attempt);
         continue;
       }

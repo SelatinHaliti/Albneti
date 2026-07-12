@@ -4,7 +4,7 @@ import Post from '../models/Post.js';
 import Event from '../models/Event.js';
 import LiveStream from '../models/LiveStream.js';
 import MarketingRun from '../models/MarketingRun.js';
-import { sendAlbnetAdsEmail, isEmailConfigured, isSmtpConfigured, resetSmtpTransporter, getEmailProvider } from '../utils/email.js';
+import { sendAlbnetAdsEmail, isEmailConfigured, isSmtpConfigured, resetSmtpTransporter, getEmailProvider, getEmailDeliveryInfo } from '../utils/email.js';
 import { generateMarketingTheme, getAiMarketingStatus } from './aiMarketingService.js';
 
 const BATCH_SIZE = 8;
@@ -13,6 +13,11 @@ const ACTIVE_DAYS = 60;
 const MIN_DAYS_BETWEEN_EMAILS = 6;
 const SYSTEM_USERNAME = 'albnet_official';
 const STUCK_RUN_MS = 15 * 60 * 1000;
+
+function isResendDomainRestrictionHint(error) {
+  const msg = String(error || '');
+  return /Resend 403/i.test(msg) && /verify a domain|only send testing emails/i.test(msg);
+}
 
 const WEEKLY_THEMES = [
   {
@@ -155,15 +160,13 @@ export async function cancelStuckMarketingRuns() {
 
 async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey, runType, force }) {
   if (!isEmailConfigured()) {
-    const err = 'SMTP nuk është konfiguruar në server.';
+    const err = 'Email nuk është konfiguruar në server (SMTP ose Resend me domain).';
     await MarketingRun.findOneAndUpdate(
       { weekKey: runKey, runType },
       { $set: { status: 'failed', errorMessage: err, completedAt: new Date(), failedCount: users.length } }
     );
     return { sent: 0, failed: users.length, skipped: 0, total: users.length, lastError: err };
   }
-
-  resetSmtpTransporter();
 
   const minEmailGap = new Date(Date.now() - MIN_DAYS_BETWEEN_EMAILS * 86400000);
   let sent = 0;
@@ -198,7 +201,9 @@ async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey
         consecutiveFails++;
         if (!lastError) lastError = result.error;
         if (consecutiveFails >= 5 && sent === 0) {
-          lastError = result.error || 'SMTP dështoi pas 5 përpjekjeve radhazi.';
+          lastError = isResendDomainRestrictionHint(result.error)
+            ? 'Resend kërkon domain të verifikuar. Duke përdorur Gmail SMTP – kontrollo SMTP_PASS në Render.'
+            : (result.error || 'Dërgimi dështoi pas 5 përpjekjeve radhazi.');
           break;
         }
       }
@@ -657,6 +662,7 @@ export async function getMarketingStats() {
     smtpConfigured: isEmailConfigured(),
     smtpVerified: isEmailConfigured(),
     emailProvider: getEmailProvider(),
+    ...getEmailDeliveryInfo(),
     currentWeekKey: weekKey,
     lastRun,
     runningBlast: runningJob

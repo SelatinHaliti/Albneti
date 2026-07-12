@@ -19,6 +19,8 @@ type MarketingStats = {
   smtpVerified?: boolean;
   smtpError?: string;
   emailProvider?: 'resend' | 'smtp' | null;
+  resendNeedsDomain?: boolean;
+  deliveryNote?: string | null;
   currentWeekKey: string;
   optedIn: number;
   optedOut: number;
@@ -345,6 +347,16 @@ export default function AdminMarketingPage() {
         <p className="text-sm text-gray-500">Gjenero marketing profesional me AI dhe dërgo me 1 klik</p>
       </div>
 
+      {stats.resendNeedsDomain && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 text-sm space-y-2">
+          <p className="font-bold">⚠️ Resend: domain nuk është verifikuar</p>
+          <p>{stats.deliveryNote || 'Blast-i përdor Gmail SMTP derisa të verifikosh domain në resend.com/domains.'}</p>
+          <p className="text-xs">
+            Pas verifikimit, vendos në Render: <code className="text-xs">RESEND_FROM=AlbNet &lt;noreply@domaini-yt.com&gt;</code>
+          </p>
+        </div>
+      )}
+
       {!stats.smtpConfigured && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/40 text-red-800 dark:text-red-200 text-sm space-y-2">
           <p className="font-bold">❌ Email nuk është konfiguruar në production (Render)</p>
@@ -449,7 +461,9 @@ export default function AdminMarketingPage() {
             {stats.smtpConfigured
               ? stats.emailProvider === 'resend'
                 ? '✅ Resend'
-                : '✅ SMTP'
+                : stats.resendNeedsDomain
+                  ? '✅ Gmail SMTP'
+                  : '✅ SMTP'
               : '❌ Jo'}
           </p>
         </div>
