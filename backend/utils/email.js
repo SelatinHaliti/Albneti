@@ -9,18 +9,23 @@ const createTransporter = () => {
   if (!host || host.includes('example')) return null;
   const user = (process.env.SMTP_USER || '').trim();
   // Gmail App Password shpesh kopjohet me hapësira (p.sh. "abcd efgh ijkl mnop")
-  // Nodemailer pret string pa hapësira.
   const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
   if (!user || !pass) return null;
+
+  const isGmail = host === 'smtp.gmail.com' || user.endsWith('@gmail.com');
+  if (isGmail) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+    });
+  }
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user,
-      pass,
-    },
-    // Disa hoste kërkojnë TLS edhe me secure=false (STARTTLS).
+    requireTLS: process.env.SMTP_SECURE !== 'true',
+    auth: { user, pass },
     tls: { servername: host },
   });
 };
@@ -34,6 +39,9 @@ function normalizeMailerError(err) {
   const code = e?.code ? String(e.code) : '';
   const response = e?.response ? String(e.response) : '';
   const message = e?.message ? String(e.message) : '';
+  if (code === 'EAUTH' || /BadCredentials/i.test(response + message)) {
+    return 'Gmail refuzoi fjalëkalimin. Aktivizo 2FA dhe krijo App Password të ri nga myaccount.google.com/apppasswords, pastaj përditëso SMTP_PASS në .env dhe Render.';
+  }
   const parts = [code, message, response].filter(Boolean);
   return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
 }
@@ -46,8 +54,12 @@ async function sendMail({ to, subject, html }) {
   try {
     // Verifikon lidhjen/auth përpara dërgimit (na jep gabim real nëse s’punon).
     await transporter.verify();
+    const smtpUser = (process.env.SMTP_USER || '').trim();
+    const from =
+      process.env.SMTP_FROM ||
+      (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'AlbNet <noreply@albnet.com>',
+      from,
       to,
       subject,
       html,
@@ -281,17 +293,33 @@ export async function sendAlbnetAdsEmail({
       </p>`
     : '';
 
+  const urgencyBanner = theme.urgencyLine
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 20px; background: linear-gradient(135deg, ${BRAND.primary}15, ${BRAND.red}15); border-radius: 12px; border: 1px solid ${BRAND.primary}40;">
+      <tr><td style="padding: 14px 18px; text-align: center;">
+        <p style="margin: 0; font-size: 14px; font-weight: 600; color: ${BRAND.text};">${theme.urgencyLine}</p>
+      </td></tr>
+    </table>`
+    : '';
+
+  const heroEmoji = theme.heroEmoji || '🇦🇱';
+
   const content = `
-    <p style="margin: 0 0 4px; font-size: 12px; font-weight: 700; color: ${BRAND.primary}; letter-spacing: 0.5px;">ALBNET ADS · Javore</p>
-    <p style="margin: 0 0 12px; font-size: 24px; font-weight: 700; color: ${BRAND.text}; line-height: 1.25;">${theme.headline}</p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px; background: linear-gradient(135deg, ${BRAND.primary}, ${BRAND.primaryDark}); border-radius: 16px;">
+      <tr><td style="padding: 28px 24px; text-align: center;">
+        <p style="margin: 0 0 8px; font-size: 36px;">${heroEmoji}</p>
+        <p style="margin: 0; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: uppercase;">ALBNET ADS · AI Marketing</p>
+      </td></tr>
+    </table>
+    <p style="margin: 0 0 12px; font-size: 26px; font-weight: 700; color: ${BRAND.text}; line-height: 1.25;">${theme.headline}</p>
     <p style="margin: 0 0 8px; color: ${BRAND.textMuted}; font-size: 14px;">Përshëndetje <strong style="color: ${BRAND.text};">${name}</strong>,</p>
-    <p style="margin: 0 0 20px; color: ${BRAND.text}; font-size: 15px; line-height: 1.6;">${theme.intro}</p>
+    <p style="margin: 0 0 20px; color: ${BRAND.text}; font-size: 15px; line-height: 1.65;">${theme.intro}</p>
+    ${urgencyBanner}
     ${statsLine}
     ${highlightBlock}
     ${featureCards}
     ${ctaButton(`${baseUrl}/feed`, 'Hap AlbNet tani')}
     <p style="margin: 24px 0 0; font-size: 12px; color: ${BRAND.textMuted}; text-align: center; line-height: 1.6;">
-      Marr këtë email sepse je përdorues aktiv i AlbNet.<br>
+      Marr këtë email sepse je përdorues i AlbNet.<br>
       <a href="${unsubUrl}" style="color: ${BRAND.textMuted}; text-decoration: underline;">Çabonohu nga emailet marketing</a>
       · <a href="${baseUrl}/profili/redakto" style="color: ${BRAND.textMuted}; text-decoration: underline;">Cilësimet</a>
     </p>

@@ -2,6 +2,11 @@ import {
   runWeeklyMarketingEmails,
   unsubscribeMarketingByToken,
   getMarketingStats,
+  sendMarketingTestEmail,
+  getAIMarketingPreview,
+  runAIMarketingBlast,
+  startAIMarketingBlast,
+  getBlastStatus,
 } from '../services/marketingEmailService.js';
 
 function verifyCronSecret(req) {
@@ -41,6 +46,54 @@ export const adminMarketingStats = async (_req, res) => {
   try {
     const stats = await getMarketingStats();
     res.json(stats);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/** Admin: dërgo 1 email test (verifikon SMTP + dizajnin) */
+export const adminTestMarketingEmail = async (req, res) => {
+  try {
+    const to = String(req.body?.email || '').trim().toLowerCase();
+    if (!to || !to.includes('@')) {
+      return res.status(400).json({ message: 'Email i pavlefshëm.' });
+    }
+    const result = await sendMarketingTestEmail(to);
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/** Admin: preview marketing të gjeneruar me AI */
+export const adminAIMarketingPreview = async (_req, res) => {
+  try {
+    const result = await getAIMarketingPreview();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/** Admin: 1 klik – nis dërgim në background */
+export const adminAIMarketingBlast = async (req, res) => {
+  try {
+    const result = await startAIMarketingBlast({ triggeredBy: 'admin' });
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/** Admin: status i blast-it */
+export const adminBlastStatus = async (req, res) => {
+  try {
+    const runKey = req.query.runKey || req.params.runKey;
+    const result = await getBlastStatus(runKey);
+    if (!result.ok) return res.status(404).json(result);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }
