@@ -259,9 +259,9 @@ export function IconCommunity({ active }: { active?: boolean }) {
 /** Verifikim – badge blu */
 export function IconVerified({ active }: { active?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={active ? 'none' : stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" fill={active ? 'var(--ig-blue)' : 'none'} stroke={active ? 'var(--ig-blue)' : stroke} />
-      <path d="M9 12l2 2 4-4" stroke={active ? '#fff' : stroke} strokeWidth={2.5} />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={active ? 'none' : stroke} strokeWidth={active ? 0 : strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" fill={active ? 'var(--ig-blue)' : 'none'} stroke={active ? 'none' : stroke} />
+      <path d="M9 12l2 2 4-4" stroke={active ? '#fff' : stroke} strokeWidth={active ? 2.5 : strokeWidth} />
     </svg>
   );
 }

@@ -38,8 +38,8 @@ const navItems = [
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
   { href: '/live', label: 'Live', Icon: IconLive },
-  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity, featured: true },
-  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified, featured: true },
+  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity },
+  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified },
   { href: '/krijo/post', label: 'Krijo', Icon: IconAdd, isCreate: true },
   { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badge: 'messages' as const },
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badge: 'social' as const },
@@ -323,7 +323,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 isActive
                   ? 'text-[var(--text)] font-bold bg-[var(--primary-soft)]'
                   : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
-              } ${'featured' in navItem && navItem.featured ? 'desktop-sidebar-link--featured' : ''}`;
+              }`;
 
               if ('isCreate' in navItem && navItem.isCreate) {
                 return (

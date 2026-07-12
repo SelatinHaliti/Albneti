@@ -34,8 +34,8 @@ const links = [
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
   { href: '/live', label: 'Live', Icon: IconLive, highlight: true },
-  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity, featured: true },
-  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified, featured: true },
+  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity },
+  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified },
   { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badgeKey: 'messages' as const },
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badgeKey: 'social' as const },
   { href: '/chat-global', label: 'Chat Global', Icon: IconChatGlobal },
@@ -127,7 +127,7 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
                 onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-colors ${
                   isActive ? 'bg-[var(--primary-soft)] text-[var(--text)] font-semibold' : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
-                } ${'highlight' in item && item.highlight ? 'border border-[var(--danger)]/30' : ''} ${'featured' in item && item.featured ? 'border border-[var(--primary)]/25 bg-[var(--primary-soft)]/40' : ''}`}
+                } ${'highlight' in item && item.highlight ? 'border border-[var(--danger)]/30' : ''}`}
               >
                 <span className="relative flex-shrink-0 w-6 flex justify-center">
                   {Icon === IconHome && <IconHome active={isActive} />}
