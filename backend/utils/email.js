@@ -110,10 +110,10 @@ export async function verifySmtpConnection({ timeoutMs = 45000, useCache = true 
   }
 }
 
-async function sendViaResend({ to, subject, html, from }) {
+async function sendViaResend({ to, subject, html }) {
   const key = process.env.RESEND_API_KEY?.trim();
   if (!key?.startsWith('re_')) return null;
-  const fromAddr = from || process.env.RESEND_FROM || process.env.SMTP_FROM || 'AlbNet <onboarding@resend.dev>';
+  const fromAddr = process.env.RESEND_FROM?.trim() || 'AlbNet <onboarding@resend.dev>';
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -153,9 +153,15 @@ async function sendMail({ to, subject, html }) {
     process.env.SMTP_FROM ||
     (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
 
-  const resendResult = await sendViaResend({ to, subject, html, from });
+  const resendResult = await sendViaResend({ to, subject, html });
   if (resendResult?.ok) return resendResult;
-  if (resendResult && !resendResult.ok && !isSmtpConfigured()) return resendResult;
+
+  const resendOnly =
+    process.env.RESEND_API_KEY?.trim().startsWith('re_') &&
+    process.env.EMAIL_USE_SMTP_FALLBACK !== 'true';
+  if (resendOnly) {
+    return resendResult || { ok: false, error: 'Resend nuk u përgjigj.' };
+  }
 
   const mailOptions = { from, to, subject, html };
   const maxAttempts = 3;

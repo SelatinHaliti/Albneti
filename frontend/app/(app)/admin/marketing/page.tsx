@@ -18,6 +18,7 @@ type MarketingStats = {
   smtpConfigured: boolean;
   smtpVerified?: boolean;
   smtpError?: string;
+  emailProvider?: 'resend' | 'smtp' | null;
   currentWeekKey: string;
   optedIn: number;
   optedOut: number;
@@ -346,8 +347,8 @@ export default function AdminMarketingPage() {
 
       {!stats.smtpConfigured && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/40 text-red-800 dark:text-red-200 text-sm space-y-2">
-          <p className="font-bold">❌ SMTP nuk është konfiguruar në production (Render)</p>
-          <p>Kjo është arsyeja kryesore pse nuk dërgohen email-et. Vendos në Render Dashboard → albneti-api → Environment variablat SMTP_*.</p>
+          <p className="font-bold">❌ Email nuk është konfiguruar në production (Render)</p>
+          <p>Vendos <strong>RESEND_API_KEY</strong> ose SMTP_* në Render Dashboard → albneti-api → Environment.</p>
           <p className="text-xs">Pastaj bëj <strong>Manual Deploy → Redeploy</strong></p>
         </div>
       )}
@@ -443,9 +444,13 @@ export default function AdminMarketingPage() {
           <p className="text-2xl font-bold dark:text-white">{stats.eligibleActiveUsers}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
-          <p className="text-xs text-gray-500">SMTP</p>
+          <p className="text-xs text-gray-500">Email</p>
           <p className={`text-lg font-bold ${stats.smtpConfigured ? 'text-green-600' : 'text-red-600'}`}>
-            {stats.smtpConfigured ? '✅ OK' : '❌ Jo'}
+            {stats.smtpConfigured
+              ? stats.emailProvider === 'resend'
+                ? '✅ Resend'
+                : '✅ SMTP'
+              : '❌ Jo'}
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
@@ -466,7 +471,7 @@ export default function AdminMarketingPage() {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border p-4 space-y-3">
-        <p className="font-semibold dark:text-white">Test SMTP (1 email)</p>
+        <p className="font-semibold dark:text-white">Test email (1 dërgim)</p>
         <div className="flex flex-wrap gap-2">
           <input
             type="email"
