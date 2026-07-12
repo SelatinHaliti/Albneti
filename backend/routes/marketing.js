@@ -9,6 +9,7 @@ import {
   adminAIMarketingBlast,
   adminBlastStatus,
   adminSendActiveMarketing,
+  adminCancelStuckMarketing,
 } from '../controllers/marketingController.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 
@@ -21,6 +22,7 @@ router.post('/unsubscribe', marketingUnsubscribe);
 router.get('/admin/stats', protect, adminOnly, adminMarketingStats);
 router.get('/admin/ai-preview', protect, adminOnly, adminAIMarketingPreview);
 router.post('/admin/ai-blast', protect, adminOnly, adminAIMarketingBlast);
+router.post('/admin/cancel-stuck', protect, adminOnly, adminCancelStuckMarketing);
 router.post('/admin/send-active', protect, adminOnly, adminSendActiveMarketing);
 router.get('/admin/blast-status', protect, adminOnly, adminBlastStatus);
 router.post('/admin/test-email', protect, adminOnly, adminTestMarketingEmail);

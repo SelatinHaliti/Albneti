@@ -30,7 +30,32 @@ const createTransporter = () => {
   });
 };
 
-export const isSmtpConfigured = () => Boolean(createTransporter());
+export const isSmtpConfigured = () => Boolean(getTransporter());
+
+/** Singleton – mos krijo transport të ri për çdo email */
+let cachedTransporter = null;
+let verifyPromise = null;
+
+function getTransporter() {
+  if (cachedTransporter) return cachedTransporter;
+  cachedTransporter = createTransporter();
+  return cachedTransporter;
+}
+
+/** Verifikon SMTP një herë (për test/diagnostikë) */
+export async function verifySmtpConnection() {
+  const transporter = getTransporter();
+  if (!transporter) return { ok: false, error: 'SMTP nuk është konfiguruar.' };
+  try {
+    if (!verifyPromise) {
+      verifyPromise = transporter.verify().finally(() => { verifyPromise = null; });
+    }
+    await verifyPromise;
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: normalizeMailerError(err) };
+  }
+}
 
 function normalizeMailerError(err) {
   if (!err) return 'Gabim i panjohur.';
@@ -46,14 +71,13 @@ function normalizeMailerError(err) {
   return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
 }
 
-async function sendMail({ to, subject, html }) {
-  const transporter = createTransporter();
+async function sendMail({ to, subject, html, skipVerify = true }) {
+  const transporter = getTransporter();
   if (!transporter) {
     return { ok: false, error: 'SMTP nuk është konfiguruar në server.' };
   }
   try {
-    // Verifikon lidhjen/auth përpara dërgimit (na jep gabim real nëse s’punon).
-    await transporter.verify();
+    if (!skipVerify) await verifySmtpConnection();
     const smtpUser = (process.env.SMTP_USER || '').trim();
     const from =
       process.env.SMTP_FROM ||

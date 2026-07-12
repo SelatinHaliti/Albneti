@@ -16,6 +16,8 @@ type AiTheme = {
 
 type MarketingStats = {
   smtpConfigured: boolean;
+  smtpVerified?: boolean;
+  smtpError?: string;
   currentWeekKey: string;
   optedIn: number;
   optedOut: number;
@@ -75,7 +77,10 @@ export default function AdminMarketingPage() {
   const [testEmail, setTestEmail] = useState('');
   const [result, setResult] = useState<string | null>(null);
   const [activeRunKey, setActiveRunKey] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
+  const MAX_POLL_TICKS = 200;
 
   const load = useCallback(() => {
     api<MarketingStats>('/api/marketing/admin/stats')
@@ -98,7 +103,17 @@ export default function AdminMarketingPage() {
   const pollBlastStatus = useCallback(
     (runKey: string) => {
       if (pollRef.current) clearInterval(pollRef.current);
+      pollCountRef.current = 0;
       pollRef.current = setInterval(async () => {
+        pollCountRef.current += 1;
+        if (pollCountRef.current > MAX_POLL_TICKS) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+          setBlasting(false);
+          setResult('⚠️ Dërguar po zgjat shumë. Kliko "Anulo dërgim të ngecur" ose prit dhe rifresko faqen.');
+          load();
+          return;
+        }
         try {
           const status = await api<BlastStatus>(`/api/marketing/admin/blast-status?runKey=${encodeURIComponent(runKey)}`);
           if (status.status === 'running') {
@@ -109,7 +124,7 @@ export default function AdminMarketingPage() {
           pollRef.current = null;
           setBlasting(false);
           setActiveRunKey(null);
-          if (status.status === 'failed' || (status.sent === 0 && status.failed)) {
+          if (status.status === 'failed' || (status.sent === 0 && (status.failed ?? 0) > 0)) {
             setResult(`❌ Dështoi: ${status.error || 'Asnjë email nuk u dërgua.'} (${status.failed ?? 0} dështuar)`);
           } else {
             setResult(
@@ -120,12 +135,35 @@ export default function AdminMarketingPage() {
           loadPreview();
         } catch {
           if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
           setBlasting(false);
+          setResult('❌ Nuk mund të lexohet statusi. Rifresko faqen ose anulo dërgimin e ngecur.');
         }
       }, 3000);
     },
     [load, loadPreview]
   );
+
+  const cancelStuck = async () => {
+    if (!confirm('Anulo çdo dërgim që është ngecur në "running"?')) return;
+    setCancelling(true);
+    try {
+      const res = await api<{ message?: string; cancelled?: number }>('/api/marketing/admin/cancel-stuck', {
+        method: 'POST',
+        body: {},
+      });
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = null;
+      setBlasting(false);
+      setActiveRunKey(null);
+      setResult(res.message || 'U anulua.');
+      load();
+    } catch (err) {
+      setResult(err instanceof Error ? err.message : 'Gabim anulimi');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -201,6 +239,12 @@ export default function AdminMarketingPage() {
         setBlasting(false);
         return;
       }
+      if (res.alreadyRunning && res.runKey) {
+        setActiveRunKey(res.runKey);
+        setResult(res.message || 'Dërgim aktiv – duke vazhduar...');
+        pollBlastStatus(res.runKey);
+        return;
+      }
       if (res.runKey) {
         setActiveRunKey(res.runKey);
         setResult(res.message || `Duke dërguar te ${res.total ?? count} aktivë...`);
@@ -232,6 +276,12 @@ export default function AdminMarketingPage() {
         setBlasting(false);
         return;
       }
+      if (res.alreadyRunning && res.runKey) {
+        setActiveRunKey(res.runKey);
+        setResult(res.message || 'Dërgim aktiv – duke vazhduar...');
+        pollBlastStatus(res.runKey);
+        return;
+      }
       if (res.runKey) {
         setActiveRunKey(res.runKey);
         setResult(res.message || `Duke dërguar te ${res.total ?? count} përdorues...`);
@@ -261,15 +311,31 @@ export default function AdminMarketingPage() {
       {!stats.smtpConfigured && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/40 text-red-800 dark:text-red-200 text-sm space-y-2">
           <p className="font-bold">❌ SMTP nuk është konfiguruar në production (Render)</p>
-          <p>Kjo është arsyeja kryesore pse nuk dërgohen email-et. Vendos në Render Dashboard → albneti-api → Environment:</p>
-          <ul className="list-disc ml-5 space-y-1 text-xs">
-            <li>SMTP_HOST = smtp.gmail.com</li>
-            <li>SMTP_PORT = 587</li>
-            <li>SMTP_USER = selatinhaliti6@gmail.com</li>
-            <li>SMTP_PASS = (Gmail App Password)</li>
-            <li>SMTP_FROM = AlbNet &lt;selatinhaliti6@gmail.com&gt;</li>
-          </ul>
+          <p>Kjo është arsyeja kryesore pse nuk dërgohen email-et. Vendos në Render Dashboard → albneti-api → Environment variablat SMTP_*.</p>
           <p className="text-xs">Pastaj bëj <strong>Manual Deploy → Redeploy</strong></p>
+        </div>
+      )}
+
+      {stats.smtpConfigured && stats.smtpVerified === false && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 text-sm">
+          <p className="font-bold">⚠️ SMTP është vendosur por lidhja dështoi</p>
+          <p>Kontrollo SMTP_PASS (Gmail App Password) dhe redeploy në Render.</p>
+        </div>
+      )}
+
+      {stats.runningBlast && (
+        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/40 text-sm flex flex-wrap items-center justify-between gap-3">
+          <p>
+            Dërgim aktiv: {stats.runningBlast.sent} dërguar, {stats.runningBlast.failed} dështuar
+          </p>
+          <button
+            type="button"
+            disabled={cancelling}
+            onClick={cancelStuck}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-50"
+          >
+            {cancelling ? 'Duke anuluar...' : 'Anulo dërgim të ngecur'}
+          </button>
         </div>
       )}
 
@@ -305,7 +371,7 @@ export default function AdminMarketingPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              disabled={blasting || !stats.smtpConfigured}
+              disabled={blasting || !stats.smtpConfigured || stats.smtpVerified === false}
               onClick={sendActiveNow}
               className="px-6 py-3 rounded-xl bg-[#c41e3a] text-white font-bold text-sm shadow-lg disabled:opacity-50"
             >
@@ -313,7 +379,7 @@ export default function AdminMarketingPage() {
             </button>
             <button
               type="button"
-              disabled={blasting || !stats.smtpConfigured}
+              disabled={blasting || !stats.smtpConfigured || stats.smtpVerified === false}
               onClick={aiBlast}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#0095f6] to-[#0077cc] text-white font-bold text-sm shadow-lg disabled:opacity-50"
             >
@@ -342,8 +408,16 @@ export default function AdminMarketingPage() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
           <p className="text-xs text-gray-500">SMTP</p>
-          <p className={`text-lg font-bold ${stats.smtpConfigured ? 'text-green-600' : 'text-red-600'}`}>
-            {stats.smtpConfigured ? '✅ OK' : '❌ Jo'}
+          <p
+            className={`text-lg font-bold ${
+              stats.smtpConfigured && stats.smtpVerified !== false ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
+            {stats.smtpConfigured
+              ? stats.smtpVerified === false
+                ? '⚠️ Lidhje'
+                : '✅ OK'
+              : '❌ Jo'}
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">

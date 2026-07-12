@@ -8,6 +8,7 @@ import {
   startAIMarketingBlast,
   startActiveMarketingSend,
   getBlastStatus,
+  cancelStuckMarketingRuns,
 } from '../services/marketingEmailService.js';
 
 function verifyCronSecret(req) {
@@ -106,6 +107,16 @@ export const adminBlastStatus = async (req, res) => {
     const result = await getBlastStatus(runKey);
     if (!result.ok) return res.status(404).json(result);
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/** Admin: anulon dërgime të ngecura */
+export const adminCancelStuckMarketing = async (_req, res) => {
+  try {
+    const cancelled = await cancelStuckMarketingRuns();
+    res.json({ ok: true, cancelled, message: cancelled ? `U anuluan ${cancelled} dërgime.` : 'Asnjë dërgim aktiv.' });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

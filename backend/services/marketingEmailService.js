@@ -4,7 +4,7 @@ import Post from '../models/Post.js';
 import Event from '../models/Event.js';
 import LiveStream from '../models/LiveStream.js';
 import MarketingRun from '../models/MarketingRun.js';
-import { sendAlbnetAdsEmail, isSmtpConfigured } from '../utils/email.js';
+import { sendAlbnetAdsEmail, isSmtpConfigured, verifySmtpConnection } from '../utils/email.js';
 import { generateMarketingTheme, getAiMarketingStatus } from './aiMarketingService.js';
 
 const BATCH_SIZE = 25;
@@ -12,6 +12,7 @@ const BATCH_DELAY_MS = 2000;
 const ACTIVE_DAYS = 60;
 const MIN_DAYS_BETWEEN_EMAILS = 6;
 const SYSTEM_USERNAME = 'albnet_official';
+const STUCK_RUN_MS = 15 * 60 * 1000;
 
 const WEEKLY_THEMES = [
   {
@@ -121,7 +122,54 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Pastron dërgime të ngecura (server restart / timeout) */
+export async function resetStuckMarketingRuns() {
+  const cutoff = new Date(Date.now() - STUCK_RUN_MS);
+  const result = await MarketingRun.updateMany(
+    { status: 'running', updatedAt: { $lt: cutoff } },
+    {
+      $set: {
+        status: 'failed',
+        errorMessage: 'Dërguar u ndërpre (server restart ose timeout). Provo përsëri.',
+        completedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount || 0;
+}
+
+/** Admin: anulon të gjitha dërgimet në status running */
+export async function cancelStuckMarketingRuns() {
+  const result = await MarketingRun.updateMany(
+    { status: 'running' },
+    {
+      $set: {
+        status: 'failed',
+        errorMessage: 'Anuluar manualisht nga admin.',
+        completedAt: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount || 0;
+}
+
 async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey, runType, force }) {
+  const smtpCheck = await verifySmtpConnection();
+  if (!smtpCheck.ok) {
+    await MarketingRun.findOneAndUpdate(
+      { weekKey: runKey, runType },
+      {
+        $set: {
+          status: 'failed',
+          errorMessage: smtpCheck.error,
+          completedAt: new Date(),
+          failedCount: users.length,
+        },
+      }
+    );
+    return { sent: 0, failed: users.length, skipped: 0, total: users.length, lastError: smtpCheck.error };
+  }
+
   const minEmailGap = new Date(Date.now() - MIN_DAYS_BETWEEN_EMAILS * 86400000);
   let sent = 0;
   let failed = 0;
@@ -322,13 +370,16 @@ export async function startAIMarketingBlast({ triggeredBy = 'admin' } = {}) {
     return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_HOST, SMTP_USER, SMTP_PASS në Render Environment.' };
   }
 
-  const running = await MarketingRun.findOne({ runType: 'ai-blast', status: 'running' }).lean();
+  await resetStuckMarketingRuns();
+
+  const running = await MarketingRun.findOne({ status: 'running' }).lean();
   if (running) {
     return {
       ok: true,
       alreadyRunning: true,
       runKey: running.weekKey,
-      message: 'Një dërgim është ende në proces. Prisni pak.',
+      runType: running.runType,
+      message: 'Një dërgim është ende në proces. Prit ose anulo.',
     };
   }
 
@@ -361,16 +412,48 @@ export async function startAIMarketingBlast({ triggeredBy = 'admin' } = {}) {
     ok: true,
     started: true,
     runKey,
+    runType: 'ai-blast',
     total: users.length,
-    message: `Duke dërguar te ${users.length} përdorues në background...`,
+    message: `Duke dërguar te ${users.length} përdorues...`,
   };
+}
+
+/** Worker – dërgon te përdoruesit aktivë */
+async function runActiveMarketingWorker({ runKey, triggeredBy }) {
+  const highlights = await buildDynamicHighlights();
+  const theme = await generateMarketingTheme(highlights, { fast: true });
+  const base = frontendBase();
+  const users = await queryEligibleUsers({ allUsers: false });
+
+  if (!users.length) {
+    await MarketingRun.findOneAndUpdate(
+      { weekKey: runKey, runType: 'weekly' },
+      { $set: { status: 'failed', errorMessage: 'Nuk ka përdorues aktivë me email.', completedAt: new Date() } }
+    );
+    return { ok: false, error: 'Nuk ka përdorues aktivë me email.' };
+  }
+
+  const result = await sendToUsers({
+    users,
+    theme,
+    highlights,
+    base,
+    triggeredBy,
+    runKey,
+    runType: 'weekly',
+    force: true,
+  });
+
+  return { ok: result.sent > 0, runKey, ...result, subject: theme.subject };
 }
 
 /** Admin: nis dërgim te përdoruesit aktivë (60 ditë) në background */
 export async function startActiveMarketingSend({ triggeredBy = 'admin' } = {}) {
   if (!isSmtpConfigured()) {
-    return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_* në Render Environment.' };
+    return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_HOST, SMTP_USER, SMTP_PASS në Render Environment.' };
   }
+
+  await resetStuckMarketingRuns();
 
   const running = await MarketingRun.findOne({ status: 'running' }).lean();
   if (running) {
@@ -378,7 +461,8 @@ export async function startActiveMarketingSend({ triggeredBy = 'admin' } = {}) {
       ok: true,
       alreadyRunning: true,
       runKey: running.weekKey,
-      message: 'Një dërgim është ende në proces.',
+      runType: running.runType,
+      message: 'Një dërgim është ende në proces. Prit ose anulo.',
     };
   }
 
@@ -399,44 +483,50 @@ export async function startActiveMarketingSend({ triggeredBy = 'admin' } = {}) {
         sentCount: 0,
         failedCount: 0,
         skippedCount: 0,
+        errorMessage: null,
+        completedAt: null,
       },
     },
     { upsert: true }
   );
 
-  setImmediate(async () => {
-    try {
-      await runWeeklyMarketingEmails({ force: true, triggeredBy });
-    } catch (err) {
+  setImmediate(() => {
+    runActiveMarketingWorker({ runKey: weekKey, triggeredBy }).catch(async (err) => {
       await MarketingRun.findOneAndUpdate(
         { weekKey, runType: 'weekly' },
         { $set: { status: 'failed', errorMessage: err.message, completedAt: new Date() } }
       );
-    }
+    });
   });
 
   return {
     ok: true,
     started: true,
     runKey: weekKey,
+    runType: 'weekly',
     total: users.length,
-    message: `Duke dërguar te ${users.length} përdorues aktivë (60 ditë)...`,
+    message: `Duke dërguar te ${users.length} përdorues aktivë...`,
   };
 }
 
 /** Status i blast-it */
 export async function getBlastStatus(runKey) {
   if (!runKey) {
-    const latest = await MarketingRun.findOne({ runType: 'ai-blast' }).sort({ createdAt: -1 }).lean();
-    if (!latest) return { ok: true, status: 'idle' };
-    runKey = latest.weekKey;
+    const running = await MarketingRun.findOne({ status: 'running' }).sort({ updatedAt: -1 }).lean();
+    if (running) runKey = running.weekKey;
+    else {
+      const latest = await MarketingRun.findOne().sort({ createdAt: -1 }).lean();
+      if (!latest) return { ok: true, status: 'idle' };
+      runKey = latest.weekKey;
+    }
   }
-  const run = await MarketingRun.findOne({ weekKey: runKey, runType: 'ai-blast' }).lean();
+  const run = await MarketingRun.findOne({ weekKey: runKey }).sort({ updatedAt: -1 }).lean();
   if (!run) return { ok: false, error: 'Run nuk u gjet.' };
   return {
     ok: true,
     runKey: run.weekKey,
-    status: run.status,
+    runType: run.runType,
+    status: run.status || 'completed',
     subject: run.subject,
     sent: run.sentCount,
     failed: run.failedCount,
@@ -538,6 +628,7 @@ export async function sendMarketingTestEmail(to) {
 }
 
 export async function getMarketingStats() {
+  await resetStuckMarketingRuns();
   const weekKey = getWeekKey();
   const [lastRun, optedIn, optedOut, eligible, totalWithEmail, runningJob] = await Promise.all([
     MarketingRun.findOne().sort({ createdAt: -1 }).lean(),
@@ -560,6 +651,7 @@ export async function getMarketingStats() {
   ]);
   return {
     smtpConfigured: isSmtpConfigured(),
+    smtpVerified: (await verifySmtpConnection()).ok,
     currentWeekKey: weekKey,
     lastRun,
     runningBlast: runningJob

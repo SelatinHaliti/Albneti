@@ -32,11 +32,13 @@ import { setIO } from './sockets/io.js';
 import { initMonitoring, errorHandler } from './middleware/monitoring.js';
 import { seedCommunityEvents } from './services/eventSeed.js';
 import { runScheduledEventPromos } from './services/eventAdsService.js';
-import { runWeeklyMarketingEmails } from './services/marketingEmailService.js';
+import { runWeeklyMarketingEmails, resetStuckMarketingRuns } from './services/marketingEmailService.js';
+import { isSmtpConfigured } from './utils/email.js';
 
 connectDB().then(() => {
   void initMonitoring();
   seedCommunityEvents();
+  resetStuckMarketingRuns().catch(() => {});
   setTimeout(() => runScheduledEventPromos().catch(() => {}), 15000);
   setInterval(() => runScheduledEventPromos().catch(() => {}), 6 * 60 * 60 * 1000);
   setTimeout(() => runWeeklyMarketingEmails().catch(() => {}), 45000);
@@ -142,6 +144,7 @@ app.get('/api/health', async (req, res) => {
     status,
     message: dbOk ? 'AlbNet API është aktiv' : 'Baza e të dhënave nuk është e lidhur',
     db: dbOk ? 'connected' : 'disconnected',
+    smtpConfigured: isSmtpConfigured(),
     timestamp: new Date().toISOString(),
   });
 });
