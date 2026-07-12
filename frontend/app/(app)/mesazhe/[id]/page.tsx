@@ -8,6 +8,7 @@ import { api, apiUpload } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSocket } from '@/components/SocketProvider';
 import { useCall } from '@/components/CallProvider';
+import { IconCallPhone, IconCallVideo } from '@/components/Icons';
 
 type Message = {
   _id: string;
@@ -180,24 +181,20 @@ export default function ChatPage() {
           <button
             type="button"
             onClick={() => initiateCall('audio')}
-            className="ig-touch w-11 h-11 rounded-full border border-[var(--border)] hover:bg-[var(--primary-soft)] flex items-center justify-center"
+            className="ig-touch w-11 h-11 rounded-full border border-[var(--border)] hover:bg-[var(--primary-soft)] flex items-center justify-center text-[var(--text)] transition-colors"
             aria-label="Thirrje audio"
             title="Thirrje audio"
           >
-            <svg className="w-5 h-5 text-[var(--text)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0-1.242 1.008-2.25 2.25-2.25h2.1c.7 0 1.33.4 1.63 1.02l1.1 2.2c.3.6.25 1.32-.14 1.87l-.83 1.16a14.1 14.1 0 006.33 6.33l1.16-.83c.55-.39 1.27-.44 1.87-.14l2.2 1.1c.62.3 1.02.93 1.02 1.63v2.1c0 1.242-1.008 2.25-2.25 2.25h-.75C9.056 23.25 2.25 16.444 2.25 8.25v-.75z" />
-            </svg>
+            <IconCallPhone size={20} />
           </button>
           <button
             type="button"
             onClick={() => initiateCall('video')}
-            className="ig-touch w-11 h-11 rounded-full border border-[var(--border)] hover:bg-[var(--primary-soft)] flex items-center justify-center"
+            className="ig-touch w-11 h-11 rounded-full border border-[var(--border)] hover:bg-[var(--primary-soft)] flex items-center justify-center text-[var(--text)] transition-colors"
             aria-label="Thirrje video"
             title="Thirrje video"
           >
-            <svg className="w-5 h-5 text-[var(--text)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5v-1.125A2.625 2.625 0 0013.125 6.75H5.625A2.625 2.625 0 003 9.375v5.25a2.625 2.625 0 002.625 2.625h7.5a2.625 2.625 0 002.625-2.625V13.5l4.5 2.25v-7.5l-4.5 2.25z" />
-            </svg>
+            <IconCallVideo size={20} />
           </button>
         </div>
       </header>

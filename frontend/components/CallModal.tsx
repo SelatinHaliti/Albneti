@@ -17,6 +17,19 @@ import {
   waitForIceGathering,
 } from '@/lib/webrtc';
 import { stopCallRingtone } from '@/lib/callRingtone';
+import { CallControlButton } from '@/components/CallControls';
+import {
+  IconCallMic,
+  IconCallMicOff,
+  IconCallVideo,
+  IconCallVideoOff,
+  IconCallFlip,
+  IconCallEnd,
+  IconCallAccept,
+  IconCallDecline,
+  IconCallPhone,
+  IconCallSpinner,
+} from '@/components/Icons';
 
 type CallMode = 'audio' | 'video';
 
@@ -545,8 +558,8 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
           />
           {showWaitingOverlay && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white/90 px-6 text-center z-20 bg-black/40">
-              <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-3xl mb-4 animate-pulse">
-                📹
+              <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center mb-4 animate-pulse text-white">
+                <IconCallVideo size={36} />
               </div>
               <p className="text-lg font-semibold">{title}</p>
               {error && <p className="text-sm text-red-300 mt-2 max-w-[280px]">{error}</p>}
@@ -556,10 +569,14 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-white px-6 text-center">
           <audio ref={remoteAudioRef} autoPlay playsInline />
-          <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-[var(--ig-blue)]/40 to-purple-600/40 flex items-center justify-center text-4xl mb-6 ring-4 ring-white/10 ${
+          <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-[var(--ig-blue)]/50 to-indigo-600/40 flex items-center justify-center mb-6 ring-4 ring-white/10 backdrop-blur-sm ${
             status === 'ringing' ? 'animate-pulse' : ''
           }`}>
-            {otherUsername ? otherUsername.charAt(0).toUpperCase() : '📞'}
+            {otherUsername ? (
+              <span className="text-3xl font-bold text-white">{otherUsername.charAt(0).toUpperCase()}</span>
+            ) : (
+              <IconCallPhone size={36} />
+            )}
           </div>
           <p className="text-xl font-semibold">{title}</p>
           {status === 'connected' && (
@@ -582,85 +599,74 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
         </div>
       )}
 
-      <div className="call-controls relative z-30 flex-shrink-0 px-4 sm:px-6 py-6 sm:py-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+      <div className="call-controls relative z-30 flex-shrink-0 px-4 sm:px-6 py-6 sm:py-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black/90 via-black/55 to-transparent">
         {direction === 'incoming' && status === 'ringing' ? (
           <div className="flex flex-col items-center gap-6">
-            <p className="text-white/70 text-sm">Prek për të përgjigjur</p>
-            <div className="flex items-center justify-center gap-10">
-              <button
-                type="button"
+            <p className="text-white/70 text-sm font-medium tracking-wide">Thirrje hyrëse</p>
+            <div className="flex items-center justify-center gap-12 sm:gap-16">
+              <CallControlButton
                 onClick={onDecline}
-                className="w-[72px] h-[72px] rounded-full bg-red-500 text-white flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
-                aria-label="Refuzo"
+                ariaLabel="Refuzo thirrjen"
+                label="Refuzo"
+                variant="danger"
               >
-                <span className="text-2xl">✕</span>
-                <span className="text-[10px] mt-0.5 font-medium">Refuzo</span>
-              </button>
-              <button
-                type="button"
+                <IconCallDecline size={28} />
+              </CallControlButton>
+              <CallControlButton
                 onClick={onAccept}
+                ariaLabel="Prano thirrjen"
+                label="Prano"
+                variant="success"
                 disabled={accepting}
-                className="w-[72px] h-[72px] rounded-full bg-green-500 text-white flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform disabled:opacity-60"
-                aria-label="Prano"
               >
-                <span className="text-2xl">✓</span>
-                <span className="text-[10px] mt-0.5 font-medium">Prano</span>
-              </button>
+                {accepting ? <IconCallSpinner size={24} /> : <IconCallAccept size={28} />}
+              </CallControlButton>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-4 sm:gap-5 flex-wrap">
-            <button
-              type="button"
+          <div className="call-controls-row">
+            <CallControlButton
               onClick={toggleMute}
-              className={`call-ctrl-btn ig-touch min-w-[56px] min-h-[56px] w-14 h-14 rounded-full flex items-center justify-center text-lg ${
-                muted ? 'bg-white text-black' : 'bg-white/20 text-white'
-              }`}
-              aria-label={muted ? 'Aktivo zërin' : 'Hesht'}
+              ariaLabel={muted ? 'Aktivo zërin' : 'Hesht'}
+              label={muted ? 'Heshtur' : 'Mikrofon'}
+              variant={muted ? 'glass-active' : 'glass'}
             >
-              {muted ? '🔇' : '🎤'}
-            </button>
+              {muted ? <IconCallMicOff /> : <IconCallMic />}
+            </CallControlButton>
+
             {showVideo && (
               <>
-                <button
-                  type="button"
+                <CallControlButton
                   onClick={toggleCam}
-                  className={`call-ctrl-btn ig-touch min-w-[56px] min-h-[56px] w-14 h-14 rounded-full flex items-center justify-center text-lg ${
-                    camOff ? 'bg-white text-black' : 'bg-white/20 text-white'
-                  }`}
-                  aria-label={camOff ? 'Aktivo kamerën' : 'Fik kamerën'}
+                  ariaLabel={camOff ? 'Aktivo kamerën' : 'Fik kamerën'}
+                  label={camOff ? 'Fikur' : 'Kamera'}
+                  variant={camOff ? 'glass-active' : 'glass'}
                 >
-                  {camOff ? '📷' : '📹'}
-                </button>
+                  {camOff ? <IconCallVideoOff /> : <IconCallVideo />}
+                </CallControlButton>
+
                 {canFlipCamera && (
-                  <button
-                    type="button"
+                  <CallControlButton
                     onClick={() => void flipCamera()}
+                    ariaLabel="Kthe kamerën para/pas"
+                    label="Kthe"
+                    variant="glass"
                     disabled={flippingCam}
-                    className="call-ctrl-btn ig-touch min-w-[56px] min-h-[56px] w-14 h-14 rounded-full flex items-center justify-center bg-white/20 text-white disabled:opacity-50"
-                    aria-label="Ndrysho kamerën para/pas"
-                    title="Kthe kamerën"
                   >
-                    {flippingCam ? (
-                      <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
-                      </svg>
-                    )}
-                  </button>
+                    {flippingCam ? <IconCallSpinner /> : <IconCallFlip />}
+                  </CallControlButton>
                 )}
               </>
             )}
-            <button
-              type="button"
+
+            <CallControlButton
               onClick={onHangup}
-              className="call-ctrl-btn ig-touch min-w-[72px] min-h-[72px] w-[72px] h-[72px] rounded-full bg-red-500 text-white flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
-              aria-label="Mbyll"
+              ariaLabel="Mbyll thirrjen"
+              label="Mbyll"
+              variant="danger"
             >
-              <span className="text-2xl">✕</span>
-              <span className="text-[10px] mt-0.5 font-medium">Mbyll</span>
-            </button>
+              <IconCallEnd size={28} />
+            </CallControlButton>
           </div>
         )}
       </div>

@@ -201,3 +201,107 @@ export function IconGlobe() {
     </svg>
   );
 }
+
+/* ─── Thirrje audio/video ─── */
+const callStroke = 1.75;
+
+export function IconCallMic({ size: s = 22 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
+      <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+      <line x1="12" y1="18" x2="12" y2="22" />
+      <line x1="8" y1="22" x2="16" y2="22" />
+    </svg>
+  );
+}
+
+export function IconCallMicOff({ size: s = 22 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <line x1="2" y1="2" x2="22" y2="22" />
+      <path d="M9 9v2a3 3 0 0 0 5.12 2.12" />
+      <path d="M15 9.34V5a3 3 0 0 0-5.94-.6" />
+      <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v1a7 7 0 0 1-.11 1.23" />
+      <line x1="12" y1="18" x2="12" y2="22" />
+      <line x1="8" y1="22" x2="16" y2="22" />
+    </svg>
+  );
+}
+
+export function IconCallVideo({ size: s = 22 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="2" y="6" width="14" height="12" rx="2" />
+      <path d="M16 10l6-3v10l-6-3v-4z" />
+    </svg>
+  );
+}
+
+export function IconCallVideoOff({ size: s = 22 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="2" y="6" width="14" height="12" rx="2" />
+      <path d="M16 10l6-3v10l-6-3v-4z" />
+      <line x1="2" y1="2" x2="22" y2="22" strokeWidth={2} />
+    </svg>
+  );
+}
+
+export function IconCallFlip({ size: s = 22 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M16 3h5v5" />
+      <path d="M8 21H3v-5" />
+      <path d="M21 3l-7.5 7.5" />
+      <path d="M3 21l7.5-7.5" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+export function IconCallEnd({ size: s = 26 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <g transform="rotate(135 12 12)">
+        <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.36 11.36 0 003.47.56 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 .78 11.36 11.36 0 00.56 3.47 1 1 0 01-.21 1.11l-2.24 2.43z" />
+      </g>
+    </svg>
+  );
+}
+
+export function IconCallAccept({ size: s = 26 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.36 11.36 0 003.47.56 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 .78 11.36 11.36 0 00.56 3.47 1 1 0 01-.21 1.11l-2.24 2.43z" />
+    </svg>
+  );
+}
+
+export function IconCallDecline({ size: s = 26 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <g transform="rotate(135 12 12)">
+        <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.36 11.36 0 003.47.56 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 .78 11.36 11.36 0 00.56 3.47 1 1 0 01-.21 1.11l-2.24 2.43z" />
+      </g>
+    </svg>
+  );
+}
+
+export function IconCallPhone({ size: s = 22 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.36 11.36 0 003.47.56 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 .78 11.36 11.36 0 00.56 3.47 1 1 0 01-.21 1.11l-2.24 2.43z" />
+    </svg>
+  );
+}
+
+export function IconCallSpinner({ size: s = 22 }: { size?: number }) {
+  return (
+    <span
+      className="inline-block rounded-full border-2 border-current border-t-transparent animate-spin"
+      style={{ width: s, height: s }}
+      aria-hidden
+    />
+  );
+}
