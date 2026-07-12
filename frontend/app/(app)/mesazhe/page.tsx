@@ -46,11 +46,27 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!socket) return;
     const onNew = () => { void loadConversations(); };
+    const onInbox = () => { void loadConversations(); };
     socket.on('new_message_notification', onNew);
-    return () => { socket.off('new_message_notification', onNew); };
+    socket.on('inbox_updated', onInbox);
+    return () => {
+      socket.off('new_message_notification', onNew);
+      socket.off('inbox_updated', onInbox);
+    };
   }, [socket, loadConversations]);
 
-  const getOther = (c: Conversation) => c.participants?.find((p) => p._id !== user?.id);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && isAuthenticated) {
+        void loadConversations();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [isAuthenticated, loadConversations]);
+
+  const getOther = (c: Conversation) =>
+    c.participants?.find((p) => String(p._id) !== String(user?.id));
 
   return (
     <div className="mobile-page max-w-[470px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
@@ -98,7 +114,7 @@ export default function MessagesPage() {
               <Link key={c._id} href={`/mesazhe/${c._id}`}>
                 <motion.div
                   whileTap={{ scale: 0.98 }}
-                  className={`conversation-row flex items-center gap-3 px-4 py-3 ${c.unreadCount ? 'font-semibold' : ''}`}
+                  className={`conversation-row flex items-center gap-3 px-4 py-3 ${c.unreadCount ? 'conversation-row--unread' : ''}`}
                 >
                   <img
                     src={other?.avatar || ''}

@@ -1,8 +1,28 @@
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import mongoose from 'mongoose';
 import { uploadToCloudinary } from '../utils/uploadMedia.js';
-import { notifyDmInbox } from '../services/messageNotifyService.js';
+import { notifyDmInbox, emitInboxUpdated } from '../services/messageNotifyService.js';
+
+function toUserObjectId(userId) {
+  return new mongoose.Types.ObjectId(String(userId));
+}
+
+async function markConversationRead(conversationId, userId) {
+  const userOid = toUserObjectId(userId);
+  const convOid = new mongoose.Types.ObjectId(String(conversationId));
+  const result = await Message.updateMany(
+    {
+      conversation: convOid,
+      sender: { $ne: userOid },
+      readBy: { $nin: [userOid] },
+    },
+    { $addToSet: { readBy: userOid }, $set: { status: 'read' } }
+  );
+  emitInboxUpdated(userId);
+  return result.modifiedCount ?? 0;
+}
 
 /**
  * Merr ose krijo bisedë me një përdorues
@@ -30,6 +50,7 @@ export const getOrCreateConversation = async (req, res) => {
       .sort({ createdAt: 1 })
       .populate('sender', 'username avatar')
       .lean();
+    await markConversationRead(conversation._id, currentUserId);
     res.json({ conversation, messages });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
@@ -56,6 +77,7 @@ export const getConversationById = async (req, res) => {
       .sort({ createdAt: 1 })
       .populate('sender', 'username avatar')
       .lean();
+    await markConversationRead(conversationId, req.user.id);
     res.json({ conversation, messages });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
@@ -68,8 +90,9 @@ export const getConversationById = async (req, res) => {
 export const getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
+    const userOid = toUserObjectId(userId);
     const conversations = await Conversation.find({
-      participants: userId,
+      participants: userOid,
     })
       .sort({ lastMessageAt: -1 })
       .populate('participants', 'username avatar fullName')
@@ -83,8 +106,8 @@ export const getConversations = async (req, res) => {
         {
           $match: {
             conversation: { $in: convIds },
-            sender: { $ne: userId },
-            readBy: { $nin: [userId] },
+            sender: { $ne: userOid },
+            readBy: { $nin: [userOid] },
           },
         },
         { $group: { _id: '$conversation', count: { $sum: 1 } } },
@@ -171,15 +194,8 @@ export const sendMessage = async (req, res) => {
 export const markAsRead = async (req, res) => {
   try {
     const { conversationId } = req.params;
-    await Message.updateMany(
-      {
-        conversation: conversationId,
-        sender: { $ne: req.user.id },
-        readBy: { $ne: req.user.id },
-      },
-      { $addToSet: { readBy: req.user.id }, $set: { status: 'read' } }
-    );
-    res.json({ success: true });
+    const marked = await markConversationRead(conversationId, req.user.id);
+    res.json({ success: true, marked });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

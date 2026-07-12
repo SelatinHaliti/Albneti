@@ -116,7 +116,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setLastNotification(payload);
     });
     s.on('new_message_notification', () => {
-      setUnreadMessages((n) => n + 1);
+      void refreshUnreadMessages();
+    });
+    s.on('inbox_updated', () => {
+      void refreshUnreadMessages();
     });
     return () => {
       s.close();

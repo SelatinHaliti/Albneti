@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -30,7 +30,7 @@ export default function ChatPage() {
   const router = useRouter();
   const id = params?.id as string;
   const user = useAuthStore((s) => s.user);
-  const { socket } = useSocket();
+  const { socket, refreshUnreadMessages } = useSocket();
   const { startCall } = useCall();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,6 +43,15 @@ export default function ChatPage() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const markConversationRead = useCallback(async () => {
+    if (!id) return;
+    try {
+      await api(`/api/messages/${id}/lexuar`, { method: 'PUT' });
+      socket?.emit('message_read', { conversationId: id });
+      void refreshUnreadMessages();
+    } catch (_) {}
+  }, [id, socket, refreshUnreadMessages]);
+
   useEffect(() => {
     if (!id || !user) return;
     (async () => {
@@ -52,20 +61,23 @@ export default function ChatPage() {
         );
         setConversation(res.conversation);
         setMessages(res.messages || []);
-        await api(`/api/messages/${id}/lexuar`, { method: 'PUT' }).catch(() => {});
+        await markConversationRead();
       } catch (_) {
         router.replace('/mesazhe');
       } finally {
         setLoading(false);
       }
     })();
-  }, [id, user, router]);
+  }, [id, user, router, markConversationRead]);
 
   useEffect(() => {
     if (!socket || !id) return;
     socket.emit('join_conversation', id);
     socket.on('message', (msg: Message) => {
       setMessages((m) => [...m, msg]);
+      if (String(msg.sender?._id) !== String(user?.id)) {
+        void markConversationRead();
+      }
     });
     socket.on('user_typing', (data: { userId: string }) => setTyping(data.userId));
     socket.on('user_stop_typing', () => setTyping(null));
@@ -75,7 +87,7 @@ export default function ChatPage() {
       socket.off('user_typing');
       socket.off('user_stop_typing');
     };
-  }, [socket, id]);
+  }, [socket, id, user?.id, markConversationRead]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -130,7 +142,7 @@ export default function ChatPage() {
         });
         setMessages((m) => [...m, res.message]);
       }
-      await api(`/api/messages/${id}/lexuar`, { method: 'PUT' });
+      await markConversationRead();
     } catch (_) {}
     setSending(false);
   };
@@ -143,7 +155,7 @@ export default function ChatPage() {
       formData.append('media', file);
       const res = await apiUpload<{ message: Message }>(`/api/messages/${id}`, formData);
       setMessages((m) => [...m, res.message]);
-      await api(`/api/messages/${id}/lexuar`, { method: 'PUT' }).catch(() => {});
+      await markConversationRead();
     } catch (_) {}
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';

@@ -1,11 +1,12 @@
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
 import GlobalChatMessage from '../models/GlobalChatMessage.js';
 import GlobalChatBan from '../models/GlobalChatBan.js';
 import { sendIncomingCallPush } from '../services/pushService.js';
-import { notifyDmInbox } from '../services/messageNotifyService.js';
+import { notifyDmInbox, emitInboxUpdated } from '../services/messageNotifyService.js';
 
 const userSockets = new Map(); // userId -> Set(socketId)
 const GLOBAL_CHAT_ROOM = 'global-chat';
@@ -114,10 +115,18 @@ export function setupSocketIO(io) {
     });
 
     socket.on('message_read', async ({ conversationId }) => {
+      if (!conversationId) return;
+      const userOid = new mongoose.Types.ObjectId(String(userId));
+      const convOid = new mongoose.Types.ObjectId(String(conversationId));
       await Message.updateMany(
-        { conversation: conversationId, sender: { $ne: userId }, readBy: { $ne: userId } },
-        { $addToSet: { readBy: userId }, $set: { status: 'read' } }
+        {
+          conversation: convOid,
+          sender: { $ne: userOid },
+          readBy: { $nin: [userOid] },
+        },
+        { $addToSet: { readBy: userOid }, $set: { status: 'read' } }
       );
+      emitInboxUpdated(userId);
       io.to(`conv:${conversationId}`).emit('messages_read', { userId, conversationId });
     });
 
