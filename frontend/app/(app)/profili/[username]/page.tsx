@@ -255,9 +255,9 @@ export default function ProfilePage() {
       )}
 
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex flex-col sm:flex-row gap-6 sm:gap-12 items-center sm:items-start mb-8 sm:mb-10"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="profile-hero-card p-5 sm:p-8 mb-8 flex flex-col sm:flex-row gap-6 sm:gap-10 items-center sm:items-start"
       >
         {/* Avatar */}
         <div className="flex-shrink-0">
@@ -280,7 +280,7 @@ export default function ProfilePage() {
             <img
               src={displayUser.avatar || ''}
               alt=""
-              className="w-[88px] h-[88px] sm:w-[150px] sm:h-[150px] rounded-full object-cover ring-4 ring-[var(--bg)] shadow-[var(--shadow-md)]"
+              className="avatar-ring-alb w-[92px] h-[92px] sm:w-[156px] sm:h-[156px] rounded-full object-cover shadow-[var(--shadow-md)]"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + displayUser.username;
               }}
@@ -299,14 +299,14 @@ export default function ProfilePage() {
               <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
               <Link
                 href="/profili/redakto"
-                className="px-5 py-2 rounded-xl text-[13px] font-semibold border border-[var(--border)] text-[var(--text)] liquid-glass-card hover:opacity-90 transition-opacity"
+                className="btn-secondary-alb px-5 py-2 text-[13px]"
               >
                 Redakto profilin
               </Link>
               {!user.isVerified && (
                 <Link
                   href="/verifikim"
-                  className="px-5 py-2 rounded-xl text-[13px] font-semibold text-white bg-[var(--ig-blue)] hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  className="btn-primary-alb px-5 py-2 text-[13px] flex items-center gap-1.5"
                 >
                   <VerifiedBadge size={14} /> Verifiko
                 </Link>
@@ -316,19 +316,19 @@ export default function ProfilePage() {
               <div className="flex gap-2">
                 <Link
                   href={`/mesazhe/te-rinj?username=${encodeURIComponent(user.username)}`}
-                  className="px-5 py-2 rounded-xl text-[13px] font-semibold border border-[var(--border)] text-[var(--text)] bg-[var(--bg-card)] hover:bg-[var(--bg)] transition-colors shadow-[var(--shadow-sm)]"
+                  className="btn-secondary-alb px-5 py-2 text-[13px]"
                 >
                   Mesazh
                 </Link>
                 <button
                   type="button"
                   onClick={handleFollow}
-                  className={`px-6 py-2 rounded-xl text-[13px] font-semibold transition-all shadow-[var(--shadow-sm)] ${
+                  className={`px-6 py-2 rounded-[var(--radius-md)] text-[13px] font-bold transition-all ${
                     following
-                      ? 'border border-[var(--border)] text-[var(--text)] liquid-glass-card'
+                      ? 'btn-secondary-alb'
                       : followPending
-                        ? 'border border-[var(--ig-blue)] text-[var(--ig-blue)] liquid-glass-card'
-                        : 'bg-[var(--primary)] text-white hover:opacity-90 shadow-md shadow-[var(--primary)]/20'
+                        ? 'border border-[var(--ig-blue)] text-[var(--ig-blue)] bg-[var(--bg-glass)]'
+                        : 'btn-primary-alb'
                   }`}
                 >
                   {following ? 'Çndiq' : followPending ? 'Kërkesë dërguar' : 'Ndiq'}
@@ -338,7 +338,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats */}
-          <div className="flex gap-8 sm:gap-10 mb-5 justify-center sm:justify-start">
+          <div className="flex gap-4 sm:gap-6 mb-5 justify-center sm:justify-start">
             {[
               { count: posts?.length || 0, label: 'postime', key: null },
               { count: followersCount, label: 'ndjekës', key: 'followers' as const },
@@ -349,15 +349,15 @@ export default function ProfilePage() {
                   key={stat.label}
                   type="button"
                   onClick={() => setFollowModal(stat.key)}
-                  className="text-center sm:text-left hover:opacity-80 transition-opacity"
+                  className="profile-stat-btn"
                 >
-                  <span className="text-[17px] font-bold text-[var(--text)] block">{stat.count}</span>
-                  <span className="text-[13px] text-[var(--text-muted)]">{stat.label}</span>
+                  <span className="stat-num">{stat.count}</span>
+                  <span className="stat-label">{stat.label}</span>
                 </button>
               ) : (
-                <div key={stat.label} className="text-center sm:text-left">
-                  <span className="text-[17px] font-bold text-[var(--text)] block">{stat.count}</span>
-                  <span className="text-[13px] text-[var(--text-muted)]">{stat.label}</span>
+                <div key={stat.label} className="profile-stat-btn cursor-default">
+                  <span className="stat-num">{stat.count}</span>
+                  <span className="stat-label">{stat.label}</span>
                 </div>
               )
             ))}
@@ -388,16 +388,16 @@ export default function ProfilePage() {
       </motion.div>
 
       {/* Tabs */}
-      <div className="border-t border-[var(--border)]">
+      <div className="border-t border-[var(--border)] mt-2">
         <div className="flex justify-center sm:justify-start">
           {tabs.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`relative text-[12px] font-semibold py-4 px-5 uppercase tracking-wider transition-colors ${
+              className={`relative text-[12px] font-bold py-4 px-5 uppercase tracking-wider transition-colors ${
                 tab === t.key
-                  ? 'text-[var(--text)]'
+                  ? 'text-[var(--primary)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text)]'
               }`}
             >
@@ -405,7 +405,7 @@ export default function ProfilePage() {
               {tab === t.key && (
                 <motion.span
                   layoutId="profile-tab"
-                  className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--text)]"
+                  className="absolute bottom-0 left-2 right-2 h-[2px] bg-[var(--primary-gradient)] rounded-full"
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}

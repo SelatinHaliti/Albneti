@@ -216,22 +216,24 @@ export default function NotificationsPage() {
 
   return (
     <div className="mobile-page max-w-[560px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
-      <div className="sticky top-0 z-10 ig-nav-bar border-b border-[var(--border)] px-5 py-4">
+      <div className="page-header-bar sticky top-0 z-10 px-5 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-[22px] font-bold text-[var(--text)] tracking-tight">Njoftime</h1>
+          <div>
+            <h1 className="text-[22px] font-extrabold text-[var(--text)] tracking-tight">Njoftime</h1>
+            <p className="text-[11px] text-[var(--text-muted)] font-semibold mt-0.5">
+              Pëlqime, komente, ndjekje
+            </p>
+          </div>
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={markAllRead}
-              className="text-[13px] font-semibold text-[var(--primary)] hover:opacity-80 transition-opacity"
+              className="text-[13px] font-bold text-[var(--primary)] hover:opacity-80 transition-opacity"
             >
               Lexo të gjitha
             </button>
           )}
         </div>
-        <p className="text-[12px] text-[var(--text-muted)] mt-1">
-          Pëlqime, komente, ndjekje — mesazhet shkojnë te Mesazhe
-        </p>
         <div className="flex gap-2 mt-3">
           {[
             { key: 'te-gjitha' as const, label: 'Të gjitha' },
@@ -241,16 +243,14 @@ export default function NotificationsPage() {
               key={f.key}
               type="button"
               onClick={() => setFilter(f.key)}
-              className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
-                filter === f.key
-                  ? 'bg-[var(--text)] text-[var(--bg)]'
-                  : 'glass-card text-[var(--text-muted)] hover:text-[var(--text)]'
+              className={`filter-chip flex items-center gap-1.5 ${
+                filter === f.key ? 'filter-chip--active' : 'text-[var(--text-muted)] bg-[var(--bg-card)]'
               }`}
             >
               {f.label}
               {f.key === 'te-palexuara' && unreadCount > 0 && (
                 <span className={`min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center ${
-                  filter === 'te-palexuara' ? 'bg-white text-[var(--primary)]' : 'bg-[var(--primary)] text-white'
+                  filter === 'te-palexuara' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--primary)] text-white'
                 }`}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
@@ -286,7 +286,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={loadNotifications}
-              className="px-6 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold hover:opacity-90"
+              className="btn-primary-alb px-6 py-2.5 text-[14px]"
             >
               Provo përsëri
             </button>
@@ -325,27 +325,27 @@ export default function NotificationsPage() {
                     />
                     <div className="min-w-0">
                       <p className="text-[14px] text-[var(--text)]">
-                        <span className="font-semibold">{n.sender?.username}</span>
-                        <span className="text-[var(--text-muted)]"> {getActionLabel(n)}</span>
-                      </p>
-                      <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">{timeAgo(n.createdAt)}</p>
-                    </div>
-                  </button>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <button
-                      type="button"
-                      disabled={actionLoading === n._id}
-                      onClick={(e) => handleAcceptRequest(n, e)}
-                      className="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-50"
-                    >
-                      Prano
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actionLoading === n._id}
-                      onClick={(e) => handleDeclineRequest(n, e)}
-                      className="px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--text)] text-[12px] font-semibold disabled:opacity-50"
-                    >
+                    <span className="font-semibold">{n.sender?.username}</span>
+                    <span className="text-[var(--text-muted)]"> {getActionLabel(n)}</span>
+                  </p>
+                  <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">{timeAgo(n.createdAt)}</p>
+                </div>
+              </button>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  type="button"
+                  disabled={actionLoading === n._id}
+                  onClick={(e) => handleAcceptRequest(n, e)}
+                  className="btn-primary-alb px-3 py-1.5 text-[12px] disabled:opacity-50"
+                >
+                  Prano
+                </button>
+                <button
+                  type="button"
+                  disabled={actionLoading === n._id}
+                  onClick={(e) => handleDeclineRequest(n, e)}
+                  className="btn-secondary-alb px-3 py-1.5 text-[12px] disabled:opacity-50"
+                >
                       Refuzo
                     </button>
                   </div>
@@ -358,8 +358,8 @@ export default function NotificationsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.02 }}
                 onClick={() => openNotification(n)}
-                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-colors text-left ${
-                  n.isRead ? 'hover:bg-[var(--bg-card)]' : 'bg-[var(--primary-soft)] hover:bg-[var(--primary-glow)]'
+                className={`notif-card w-full flex items-center gap-3 p-3 text-left ${
+                  n.isRead ? '' : 'notif-card--unread'
                 }`}
               >
                 <div className="relative flex-shrink-0">

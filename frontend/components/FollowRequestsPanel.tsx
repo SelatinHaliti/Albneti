@@ -50,7 +50,7 @@ export function FollowRequestsPanel({ requests, onUpdate }: FollowRequestsPanelP
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-6 liquid-glass-card rounded-2xl overflow-hidden border border-[var(--border)]"
+      className="mb-6 albanian-card rounded-2xl overflow-hidden"
     >
       <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
         <h3 className="text-[14px] font-bold text-[var(--text)]">Kërkesa për ndjekje</h3>
@@ -81,7 +81,7 @@ export function FollowRequestsPanel({ requests, onUpdate }: FollowRequestsPanelP
                 type="button"
                 disabled={loadingId === r._id}
                 onClick={() => handleAccept(r._id)}
-                className="px-3.5 py-1.5 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:opacity-90 disabled:opacity-50"
+                className="btn-primary-alb px-3.5 py-1.5 text-[12px] disabled:opacity-50"
               >
                 Prano
               </button>
@@ -89,7 +89,7 @@ export function FollowRequestsPanel({ requests, onUpdate }: FollowRequestsPanelP
                 type="button"
                 disabled={loadingId === r._id}
                 onClick={() => handleDecline(r._id)}
-                className="px-3.5 py-1.5 rounded-lg border border-[var(--border)] text-[var(--text)] text-[12px] font-semibold hover:bg-[var(--primary-soft)] disabled:opacity-50"
+                className="btn-secondary-alb px-3.5 py-1.5 text-[12px] disabled:opacity-50"
               >
                 Refuzo
               </button>

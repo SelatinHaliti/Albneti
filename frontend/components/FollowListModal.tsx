@@ -136,7 +136,7 @@ export function FollowListModal({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-          className="w-full max-w-[420px] max-h-[85vh] sm:max-h-[70vh] liquid-glass-ultra rounded-t-3xl sm:rounded-3xl flex flex-col safe-area-pb sm:mx-4 overflow-hidden"
+          className="w-full max-w-[420px] max-h-[85vh] sm:max-h-[70vh] albanian-card flex flex-col safe-area-pb sm:mx-4 overflow-hidden backdrop-blur-xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto mt-3 mb-1 sm:hidden" />
@@ -234,12 +234,12 @@ export function FollowListModal({
                         type="button"
                         disabled={followLoading === u._id}
                         onClick={() => handleFollow(u)}
-                        className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+                        className={`flex-shrink-0 text-[12px] font-bold transition-all ${
                           u.isFollowing
-                            ? 'border border-[var(--border)] text-[var(--text)]'
+                            ? 'btn-secondary-alb py-1.5 px-4'
                             : u.followRequestPending
-                              ? 'border border-[var(--ig-blue)] text-[var(--ig-blue)]'
-                              : 'bg-[var(--primary)] text-white hover:opacity-90'
+                              ? 'py-1.5 px-4 rounded-[var(--radius-md)] border border-[var(--ig-blue)] text-[var(--ig-blue)]'
+                              : 'btn-primary-alb py-1.5 px-4'
                         }`}
                       >
                         {u.isFollowing ? 'Çndiq' : u.followRequestPending ? 'Dërguar' : 'Ndiq'}
