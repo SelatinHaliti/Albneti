@@ -238,6 +238,52 @@ export function IconGlobe() {
   );
 }
 
+/** Komuniteti – evente & diaspora */
+export function IconCommunity({ active }: { active?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke={active ? 'none' : stroke} strokeWidth={active ? 0 : strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {active ? (
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+      ) : (
+        <>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/** Verifikim – badge blu */
+export function IconVerified({ active }: { active?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={active ? 'none' : stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" fill={active ? 'var(--ig-blue)' : 'none'} stroke={active ? 'var(--ig-blue)' : stroke} />
+      <path d="M9 12l2 2 4-4" stroke={active ? '#fff' : stroke} strokeWidth={2.5} />
+    </svg>
+  );
+}
+
+/** Chat global */
+export function IconChatGlobal({ active }: { active?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke={active ? 'none' : stroke} strokeWidth={active ? 0 : strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {active ? (
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      ) : (
+        <>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="10" r="1" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 /* ─── Thirrje audio/video ─── */
 const callStroke = 1.75;
 

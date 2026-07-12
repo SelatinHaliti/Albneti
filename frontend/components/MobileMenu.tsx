@@ -12,7 +12,9 @@ import {
   IconLive,
   IconMessage,
   IconHeart,
-  IconGlobe,
+  IconCommunity,
+  IconVerified,
+  IconChatGlobal,
   IconSettings,
   IconLogout,
   IconSun,
@@ -32,11 +34,11 @@ const links = [
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
   { href: '/live', label: 'Live', Icon: IconLive, highlight: true },
+  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity, featured: true },
+  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified, featured: true },
   { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badgeKey: 'messages' as const },
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badgeKey: 'social' as const },
-  { href: '/komuniteti', label: 'Komuniteti', Icon: IconGlobe },
-  { href: '/chat-global', label: 'Chat Global', Icon: IconGlobe },
-  { href: '/verifikim', label: 'Verifikim', Icon: IconSettings },
+  { href: '/chat-global', label: 'Chat Global', Icon: IconChatGlobal },
 ];
 
 export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 }: MobileMenuProps) {
@@ -123,9 +125,9 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-medium transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-colors ${
                   isActive ? 'bg-[var(--primary-soft)] text-[var(--text)] font-semibold' : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
-                } ${'highlight' in item && item.highlight ? 'border border-[var(--danger)]/30' : ''}`}
+                } ${'highlight' in item && item.highlight ? 'border border-[var(--danger)]/30' : ''} ${'featured' in item && item.featured ? 'border border-[var(--primary)]/25 bg-[var(--primary-soft)]/40' : ''}`}
               >
                 <span className="relative flex-shrink-0 w-6 flex justify-center">
                   {Icon === IconHome && <IconHome active={isActive} />}
@@ -134,8 +136,9 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
                   {Icon === IconLive && <IconLive active={isActive} />}
                   {Icon === IconMessage && <IconMessage />}
                   {Icon === IconHeart && <IconHeart />}
-                  {Icon === IconGlobe && <IconGlobe />}
-                  {Icon === IconSettings && <IconSettings />}
+                  {Icon === IconCommunity && <IconCommunity active={isActive} />}
+                  {Icon === IconVerified && <IconVerified active={isActive} />}
+                  {Icon === IconChatGlobal && <IconChatGlobal active={isActive} />}
                   {'highlight' in item && item.highlight && (
                     <span className="absolute -top-1 -right-2 w-2 h-2 rounded-full bg-[var(--danger)] animate-pulse-live" />
                   )}

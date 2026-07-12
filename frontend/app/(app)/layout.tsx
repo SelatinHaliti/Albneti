@@ -21,7 +21,9 @@ import {
   IconLogout,
   IconSun,
   IconMoon,
-  IconGlobe,
+  IconCommunity,
+  IconVerified,
+  IconChatGlobal,
 } from '@/components/Icons';
 import { AppLogo } from '@/components/AppLogo';
 import { Toaster } from '@/components/Toaster';
@@ -36,12 +38,12 @@ const navItems = [
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
   { href: '/live', label: 'Live', Icon: IconLive },
-  { href: '/krijo/post', label: 'Krijo', Icon: IconAdd },
-  { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage },
-  { href: '/njoftime', label: 'Njoftime', Icon: IconHeart },
-  { href: '/chat-global', label: 'Chat Global', Icon: IconGlobe },
-  { href: '/komuniteti', label: 'Komuniteti', Icon: IconGlobe },
-  { href: '/verifikim', label: 'Verifikim', Icon: IconSettings },
+  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity, featured: true },
+  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified, featured: true },
+  { href: '/krijo/post', label: 'Krijo', Icon: IconAdd, isCreate: true },
+  { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badge: 'messages' as const },
+  { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badge: 'social' as const },
+  { href: '/chat-global', label: 'Chat Global', Icon: IconChatGlobal },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -241,8 +243,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         {/* ── Desktop sidebar ── */}
-        <aside className={`hidden md:flex md:w-[72px] lg:w-[245px] flex-col fixed left-0 top-0 h-full border-r border-[var(--border)] z-30 ${isReelsPage ? 'bg-black/80 backdrop-blur-xl' : 'ig-nav-bar'}`}>
-          <div className="px-4 lg:px-6 pt-6 pb-4 flex items-center relative" ref={feedDropdownRefDesktop}>
+        <aside className={`desktop-sidebar hidden md:flex md:w-[72px] lg:w-[245px] flex-col fixed left-0 top-0 h-dvh border-r border-[var(--border)] z-30 overflow-hidden ${isReelsPage ? 'bg-black/80 backdrop-blur-xl' : 'ig-nav-bar'}`}>
+          <div className="desktop-sidebar-brand px-3 lg:px-5 pt-4 pb-2 flex items-center relative flex-shrink-0" ref={feedDropdownRefDesktop}>
             {pathname === '/feed' ? (
               <>
                 <button
@@ -272,7 +274,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          <nav className="flex-1 px-3 lg:px-4 pt-1 space-y-0.5 overflow-y-auto">
+          <nav className="desktop-sidebar-nav flex-1 min-h-0 px-2 lg:px-3 py-1 flex flex-col gap-0.5 overflow-hidden">
             {navItems.map((navItem) => {
               const isActive = navItem.href === '/feed'
                 ? pathname === '/feed'
@@ -280,54 +282,56 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   ? isLiveSection
                   : pathname === navItem.href || (navItem.href === '/explore' && pathname.startsWith('/explore'));
               const Icon = navItem.Icon;
+              const badgeCount = navItem.badge === 'messages' ? unreadMessages : navItem.badge === 'social' ? socialUnread : 0;
+
+              const renderIcon = () => {
+                if (Icon === IconHome) return <IconHome active={isActive} />;
+                if (Icon === IconSearch) return <IconSearch />;
+                if (Icon === IconReels) return <IconReels active={isActive} />;
+                if (Icon === IconLive) return <IconLive active={isActive || (navItem.href === '/live' && isLiveSection)} />;
+                if (Icon === IconCommunity) return <IconCommunity active={isActive} />;
+                if (Icon === IconVerified) return <IconVerified active={isActive} />;
+                if (Icon === IconChatGlobal) return <IconChatGlobal active={isActive} />;
+                if (Icon === IconMessage) return <IconMessage />;
+                if (Icon === IconHeart) return <IconHeart />;
+                return null;
+              };
+
               const inner = (
                 <>
                   <span className={`flex-shrink-0 relative transition-transform duration-150 ${isActive ? 'scale-105' : 'group-hover:scale-105'}`}>
-                    {Icon === IconHome && <IconHome active={isActive} />}
-                    {Icon === IconSearch && <IconSearch />}
-                    {Icon === IconReels && <IconReels active={isActive} />}
-                    {Icon === IconLive && <IconLive active={isActive || (navItem.href === '/live' && isLiveSection)} />}
-                    {Icon === IconAdd && (
+                    {'isCreate' in navItem && navItem.isCreate ? (
                       <span className="ig-create-btn">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                       </span>
-                    )}
-                    {Icon === IconGlobe && <IconGlobe />}
-                    {navItem.href === '/mesazhe' ? (
-                      <>
-                        <IconMessage />
-                        {unreadMessages > 0 && (
-                          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[var(--danger)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--bg-card)]">
-                            {unreadMessages > 9 ? '9+' : unreadMessages}
-                          </span>
-                        )}
-                      </>
-                    ) : navItem.href === '/njoftime' ? (
-                      <>
-                        <IconHeart />
-                        {socialUnread > 0 && (
-                          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[var(--danger)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--bg-card)]">
-                            {socialUnread > 9 ? '9+' : socialUnread}
-                          </span>
-                        )}
-                      </>
                     ) : (
                       <>
-                        {Icon === IconMessage && <IconMessage />}
-                        {Icon === IconHeart && <IconHeart />}
+                        {renderIcon()}
+                        {badgeCount > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[var(--danger)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--bg-card)]">
+                            {badgeCount > 9 ? '9+' : badgeCount}
+                          </span>
+                        )}
                       </>
                     )}
                   </span>
-                  <span className="hidden lg:inline text-[15px] truncate">{navItem.label}</span>
+                  <span className="hidden lg:inline text-[14px] truncate leading-tight">{navItem.label}</span>
                 </>
               );
-              if (navItem.href === '/krijo/post') {
+
+              const linkClass = `desktop-sidebar-link group flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 rounded-xl transition-all duration-150 md:justify-center lg:justify-start min-h-[40px] lg:min-h-[42px] ${
+                isActive
+                  ? 'text-[var(--text)] font-bold bg-[var(--primary-soft)]'
+                  : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
+              } ${'featured' in navItem && navItem.featured ? 'desktop-sidebar-link--featured' : ''}`;
+
+              if ('isCreate' in navItem && navItem.isCreate) {
                 return (
                   <button
                     key={navItem.href}
                     type="button"
                     onClick={() => setCreateMenuOpen(true)}
-                    className="group w-full flex items-center gap-4 px-3 py-3 rounded-xl text-[var(--text)] hover:bg-[var(--primary-soft)] transition-all duration-150"
+                    className={`${linkClass} w-full`}
                   >
                     {inner}
                   </button>
@@ -338,9 +342,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   key={navItem.href}
                   href={navItem.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : navItem.href}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`group flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-150 md:justify-center lg:justify-start md:px-2 lg:px-3 overflow-hidden ${
-                    isActive ? 'text-[var(--text)] font-bold' : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
-                  }`}
+                  className={linkClass}
                 >
                   {inner}
                 </Link>
@@ -348,46 +350,46 @@ function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="p-3 lg:p-4 border-t border-[var(--border)] space-y-0.5">
+          <div className="desktop-sidebar-footer flex-shrink-0 p-2 lg:p-3 border-t border-[var(--border)] space-y-0.5">
             <button
               type="button"
               onClick={toggleTheme}
-              className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-[var(--text)] hover:bg-[var(--primary-soft)] transition-colors"
+              className="desktop-sidebar-link w-full flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[40px] rounded-xl text-[var(--text)] hover:bg-[var(--primary-soft)] transition-colors md:justify-center lg:justify-start"
             >
               <span className="flex-shrink-0">{theme === 'dark' ? <IconSun /> : <IconMoon />}</span>
-              <span className="hidden lg:inline text-[15px]">{theme === 'dark' ? 'Ndriço' : 'Errëso'}</span>
+              <span className="hidden lg:inline text-[14px]">{theme === 'dark' ? 'Ndriço' : 'Errëso'}</span>
             </button>
             {(user.role === 'admin' || user.role === 'moderator') && (
-              <Link href="/admin" className="flex items-center gap-4 px-3 py-3 rounded-xl text-[var(--text)] hover:bg-[var(--primary-soft)] transition-colors">
+              <Link href="/admin" className="desktop-sidebar-link flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[40px] rounded-xl text-[var(--text)] hover:bg-[var(--primary-soft)] transition-colors md:justify-center lg:justify-start">
                 <span className="flex-shrink-0"><IconSettings /></span>
-                <span className="hidden lg:inline text-[15px]">Admin</span>
+                <span className="hidden lg:inline text-[14px]">Admin</span>
               </Link>
             )}
             <Link
               href={`/profili/${user.username}`}
-              className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-colors ${
+              className={`desktop-sidebar-link flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[40px] rounded-xl transition-colors md:justify-center lg:justify-start ${
                 pathname.startsWith('/profili')
-                  ? 'font-bold text-[var(--text)]'
+                  ? 'font-bold text-[var(--text)] bg-[var(--primary-soft)]'
                   : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
               }`}
             >
               <img
                 src={user.avatar || ''}
                 alt=""
-                className={`w-7 h-7 rounded-full object-cover flex-shrink-0 ${pathname.startsWith('/profili') ? 'ring-2 ring-[var(--primary)]' : ''}`}
+                className={`w-6 h-6 lg:w-7 lg:h-7 rounded-full object-cover flex-shrink-0 ${pathname.startsWith('/profili') ? 'ring-2 ring-[var(--primary)]' : ''}`}
                 onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username; }}
               />
-              <span className="hidden lg:inline text-[15px] font-medium truncate">{user.username}</span>
+              <span className="hidden lg:inline text-[14px] font-medium truncate">{user.username}</span>
             </Link>
             <button
               type="button"
               onClick={() => { logout(); router.push('/'); }}
-              className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-[var(--text-muted)] hover:bg-[var(--primary-soft)] hover:text-[var(--danger)] transition-colors"
+              className="desktop-sidebar-link w-full flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[40px] rounded-xl text-[var(--text-muted)] hover:bg-[var(--primary-soft)] hover:text-[var(--danger)] transition-colors md:justify-center lg:justify-start"
               aria-label="Dil nga llogaria"
               title="Dil"
             >
               <span className="flex-shrink-0"><IconLogout /></span>
-              <span className="hidden lg:inline text-[15px]">Dil</span>
+              <span className="hidden lg:inline text-[14px]">Dil</span>
             </button>
           </div>
         </aside>

@@ -633,6 +633,52 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   border-color: var(--border);
 }
 
+/* Desktop sidebar – pa scroll, të gjitha linket të dukshme */
+.desktop-sidebar {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.desktop-sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.desktop-sidebar-link--featured {
+  border: 1px solid transparent;
+}
+
+.desktop-sidebar-link--featured:not(.font-bold) {
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.desktop-sidebar-link--featured.font-bold {
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+@media (min-height: 700px) and (min-width: 1024px) {
+  .desktop-sidebar-nav {
+    justify-content: flex-start;
+    gap: 2px;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 1024px) {
+  .desktop-sidebar-brand {
+    padding-top: 0.75rem;
+    padding-bottom: 0.25rem;
+  }
+  .desktop-sidebar-link {
+    min-height: 36px !important;
+  }
+  .desktop-sidebar-nav .hidden.lg\:inline {
+    font-size: 13px;
+  }
+}
+
 .ig-feed-layout {
   display: flex;
   justify-content: center;
