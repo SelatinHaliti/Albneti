@@ -15,17 +15,15 @@ const createTransporter = () => {
   const isGmail = host === 'smtp.gmail.com' || user.endsWith('@gmail.com');
   if (isGmail) {
     return nodemailer.createTransport({
-      pool: true,
-      maxConnections: 1,
-      maxMessages: 100,
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
+      port: 465,
+      secure: true,
+      family: 4,
       auth: { user, pass },
-      connectionTimeout: 60000,
-      greetingTimeout: 30000,
-      socketTimeout: 90000,
+      connectionTimeout: 120000,
+      greetingTimeout: 60000,
+      socketTimeout: 120000,
+      tls: { minVersion: 'TLSv1.2' },
     });
   }
 
@@ -40,6 +38,14 @@ const createTransporter = () => {
 };
 
 export const isSmtpConfigured = () => Boolean(getTransporter());
+
+export function getEmailProvider() {
+  if (process.env.RESEND_API_KEY?.startsWith('re_')) return 'resend';
+  if (isSmtpConfigured()) return 'smtp';
+  return null;
+}
+
+export const isEmailConfigured = () => Boolean(getEmailProvider());
 
 /** Singleton – mos krijo transport të ri për çdo email */
 let cachedTransporter = null;
@@ -104,6 +110,26 @@ export async function verifySmtpConnection({ timeoutMs = 45000, useCache = true 
   }
 }
 
+async function sendViaResend({ to, subject, html, from }) {
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key?.startsWith('re_')) return null;
+  const fromAddr = from || process.env.RESEND_FROM || process.env.SMTP_FROM || 'AlbNet <onboarding@resend.dev>';
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: fromAddr, to: [to], subject, html }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
+    }
+    return { ok: true, provider: 'resend' };
+  } catch (err) {
+    return { ok: false, error: String(err?.message || err) };
+  }
+}
+
 function normalizeMailerError(err) {
   if (!err) return 'Gabim i panjohur.';
   if (typeof err === 'string') return err;
@@ -115,39 +141,42 @@ function normalizeMailerError(err) {
     return 'Gmail refuzoi fjalëkalimin. Aktivizo 2FA dhe krijo App Password të ri nga myaccount.google.com/apppasswords, pastaj përditëso SMTP_PASS në .env dhe Render.';
   }
   if (/timeout/i.test(message)) {
-    return 'Lidhja me Gmail vonoi. SMTP mund të funksionojë gjithsesi — provo Dërgo test.';
+    return 'Lidhja me Gmail vonoi. Provo përsëri ose vendos RESEND_API_KEY për dërgim më të shpejtë.';
   }
   const parts = [code, message, response].filter(Boolean);
   return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
 }
 
-async function sendMail({ to, subject, html, skipVerify = true }) {
+async function sendMail({ to, subject, html }) {
   const smtpUser = (process.env.SMTP_USER || '').trim();
   const from =
     process.env.SMTP_FROM ||
     (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
 
+  const resendResult = await sendViaResend({ to, subject, html, from });
+  if (resendResult?.ok) return resendResult;
+  if (resendResult && !resendResult.ok && !isSmtpConfigured()) return resendResult;
+
   const mailOptions = { from, to, subject, html };
   const maxAttempts = 3;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    resetSmtpTransporter();
     const transporter = getTransporter();
     if (!transporter) {
-      return { ok: false, error: 'SMTP nuk është konfiguruar në server.' };
+      return resendResult || { ok: false, error: 'SMTP nuk është konfiguruar në server.' };
     }
     try {
-      if (!skipVerify && attempt === 1) await verifySmtpConnection({ timeoutMs: 45000 });
       const sendTask = transporter.sendMail(mailOptions);
       const timeoutTask = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('send timeout')), 90000);
+        setTimeout(() => reject(new Error('send timeout')), 120000);
       });
       await Promise.race([sendTask, timeoutTask]);
-      return { ok: true };
+      return { ok: true, provider: 'smtp' };
     } catch (err) {
       const error = normalizeMailerError(err);
       if (attempt < maxAttempts && isRetryableSmtpError(err)) {
-        resetSmtpTransporter();
-        await sleep(1500 * attempt);
+        await sleep(2000 * attempt);
         continue;
       }
       return { ok: false, error };
@@ -347,11 +376,9 @@ export async function sendAlbnetAdsEmail({
   let highlightBlock = '';
   if (highlights?.trendingPost) {
     const p = highlights.trendingPost;
-    const img = p.media?.[0]?.url;
     highlightBlock += `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 20px 0; border-radius: 12px; border: 1px solid ${BRAND.border}; overflow: hidden;">
       <tr>
-        ${img ? `<td width="120" style="padding: 0;"><img src="${img}" alt="" width="120" height="120" style="display: block; object-fit: cover;" /></td>` : ''}
         <td style="padding: 16px 18px; background: ${BRAND.bg};">
           <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${BRAND.primary}; text-transform: uppercase;">🔥 Trending këtë javë</p>
           <p style="margin: 0 0 6px; font-size: 15px; font-weight: 600; color: ${BRAND.text};">@${p.user?.username || 'krijues'}</p>

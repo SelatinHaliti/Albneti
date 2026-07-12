@@ -14,11 +14,13 @@ const API = 'https://api.render.com/v1';
 
 const KEYS = {
   SMTP_HOST: 'smtp.gmail.com',
-  SMTP_PORT: '587',
-  SMTP_SECURE: 'false',
+  SMTP_PORT: '465',
+  SMTP_SECURE: 'true',
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
   SMTP_FROM: process.env.SMTP_FROM || (process.env.SMTP_USER ? `AlbNet <${process.env.SMTP_USER}>` : ''),
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  RESEND_FROM: process.env.RESEND_FROM,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   FRONTEND_URL: process.env.FRONTEND_URL || 'https://albneti.vercel.app',
   AI_MARKETING_USE_SMART_ONLY: 'true',

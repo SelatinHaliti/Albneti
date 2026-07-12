@@ -4,7 +4,7 @@ import Post from '../models/Post.js';
 import Event from '../models/Event.js';
 import LiveStream from '../models/LiveStream.js';
 import MarketingRun from '../models/MarketingRun.js';
-import { sendAlbnetAdsEmail, isSmtpConfigured, resetSmtpTransporter } from '../utils/email.js';
+import { sendAlbnetAdsEmail, isEmailConfigured, isSmtpConfigured, resetSmtpTransporter, getEmailProvider } from '../utils/email.js';
 import { generateMarketingTheme, getAiMarketingStatus } from './aiMarketingService.js';
 
 const BATCH_SIZE = 8;
@@ -154,7 +154,7 @@ export async function cancelStuckMarketingRuns() {
 }
 
 async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey, runType, force }) {
-  if (!isSmtpConfigured()) {
+  if (!isEmailConfigured()) {
     const err = 'SMTP nuk është konfiguruar në server.';
     await MarketingRun.findOneAndUpdate(
       { weekKey: runKey, runType },
@@ -266,7 +266,7 @@ function queryEligibleUsers({ allUsers = false } = {}) {
  * Dërgon email-in javor AlbNet Ads te përdoruesit aktivë.
  */
 export async function runWeeklyMarketingEmails({ force = false, triggeredBy = 'cron' } = {}) {
-  if (!isSmtpConfigured()) {
+  if (!isEmailConfigured()) {
     return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_* në Render.' };
   }
 
@@ -370,7 +370,7 @@ async function runAIMarketingBlastWorker({ runKey, triggeredBy }) {
 
 /** Admin: nis blast në background (kthehet menjëherë) */
 export async function startAIMarketingBlast({ triggeredBy = 'admin' } = {}) {
-  if (!isSmtpConfigured()) {
+  if (!isEmailConfigured()) {
     return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_HOST, SMTP_USER, SMTP_PASS në Render Environment.' };
   }
 
@@ -453,7 +453,7 @@ async function runActiveMarketingWorker({ runKey, triggeredBy }) {
 
 /** Admin: nis dërgim te përdoruesit aktivë (60 ditë) në background */
 export async function startActiveMarketingSend({ triggeredBy = 'admin' } = {}) {
-  if (!isSmtpConfigured()) {
+  if (!isEmailConfigured()) {
     return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_HOST, SMTP_USER, SMTP_PASS në Render Environment.' };
   }
 
@@ -543,7 +543,7 @@ export async function getBlastStatus(runKey) {
 
 /** Admin: 1 klik – gjeneron me AI dhe dërgon te të gjithë përdoruesit (sync – për CLI) */
 export async function runAIMarketingBlast({ triggeredBy = 'admin' } = {}) {
-  if (!isSmtpConfigured()) {
+  if (!isEmailConfigured()) {
     return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_* në Render.' };
   }
 
@@ -601,7 +601,7 @@ export async function unsubscribeMarketingByToken(token) {
 
 /** Dërgon 1 email test AlbNet Ads (admin ose CLI). */
 export async function sendMarketingTestEmail(to) {
-  if (!isSmtpConfigured()) {
+  if (!isEmailConfigured()) {
     return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_* në .env ose Render.' };
   }
   const highlights = await buildDynamicHighlights().catch(() => ({
@@ -654,8 +654,9 @@ export async function getMarketingStats() {
     MarketingRun.findOne({ status: 'running' }).sort({ createdAt: -1 }).lean(),
   ]);
   return {
-    smtpConfigured: isSmtpConfigured(),
-    smtpVerified: isSmtpConfigured() ? true : false,
+    smtpConfigured: isEmailConfigured(),
+    smtpVerified: isEmailConfigured(),
+    emailProvider: getEmailProvider(),
     currentWeekKey: weekKey,
     lastRun,
     runningBlast: runningJob
