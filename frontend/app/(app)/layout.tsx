@@ -163,7 +163,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                     aria-haspopup="true"
                     aria-label="Zgjidh feed"
                   >
-                    <span className="brand-text text-[18px]">ALBNET</span>
+                    <span className="font-bold text-[18px] tracking-tight text-[var(--text)]">ALBNET</span>
                     <svg className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform duration-200 ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                     </svg>
@@ -176,7 +176,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 </>
               ) : (
                 <Link href="/feed" className="ig-touch flex items-center min-h-[52px] -m-2 px-2">
-                  <span className="brand-text text-[18px]">ALBNET</span>
+                  <span className="font-bold text-[18px] tracking-tight text-[var(--text)]">ALBNET</span>
                 </Link>
               )}
             </div>
@@ -225,7 +225,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   aria-label="Zgjidh feed"
                 >
                   <AppLogo size={32} />
-                  <span className="hidden lg:inline brand-text text-[22px]">ALBNET</span>
+                  <span className="hidden lg:inline font-bold text-[22px] tracking-tight text-[var(--text)]">ALBNET</span>
                   <svg className={`hidden lg:block w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                   </svg>
@@ -239,7 +239,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             ) : (
               <Link href="/feed" className="flex items-center gap-3">
                 <AppLogo size={32} />
-                <span className="hidden lg:inline brand-text text-[22px]">ALBNET</span>
+                <span className="hidden lg:inline font-bold text-[22px] tracking-tight text-[var(--text)]">ALBNET</span>
               </Link>
             )}
           </div>

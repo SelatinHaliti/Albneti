@@ -216,25 +216,20 @@ export default function NotificationsPage() {
 
   return (
     <div className="mobile-page max-w-[560px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
-      <div className="page-header-bar sticky top-0 z-10 px-5 py-4">
+      <div className="ig-page-header ig-nav-bar sticky top-0 z-10 px-5 py-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[22px] font-extrabold text-[var(--text)] tracking-tight">Njoftime</h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-semibold mt-0.5">
-              Pëlqime, komente, ndjekje
-            </p>
-          </div>
+          <h1 className="text-[16px] font-semibold text-[var(--text)]">Njoftime</h1>
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={markAllRead}
-              className="text-[13px] font-bold text-[var(--primary)] hover:opacity-80 transition-opacity"
+              className="ig-link-btn text-[14px]"
             >
               Lexo të gjitha
             </button>
           )}
         </div>
-        <div className="flex gap-2 mt-3">
+        <div className="flex gap-6 mt-3 border-b border-[var(--border)]">
           {[
             { key: 'te-gjitha' as const, label: 'Të gjitha' },
             { key: 'te-palexuara' as const, label: 'Të palexuara' },
@@ -243,8 +238,8 @@ export default function NotificationsPage() {
               key={f.key}
               type="button"
               onClick={() => setFilter(f.key)}
-              className={`filter-chip flex items-center gap-1.5 ${
-                filter === f.key ? 'filter-chip--active' : 'text-[var(--text-muted)] bg-[var(--bg-card)]'
+              className={`filter-chip pb-2.5 ${
+                filter === f.key ? 'filter-chip--active' : ''
               }`}
             >
               {f.label}
@@ -286,7 +281,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={loadNotifications}
-              className="btn-primary-alb px-6 py-2.5 text-[14px]"
+              className="ig-btn-action px-6 py-2 text-[14px]"
             >
               Provo përsëri
             </button>
@@ -336,7 +331,7 @@ export default function NotificationsPage() {
                   type="button"
                   disabled={actionLoading === n._id}
                   onClick={(e) => handleAcceptRequest(n, e)}
-                  className="btn-primary-alb px-3 py-1.5 text-[12px] disabled:opacity-50"
+                  className="ig-btn-action px-3 py-1.5 text-[12px] disabled:opacity-50"
                 >
                   Prano
                 </button>
@@ -344,7 +339,7 @@ export default function NotificationsPage() {
                   type="button"
                   disabled={actionLoading === n._id}
                   onClick={(e) => handleDeclineRequest(n, e)}
-                  className="btn-secondary-alb px-3 py-1.5 text-[12px] disabled:opacity-50"
+                  className="ig-btn-outline px-3 py-1.5 text-[12px] disabled:opacity-50"
                 >
                       Refuzo
                     </button>

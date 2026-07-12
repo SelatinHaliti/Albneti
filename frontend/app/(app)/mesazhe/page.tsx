@@ -54,12 +54,9 @@ export default function MessagesPage() {
 
   return (
     <div className="mobile-page max-w-[470px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
-      <div className="page-header-bar sticky top-0 z-10 px-4 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-[20px] font-extrabold text-[var(--text)] tracking-tight">Mesazhe</h1>
-          <p className="text-[11px] text-[var(--text-muted)] font-semibold mt-0.5">Biseda private</p>
-        </div>
-        <Link href="/mesazhe/te-rinj" className="btn-primary-alb px-4 py-2 text-[13px]">
+      <div className="ig-page-header ig-nav-bar sticky top-0 z-10 px-4 py-3 flex items-center justify-between">
+        <h1 className="text-[16px] font-semibold text-[var(--text)]">Mesazhe</h1>
+        <Link href="/mesazhe/te-rinj" className="ig-link-btn text-[14px]">
           E re
         </Link>
       </div>
@@ -83,25 +80,25 @@ export default function MessagesPage() {
           className="flex flex-col items-center justify-center py-24 px-6 text-center"
         >
           <div className="empty-state-icon mb-4">
-            <svg className="w-8 h-8 text-[var(--primary)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
             </svg>
           </div>
           <p className="text-[15px] font-semibold text-[var(--text)]">Nuk ka mesazhe</p>
           <p className="text-[13px] text-[var(--text-muted)] mt-1">Fillo një bisedë të re me miqtë.</p>
-          <Link href="/mesazhe/te-rinj" className="btn-primary-alb mt-5 px-6 py-2.5 text-[14px]">
+          <Link href="/mesazhe/te-rinj" className="ig-btn-action mt-5 px-6 py-2 text-[14px] inline-block">
             Bisedë e re
           </Link>
         </motion.div>
       ) : (
-        <div className="px-2 py-2 space-y-1">
+        <div className="divide-y divide-[var(--border)]">
           {conversations.map((c) => {
             const other = getOther(c);
             return (
               <Link key={c._id} href={`/mesazhe/${c._id}`}>
                 <motion.div
                   whileTap={{ scale: 0.98 }}
-                  className={`conversation-row flex items-center gap-3 px-4 py-3 ${c.unreadCount ? 'conversation-row--unread' : ''}`}
+                  className={`conversation-row flex items-center gap-3 px-4 py-3 ${c.unreadCount ? 'font-semibold' : ''}`}
                 >
                   <img
                     src={other?.avatar || ''}
