@@ -25,18 +25,22 @@ import verificationRoutes from './routes/verification.js';
 import callRoutes from './routes/calls.js';
 import pushRoutes from './routes/push.js';
 import liveRoutes from './routes/live.js';
+import marketingRoutes from './routes/marketing.js';
 import { stripeWebhook } from './controllers/verificationController.js';
 import { setupSocketIO } from './sockets/index.js';
 import { setIO } from './sockets/io.js';
 import { initMonitoring, errorHandler } from './middleware/monitoring.js';
 import { seedCommunityEvents } from './services/eventSeed.js';
 import { runScheduledEventPromos } from './services/eventAdsService.js';
+import { runWeeklyMarketingEmails } from './services/marketingEmailService.js';
 
 connectDB().then(() => {
   void initMonitoring();
   seedCommunityEvents();
   setTimeout(() => runScheduledEventPromos().catch(() => {}), 15000);
   setInterval(() => runScheduledEventPromos().catch(() => {}), 6 * 60 * 60 * 1000);
+  setTimeout(() => runWeeklyMarketingEmails().catch(() => {}), 45000);
+  setInterval(() => runWeeklyMarketingEmails().catch(() => {}), 24 * 60 * 60 * 1000);
 });
 
 const app = express();
@@ -125,6 +129,7 @@ app.use('/api/verification', verificationRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/live', liveRoutes);
+app.use('/api/marketing', marketingRoutes);
 
 // Health check – përfshirë gjendjen e DB (për load balancer / monitoring)
 app.get('/api/health', async (req, res) => {

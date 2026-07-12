@@ -16,6 +16,8 @@ import {
   toggleCloseFriend,
   exportUserData,
   deleteAccount,
+  updateMarketingPreferences,
+  getMarketingPreferences,
 } from '../controllers/userController.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import { uploadSingle } from '../middleware/upload.js';
@@ -29,6 +31,8 @@ router.get('/me/kerkesa-ndjekje', protect, getFollowRequests);
 router.get('/me/miq-te-ngushte', protect, getCloseFriends);
 router.get('/me/eksport', protect, exportUserData);
 router.delete('/me', protect, deleteAccount);
+router.put('/me/marketing', protect, updateMarketingPreferences);
+router.get('/me/marketing', protect, getMarketingPreferences);
 router.post('/me/kerkesa-ndjekje/:requesterId/prano', protect, acceptFollowRequest);
 router.post('/me/kerkesa-ndjekje/:requesterId/refuzo', protect, declineFollowRequest);
 router.get('/liste/:userId/ndjekesit', protect, getFollowers);

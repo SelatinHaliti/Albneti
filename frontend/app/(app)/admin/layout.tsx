@@ -59,6 +59,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           Përdoruesit
         </Link>
+        <Link
+          href="/admin/marketing"
+          className={`px-4 py-2 rounded-xl font-medium ${
+            pathname === '/admin/marketing' ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+          }`}
+        >
+          AlbNet Ads
+        </Link>
       </nav>
       {children}
     </div>

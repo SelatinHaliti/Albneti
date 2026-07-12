@@ -713,3 +713,38 @@ export const deleteAccount = async (req, res) => {
     res.status(500).json({ message: err.message || 'Gabim gjatë fshirjes së llogarisë.' });
   }
 };
+
+/**
+ * Preferencat e email marketing (AlbNet Ads)
+ */
+export const getMarketingPreferences = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('marketingEmailsOptIn');
+    if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+    res.json({ marketingEmailsOptIn: user.marketingEmailsOptIn !== false });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Preferencat e email marketing (AlbNet Ads)
+ */
+export const updateMarketingPreferences = async (req, res) => {
+  try {
+    const { optIn } = req.body;
+    if (typeof optIn !== 'boolean') {
+      return res.status(400).json({ message: 'Vlera optIn duhet të jetë true ose false.' });
+    }
+    await User.findByIdAndUpdate(req.user.id, { $set: { marketingEmailsOptIn: optIn } });
+    res.json({
+      success: true,
+      marketingEmailsOptIn: optIn,
+      message: optIn
+        ? 'Do të merrni emailet javore AlbNet Ads.'
+        : 'Nuk do të merrni më emaile marketing.',
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};

@@ -215,3 +215,91 @@ export const sendPasswordResetEmail = async (email, token, username) => {
   }
   return result;
 };
+
+/**
+ * AlbNet Ads – email marketing javor me dizajn profesional
+ */
+export async function sendAlbnetAdsEmail({
+  to,
+  username,
+  fullName,
+  theme,
+  highlights,
+  baseUrl,
+  unsubscribeToken,
+}) {
+  const name = fullName || username;
+  const unsubUrl = `${baseUrl}/marketing/clahu?token=${encodeURIComponent(unsubscribeToken)}`;
+
+  const featureCards = (theme.features || [])
+    .map(
+      (f) => `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 16px; background: ${BRAND.bg}; border-radius: 12px; border: 1px solid ${BRAND.border}; overflow: hidden;">
+      <tr>
+        <td style="padding: 18px 20px;">
+          <p style="margin: 0 0 6px; font-size: 18px; font-weight: 700; color: ${BRAND.text};">${f.emoji} ${f.title}</p>
+          <p style="margin: 0 0 12px; font-size: 14px; color: ${BRAND.textMuted}; line-height: 1.5;">${f.desc}</p>
+          <a href="${baseUrl}${f.path}" style="font-size: 13px; font-weight: 600; color: ${BRAND.primary}; text-decoration: none;">${f.cta} →</a>
+        </td>
+      </tr>
+    </table>`
+    )
+    .join('');
+
+  let highlightBlock = '';
+  if (highlights?.trendingPost) {
+    const p = highlights.trendingPost;
+    const img = p.media?.[0]?.url;
+    highlightBlock += `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 20px 0; border-radius: 12px; border: 1px solid ${BRAND.border}; overflow: hidden;">
+      <tr>
+        ${img ? `<td width="120" style="padding: 0;"><img src="${img}" alt="" width="120" height="120" style="display: block; object-fit: cover;" /></td>` : ''}
+        <td style="padding: 16px 18px; background: ${BRAND.bg};">
+          <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${BRAND.primary}; text-transform: uppercase;">🔥 Trending këtë javë</p>
+          <p style="margin: 0 0 6px; font-size: 15px; font-weight: 600; color: ${BRAND.text};">@${p.user?.username || 'krijues'}</p>
+          <p style="margin: 0; font-size: 13px; color: ${BRAND.textMuted};">${(p.caption || '').slice(0, 100)}${p.caption?.length > 100 ? '…' : ''}</p>
+        </td>
+      </tr>
+    </table>`;
+  }
+  if (highlights?.upcomingEvent) {
+    const e = highlights.upcomingEvent;
+    highlightBlock += `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 12px 0 20px; padding: 16px 18px; background: #fafafa; border-radius: 12px; border: 1px solid ${BRAND.border};">
+      <tr><td>
+        <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${BRAND.red};">🇦🇱 Event i afërt</p>
+        <p style="margin: 0 0 4px; font-size: 16px; font-weight: 700; color: ${BRAND.text};">${e.emoji || '📅'} ${e.title}</p>
+        <p style="margin: 0; font-size: 13px; color: ${BRAND.textMuted};">${e.shortDate || ''} · ${e.location || e.city || ''}</p>
+      </td></tr>
+    </table>`;
+  }
+
+  const statsLine = highlights
+    ? `<p style="margin: 16px 0 0; padding: 12px 16px; background: ${BRAND.bg}; border-radius: 10px; font-size: 13px; color: ${BRAND.textMuted}; text-align: center;">
+        <strong style="color: ${BRAND.text};">${highlights.activeUsers || 0}</strong> përdorues aktiv këtë javë
+        ${highlights.activeLives ? ` · <strong style="color: ${BRAND.red};">${highlights.activeLives}</strong> live tani` : ''}
+      </p>`
+    : '';
+
+  const content = `
+    <p style="margin: 0 0 4px; font-size: 12px; font-weight: 700; color: ${BRAND.primary}; letter-spacing: 0.5px;">ALBNET ADS · Javore</p>
+    <p style="margin: 0 0 12px; font-size: 24px; font-weight: 700; color: ${BRAND.text}; line-height: 1.25;">${theme.headline}</p>
+    <p style="margin: 0 0 8px; color: ${BRAND.textMuted}; font-size: 14px;">Përshëndetje <strong style="color: ${BRAND.text};">${name}</strong>,</p>
+    <p style="margin: 0 0 20px; color: ${BRAND.text}; font-size: 15px; line-height: 1.6;">${theme.intro}</p>
+    ${statsLine}
+    ${highlightBlock}
+    ${featureCards}
+    ${ctaButton(`${baseUrl}/feed`, 'Hap AlbNet tani')}
+    <p style="margin: 24px 0 0; font-size: 12px; color: ${BRAND.textMuted}; text-align: center; line-height: 1.6;">
+      Marr këtë email sepse je përdorues aktiv i AlbNet.<br>
+      <a href="${unsubUrl}" style="color: ${BRAND.textMuted}; text-decoration: underline;">Çabonohu nga emailet marketing</a>
+      · <a href="${baseUrl}/profili/redakto" style="color: ${BRAND.textMuted}; text-decoration: underline;">Cilësimet</a>
+    </p>
+  `;
+
+  return sendMail({
+    to,
+    subject: theme.subject,
+    html: baseEmailTemplate(content),
+  });
+}

@@ -41,6 +41,8 @@ export default function EditProfilePage() {
   const [deleteUsername, setDeleteUsername] = useState('');
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
+  const [marketingLoading, setMarketingLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -54,6 +56,9 @@ export default function EditProfilePage() {
     setWebsite(user.website ?? '');
     setLocation(user.location ?? '');
     setIsPrivate(!!user.isPrivate);
+    void api<{ marketingEmailsOptIn: boolean }>('/api/users/me/marketing')
+      .then((r) => setMarketingOptIn(r.marketingEmailsOptIn))
+      .catch(() => {});
   }, [ready, isAuthenticated, user, router]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -259,6 +264,39 @@ export default function EditProfilePage() {
           >
             <span
               className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${isPrivate ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--bg)]">
+          <div>
+            <p className="text-sm font-medium text-[var(--text)]">AlbNet Ads (email javore)</p>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">Lajme, trending dhe tips marketing 1x në javë</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={marketingOptIn}
+            disabled={marketingLoading}
+            onClick={async () => {
+              setMarketingLoading(true);
+              try {
+                const next = !marketingOptIn;
+                const res = await api<{ marketingEmailsOptIn: boolean }>('/api/users/me/marketing', {
+                  method: 'PUT',
+                  body: { optIn: next },
+                });
+                setMarketingOptIn(res.marketingEmailsOptIn);
+              } catch (_) {
+                setError('Nuk u përditësuan preferencat e email-it.');
+              } finally {
+                setMarketingLoading(false);
+              }
+            }}
+            className={`relative w-11 h-6 rounded-full transition-colors ${marketingOptIn ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'} disabled:opacity-50`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${marketingOptIn ? 'translate-x-5' : 'translate-x-0'}`}
             />
           </button>
         </div>
