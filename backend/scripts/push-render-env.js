@@ -28,10 +28,10 @@ const KEYS = {
 };
 
 async function main() {
-  const apiKey = process.env.RENDER_API_KEY?.trim();
+  const apiKey = (process.argv[2] || process.env.RENDER_API_KEY || '').trim();
   if (!apiKey?.startsWith('rnd_')) {
-    console.error('❌ Shto RENDER_API_KEY=rnd_... në backend/.env');
-    console.error('   Merr nga: https://dashboard.render.com/u/settings#api-keys');
+    console.error('❌ API key mungon ose është i pavlefshëm (duhet rnd_...)');
+    console.error('   Përdorimi: node backend/scripts/push-render-env.js rnd_...');
     process.exit(1);
   }
 

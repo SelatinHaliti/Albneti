@@ -1,6 +1,6 @@
 @echo off
 title AlbNet - Konfiguro Render
-cd /d "%~dp0.."
+cd /d "%~dp0"
 echo.
 echo ============================================
 echo   AlbNet - Vendos SMTP, Stripe, VAPID ne Render
@@ -20,6 +20,15 @@ if "%RENDER_KEY%"=="" (
 echo.
 echo Duke vendosur variablat ne Render...
 set RENDER_API_KEY=%RENDER_KEY%
-node backend\scripts\push-render-env.js
+node backend\scripts\push-render-env.js "%RENDER_KEY%"
+if errorlevel 1 (
+  echo.
+  echo Dështoi. Kontrollo mesazhin e gabimit sipër.
+  pause
+  exit /b 1
+)
+echo.
+echo U krye! Prit 2-3 minuta pastaj kontrollo:
+echo https://albneti-api.onrender.com/api/health
 echo.
 pause
