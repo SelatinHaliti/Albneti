@@ -235,13 +235,18 @@ export function setupSocketIO(io) {
     socket.on('disconnect', () => {
       const entry = activeCalls.get(String(userId));
       if (entry) {
-        io.to(`user:${entry.withUserId}`).emit('call:end', {
-          fromUserId: userId,
-          conversationId: entry.conversationId,
-          reason: 'disconnect',
-        });
-        clearCallActive(userId);
-        clearCallActive(entry.withUserId);
+        setTimeout(() => {
+          const stillGone = !userSockets.get(String(userId))?.size;
+          const stillActive = activeCalls.get(String(userId));
+          if (!stillGone || !stillActive) return;
+          io.to(`user:${stillActive.withUserId}`).emit('call:end', {
+            fromUserId: userId,
+            conversationId: stillActive.conversationId,
+            reason: 'disconnect',
+          });
+          clearCallActive(userId);
+          clearCallActive(stillActive.withUserId);
+        }, 8000);
       }
       socket.leave(GLOBAL_CHAT_ROOM);
       const globalRoom = io.sockets.adapter.rooms.get(GLOBAL_CHAT_ROOM);

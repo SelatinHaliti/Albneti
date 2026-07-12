@@ -43,6 +43,7 @@ type CommonProps = {
   onClose: () => void;
   onStopRing: () => void;
   onConnected?: () => void;
+  onEmitCallEnd?: (reason: string) => void;
 };
 
 type OutgoingProps = CommonProps & {
@@ -77,6 +78,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     onClose,
     onStopRing,
     onConnected,
+    onEmitCallEnd,
   } = props;
   const direction = props.direction;
   const mode = props.mode;
@@ -91,6 +93,8 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   const endedRef = useRef(false);
   const offerSentRef = useRef(false);
   const acceptStartedRef = useRef(false);
+  const outgoingStartedRef = useRef<string | null>(null);
+  const disconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -184,14 +188,20 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       stopCallRingtone();
       onStopRing();
 
-      if (emitEvent === 'end') emitSignal('call:end', { reason });
-      if (emitEvent === 'reject') emitSignal('call:reject', { reason });
+      if (emitEvent === 'end') onEmitCallEnd?.(reason);
+      if (emitEvent === 'reject') {
+        socket.emit('call:reject', { toUserId: otherUserId, conversationId, reason });
+      }
 
+      if (disconnectTimerRef.current) {
+        clearTimeout(disconnectTimerRef.current);
+        disconnectTimerRef.current = null;
+      }
       cleanupLocal();
       setStatus('ended');
       onClose();
     },
-    [cleanupLocal, emitSignal, onClose, onStopRing]
+    [cleanupLocal, onEmitCallEnd, socket, otherUserId, conversationId, onClose, onStopRing]
   );
 
   const attachRemoteStream = useCallback(
@@ -232,19 +242,38 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
-      if (state === 'connected') setStatus('connected');
+      if (state === 'connected') {
+        if (disconnectTimerRef.current) {
+          clearTimeout(disconnectTimerRef.current);
+          disconnectTimerRef.current = null;
+        }
+        setStatus('connected');
+      }
       if (state === 'failed' && !endedRef.current) {
         setError('Lidhja dështoi. Kontrollo internetin dhe provo përsëri.');
         setStatus('error');
       }
-      if (state === 'disconnected') {
-        setError('Lidhja u ndërpre.');
+      if (state === 'disconnected' && !endedRef.current) {
+        setError('Lidhja u ndërpre. Duke u rilidhur...');
+        if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
+        disconnectTimerRef.current = setTimeout(() => {
+          if (!endedRef.current && pc.connectionState === 'disconnected') {
+            finishCall('disconnect', 'end');
+          }
+        }, 12000);
+      }
+      if (state === 'closed' && !endedRef.current) {
+        finishCall('closed', 'none');
       }
     };
 
     pc.oniceconnectionstatechange = () => {
       const iceState = pc.iceConnectionState;
       if (iceState === 'connected' || iceState === 'completed') {
+        if (disconnectTimerRef.current) {
+          clearTimeout(disconnectTimerRef.current);
+          disconnectTimerRef.current = null;
+        }
         setStatus('connected');
       }
       if (iceState === 'failed' && !endedRef.current) {
@@ -411,9 +440,11 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     }
   }, [status, direction, onStopRing]);
 
-  // Outgoing: nis thirrjen një herë
+  // Outgoing: nis thirrjen një herë për bisedë (mos dërgo call:end në cleanup)
   useEffect(() => {
     if (direction !== 'outgoing') return;
+    if (outgoingStartedRef.current === conversationId) return;
+    outgoingStartedRef.current = conversationId;
 
     startOutgoingCall().catch((e) => {
       if (endedRef.current) return;
@@ -435,20 +466,9 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
     return () => {
       clearTimeout(ringTimer);
-      stopCallRingtone();
-      onStopRing();
-      if (!endedRef.current) {
-        endedRef.current = true;
-        socket.emit('call:end', {
-          toUserId: otherUserId,
-          conversationId,
-          reason: 'cancelled',
-        });
-      }
-      cleanupLocal();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [direction, conversationId]);
 
   // Kohëzgjatja thirrjes
   useEffect(() => {

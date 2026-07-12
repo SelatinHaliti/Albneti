@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSocket } from '@/components/SocketProvider';
 import { useToastStore } from '@/store/useToastStore';
@@ -107,6 +107,7 @@ function createSignalingBridge(): CallSignalingBridge {
 
 export function CallProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const { socket } = useSocket();
   const toastError = useToastStore((s) => s.error);
@@ -114,8 +115,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [ringPhase, setRingPhase] = useState<CallRingPhase>('idle');
   const activeCallRef = useRef<ActiveCall | null>(null);
   const signalingBridgeRef = useRef<ReturnType<typeof createSignalingBridge> | null>(null);
+  const callSocketRef = useRef(socket);
+  const callEndedEmittedRef = useRef(false);
 
   activeCallRef.current = activeCall;
+
+  useEffect(() => {
+    if (socket) callSocketRef.current = socket;
+  }, [socket]);
 
   const stopRing = useCallback(() => {
     setRingPhase('active');
@@ -132,11 +139,25 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     stopCallRingtone();
     signalingBridgeRef.current?.reset();
     signalingBridgeRef.current = null;
+    callEndedEmittedRef.current = false;
     setActiveCall((current) => {
       if (current?.direction === 'outgoing' && current.localStream) {
         current.localStream.getTracks().forEach((t) => t.stop());
       }
       return null;
+    });
+  }, []);
+
+  const emitCallEnd = useCallback((reason: string) => {
+    if (callEndedEmittedRef.current) return;
+    const current = activeCallRef.current;
+    const s = callSocketRef.current;
+    if (!current || !s?.connected) return;
+    callEndedEmittedRef.current = true;
+    s.emit('call:end', {
+      toUserId: current.otherUserId,
+      conversationId: current.conversationId,
+      reason,
     });
   }, []);
 
@@ -168,6 +189,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       stopCallRingtone();
       signalingBridgeRef.current?.reset();
       signalingBridgeRef.current = createSignalingBridge();
+      callEndedEmittedRef.current = false;
 
       try {
         const localStream = await acquireLocalMedia(opts.mode);
@@ -228,6 +250,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       stopCallRingtone();
       signalingBridgeRef.current?.reset();
       signalingBridgeRef.current = createSignalingBridge();
+      callEndedEmittedRef.current = false;
       void resolveIceServers();
       setActiveCall({
         direction: 'incoming',
@@ -357,17 +380,22 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const handleAcceptNavigate = useCallback(() => {
     setRingPhase('active');
     stopCallRingtone();
-    if (activeCall?.conversationId) {
-      router.push(`/mesazhe/${activeCall.conversationId}`);
+    const convId = activeCallRef.current?.conversationId;
+    if (!convId) return;
+    const target = `/mesazhe/${convId}`;
+    if (pathname !== target) {
+      router.push(target);
     }
-  }, [activeCall, router]);
+  }, [pathname, router]);
+
+  const callSocket = socket || callSocketRef.current;
 
   return (
     <CallContext.Provider value={{ activeCall, startCall, endCall, stopRing }}>
       {children}
-      {activeCall && socket && user && signalingBridgeRef.current && (
+      {activeCall && user && signalingBridgeRef.current && callSocket && (
         <CallModal
-          socket={socket}
+          socket={callSocket}
           selfUserId={user.id}
           otherUserId={activeCall.otherUserId}
           conversationId={activeCall.conversationId}
@@ -380,6 +408,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           onClose={endCall}
           onStopRing={silenceRing}
           onConnected={handleAcceptNavigate}
+          onEmitCallEnd={emitCallEnd}
         />
       )}
     </CallContext.Provider>
