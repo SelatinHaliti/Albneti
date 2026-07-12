@@ -4,8 +4,13 @@ import Story from '../models/Story.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import Notification from '../models/Notification.js';
+import LiveStream from '../models/LiveStream.js';
+import PushSubscription from '../models/PushSubscription.js';
+import GlobalChatMessage from '../models/GlobalChatMessage.js';
+import Report from '../models/Report.js';
 import { dispatchSocialNotification } from '../services/notificationService.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.js';
+import { cancelStripeSubscription } from '../services/stripeService.js';
 
 const USER_LIST_FIELDS = 'username avatar fullName isVerified isPrivate';
 
@@ -617,5 +622,94 @@ export const exportUserData = async (req, res) => {
     res.json(exportData);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Fshi llogarinë përgjithmonë (GDPR – e drejta e fshirjes)
+ */
+export const deleteAccount = async (req, res) => {
+  try {
+    const { password, confirmUsername } = req.body;
+    const user = await User.findById(req.user.id).select('+password +avatarPublicId');
+    if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+
+    if (String(confirmUsername || '').trim() !== user.username) {
+      return res.status(400).json({ message: 'Shkruani saktë emrin e përdoruesit për të konfirmuar.' });
+    }
+
+    if (user.password && user.authProvider === 'local') {
+      if (!password) {
+        return res.status(400).json({ message: 'Vendosni fjalëkalimin për të fshirë llogarinë.' });
+      }
+      const ok = await user.comparePassword(password);
+      if (!ok) return res.status(401).json({ message: 'Fjalëkalimi është i gabuar.' });
+    }
+
+    const userId = user._id;
+    const userOid = userId.toString();
+
+    try {
+      await cancelStripeSubscription(user);
+    } catch (_) {}
+
+    const posts = await Post.find({ user: userId }).lean();
+    for (const post of posts) {
+      for (const m of post.media || []) {
+        if (m.publicId) {
+          try { await deleteFromCloudinary(m.publicId, m.type === 'video' ? 'video' : 'image'); } catch (_) {}
+        }
+      }
+    }
+    await Post.deleteMany({ user: userId });
+
+    const stories = await Story.find({ user: userId }).lean();
+    for (const story of stories) {
+      if (story.publicId) {
+        try { await deleteFromCloudinary(story.publicId, story.type === 'video' ? 'video' : 'image'); } catch (_) {}
+      }
+    }
+    await Story.deleteMany({ user: userId });
+
+    await LiveStream.deleteMany({ user: userId });
+
+    if (user.avatarPublicId) {
+      try { await deleteFromCloudinary(user.avatarPublicId, 'image'); } catch (_) {}
+    }
+
+    await Message.deleteMany({ sender: userId });
+    await Conversation.updateMany(
+      { participants: userId },
+      { $pull: { participants: userId } }
+    );
+    await Conversation.deleteMany({ participants: { $size: 0 } });
+
+    await Notification.deleteMany({ $or: [{ recipient: userId }, { sender: userId }] });
+    await PushSubscription.deleteMany({ user: userId });
+    await GlobalChatMessage.deleteMany({ user: userId });
+    await Report.deleteMany({ $or: [{ reporter: userId }, { reportedUser: userId }] });
+
+    await Post.updateMany(
+      { 'comments.user': userId },
+      { $pull: { comments: { user: userId } } }
+    );
+    await Post.updateMany({}, { $pull: { likes: userId, shares: userId } });
+
+    await User.updateMany({}, {
+      $pull: {
+        followers: userId,
+        following: userId,
+        followRequests: userId,
+        closeFriends: userId,
+        blockedUsers: userId,
+      },
+    });
+
+    await User.findByIdAndDelete(userId);
+
+    res.cookie('token', '', { maxAge: 0, httpOnly: true });
+    res.json({ success: true, message: 'Llogaria u fshi përgjithmonë.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim gjatë fshirjes së llogarisë.' });
   }
 };

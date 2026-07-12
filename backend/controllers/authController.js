@@ -57,6 +57,11 @@ export const register = async (req, res) => {
         message: 'Ju lutemi plotësoni emrin e përdoruesit, email-in dhe fjalëkalimin.',
       });
     }
+    if (!req.body.acceptedTerms) {
+      return res.status(400).json({
+        message: 'Duhet të pranoni Kushtet e Përdorimit dhe Politikën e Privatësisë.',
+      });
+    }
 
     const existingUser = await User.findOne({
       $or: [{ email: email.toLowerCase() }, { username: username.trim() }],
@@ -154,7 +159,7 @@ export const verifyEmail = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: 'Linku i verifikimit është i pavlefshëm ose ka skaduar.' });
     }
-    user.isVerified = true;
+    user.emailVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpires = undefined;
     await user.save();
@@ -239,6 +244,7 @@ export const googleLogin = async (req, res) => {
       email: profile.email,
       name: profile.name,
       avatar: profile.avatar,
+      emailVerified: profile.emailVerified,
     });
     sendTokenResponse(user, res);
   } catch (err) {
@@ -273,6 +279,7 @@ export const appleLogin = async (req, res) => {
       email: profile.email,
       name,
       avatar: '',
+      emailVerified: profile.emailVerified,
     });
     sendTokenResponse(user, res);
   } catch (err) {

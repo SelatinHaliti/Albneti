@@ -66,7 +66,7 @@ async function generateUniqueUsername(base) {
 /**
  * Gjen ose krijon përdorues nga OAuth (Google / Apple).
  */
-export async function findOrCreateOAuthUser({ provider, providerId, email, name, avatar }) {
+export async function findOrCreateOAuthUser({ provider, providerId, email, name, avatar, emailVerified = false }) {
   const idField = provider === 'google' ? 'googleId' : 'appleId';
   const query = [{ [idField]: providerId }];
   if (email) query.push({ email });
@@ -88,8 +88,8 @@ export async function findOrCreateOAuthUser({ provider, providerId, email, name,
       user.fullName = name.slice(0, 50);
       changed = true;
     }
-    if (!user.isVerified) {
-      user.isVerified = true;
+    if (!user.emailVerified && emailVerified) {
+      user.emailVerified = true;
       changed = true;
     }
     if (changed) await user.save();
@@ -111,7 +111,7 @@ export async function findOrCreateOAuthUser({ provider, providerId, email, name,
     avatar: avatar || '',
     [idField]: providerId,
     authProvider: provider,
-    isVerified: true,
+    emailVerified: !!emailVerified,
   });
 
   return user;

@@ -75,6 +75,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
     verifiedSubscription: {
       plan: { type: String, enum: ['none', 'monthly', 'yearly'], default: 'none' },
       status: { type: String, enum: ['none', 'active', 'expired', 'cancelled'], default: 'none' },

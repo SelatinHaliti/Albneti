@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { apiUpload } from '@/utils/api';
+import { api, apiUpload } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useAuthReady } from '@/hooks/useAuthReady';
 
@@ -37,6 +37,10 @@ export default function EditProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteUsername, setDeleteUsername] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -113,6 +117,28 @@ export default function EditProfilePage() {
   };
 
   if (!user) return null;
+
+  const handleDeleteAccount = async () => {
+    if (deleteUsername.trim() !== user.username) {
+      setError('Shkruani saktë emrin e përdoruesit.');
+      return;
+    }
+    if (!confirm('Kjo veprim fshin përgjithmonë llogarinë, postimet dhe mesazhet. Vazhdoni?')) return;
+    setDeleteLoading(true);
+    setError('');
+    try {
+      await api('/api/users/me', {
+        method: 'DELETE',
+        body: { confirmUsername: deleteUsername.trim(), password: deletePassword || undefined },
+      });
+      logout();
+      router.push('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Fshirja e llogarisë dështoi.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const displayAvatar = avatarPreview || user.avatar || '';
 
@@ -286,6 +312,56 @@ export default function EditProfilePage() {
         >
           Dil nga llogaria
         </button>
+
+        <div className="pt-4 mt-2 border-t border-[var(--border)]">
+          <p className="text-xs text-[var(--text-muted)] mb-3">Zona e rrezikshme</p>
+          {!deleteOpen ? (
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(true)}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-[var(--danger)] hover:opacity-90 transition-opacity"
+            >
+              Fshi llogarinë përgjithmonë
+            </button>
+          ) : (
+            <div className="space-y-3 p-4 rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/5">
+              <p className="text-[13px] text-[var(--text)]">
+                Shkruani <strong>@{user.username}</strong> dhe fjalëkalimin për të konfirmuar fshirjen.
+              </p>
+              <input
+                type="text"
+                value={deleteUsername}
+                onChange={(e) => setDeleteUsername(e.target.value)}
+                placeholder={user.username}
+                className="w-full px-4 py-2.5 text-sm border border-[var(--border)] rounded-xl bg-[var(--bg)]"
+              />
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Fjalëkalimi (nëse ke)"
+                className="w-full px-4 py-2.5 text-sm border border-[var(--border)] rounded-xl bg-[var(--bg)]"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setDeleteOpen(false); setDeleteUsername(''); setDeletePassword(''); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-[var(--border)]"
+                >
+                  Anulo
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={deleteLoading}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[var(--danger)] disabled:opacity-50"
+                >
+                  {deleteLoading ? 'Duke fshirë...' : 'Fshi përgjithmonë'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </motion.form>
     </div>
   );

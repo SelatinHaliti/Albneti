@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { PWARegister } from '@/components/PWARegister';
+import { CookieConsent } from '@/components/CookieConsent';
 
 export const metadata: Metadata = {
   title: 'AlbNet',
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className="antialiased bg-[var(--bg)] text-[var(--text)]">
         <PWARegister />
         <ThemeProvider>{children}</ThemeProvider>
+        <CookieConsent />
       </body>
     </html>
   );

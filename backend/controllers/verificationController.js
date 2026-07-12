@@ -7,6 +7,8 @@ import {
   cancelStripeSubscription,
   constructWebhookEvent,
   handleStripeWebhookEvent,
+  isStripeTestMode,
+  getStripeRegionNote,
 } from '../services/stripeService.js';
 
 const PLANS = {
@@ -54,7 +56,9 @@ export const getPlans = async (_req, res) => {
   res.json({
     plans: Object.values(PLANS),
     stripeEnabled: isStripeConfigured(),
-    testMode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ?? false,
+    testMode: isStripeTestMode(),
+    regionNote: getStripeRegionNote(),
+    kosovoTestOnly: isStripeTestMode(),
   });
 };
 
@@ -80,7 +84,9 @@ export const getStatus = async (req, res) => {
       subscription: user.verifiedSubscription || { plan: 'none', status: 'none' },
       plans: Object.values(PLANS),
       stripeEnabled: isStripeConfigured(),
-      testMode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ?? false,
+      testMode: isStripeTestMode(),
+      regionNote: getStripeRegionNote(),
+      kosovoTestOnly: isStripeTestMode(),
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
@@ -118,6 +124,7 @@ export const createCheckout = async (req, res) => {
       url: checkout.url,
       sessionId: checkout.sessionId,
       testMode: checkout.testMode,
+    regionNote: getStripeRegionNote(),
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim gjatë pagesës.' });

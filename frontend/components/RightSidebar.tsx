@@ -106,8 +106,14 @@ export function RightSidebar() {
       <div className="text-[11px] text-[var(--text-secondary)] leading-5 pt-2">
         <p className="font-semibold text-[var(--text-muted)] mb-1">ALBNET</p>
         <div className="flex flex-wrap gap-x-2">
-          {['Rreth', 'Ndihmë', 'Privatësia', 'Kushtet'].map((l) => (
-            <span key={l} className="hover:underline cursor-pointer">{l}</span>
+          {[
+            { label: 'Privatësia', href: '/privatesi' },
+            { label: 'Kushtet', href: '/kushtet' },
+            { label: 'Cookies', href: '/cookies' },
+          ].map((l) => (
+            <Link key={l.href} href={l.href} className="hover:underline">
+              {l.label}
+            </Link>
           ))}
         </div>
         <p className="pt-3">© 2026 ALBNET · Platforma Sociale Shqiptare</p>

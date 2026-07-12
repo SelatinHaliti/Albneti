@@ -26,6 +26,8 @@ type SubStatus = {
   plans: Plan[];
   stripeEnabled?: boolean;
   testMode?: boolean;
+  regionNote?: string;
+  kosovoTestOnly?: boolean;
 };
 
 const STEPS = [
@@ -120,6 +122,7 @@ function VerifikimContent() {
   const isActive = status?.isVerified;
   const stripeOn = status?.stripeEnabled;
   const testMode = status?.testMode;
+  const regionNote = status?.regionNote;
   const currentStep = isActive ? 3 : stripeOn ? 1 : 1;
 
   return (
@@ -192,6 +195,14 @@ function VerifikimContent() {
             {!stripeOn && !isActive && (
               <div className="liquid-glass-card rounded-xl p-4 border border-amber-500/30 bg-amber-500/5 text-[12px] text-[var(--text-muted)]">
                 ⚠️ Stripe nuk është aktiv në server. Vendos <code className="text-[11px]">STRIPE_SECRET_KEY</code> në Render, pastaj Redeploy.
+              </div>
+            )}
+
+            {stripeOn && testMode && regionNote && (
+              <div className="liquid-glass-card rounded-xl p-4 border border-[var(--ig-blue)]/30 bg-[var(--ig-blue)]/5 text-[12px] text-[var(--text-muted)] leading-relaxed">
+                <p className="font-semibold text-[var(--text)] mb-1">🇽🇰 Modalitet test për Kosovën</p>
+                <p>{regionNote}</p>
+                <p className="mt-2 text-[11px]">Për testim përdorni kartën Stripe: <code>4242 4242 4242 4242</code></p>
               </div>
             )}
 

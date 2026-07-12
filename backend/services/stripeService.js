@@ -20,6 +20,14 @@ export function isStripeConfigured() {
   return Boolean(process.env.STRIPE_SECRET_KEY?.startsWith('sk_'));
 }
 
+export function isStripeTestMode() {
+  return !process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
+}
+
+export function getStripeRegionNote() {
+  return 'Stripe nuk mbështet Kosovën për pagesa live. AlbNet përdor modalitet TEST derisa regjioni të aktivizohet zyrtarisht.';
+}
+
 function getStripe() {
   if (!isStripeConfigured()) return null;
   if (!stripeClient) {
@@ -116,7 +124,7 @@ export async function createCheckoutSession(user, plan) {
   return {
     url: session.url,
     sessionId: session.id,
-    testMode: process.env.STRIPE_SECRET_KEY.startsWith('sk_test_'),
+    testMode: isStripeTestMode(),
   };
 }
 

@@ -24,18 +24,23 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setError('Duhet të pranoni Kushtet dhe Privatësinë.');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
       const data = await api<{ user: unknown; token: string }>('/api/auth/regjistrohu', {
         method: 'POST',
-        body: { username, email, fullName, password },
+        body: { username, email, fullName, password, acceptedTerms: true },
       });
       const normalized = normalizeAuthUser(data.user);
       if (!normalized) throw new Error('Përgjigja e serverit është e paplotë.');
@@ -132,8 +137,26 @@ export default function RegisterPage() {
             autoComplete="new-password"
           />
         </motion.div>
+        <motion.label variants={item} className="flex items-start gap-2.5 text-[12px] text-[var(--text-muted)] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-0.5 rounded border-[var(--border)]"
+          />
+          <span>
+            Pranoj{' '}
+            <Link href="/kushtet" target="_blank" className="text-[var(--ig-blue)] font-semibold hover:underline">
+              Kushtet
+            </Link>{' '}
+            dhe{' '}
+            <Link href="/privatesi" target="_blank" className="text-[var(--ig-blue)] font-semibold hover:underline">
+              Privatësinë
+            </Link>
+          </span>
+        </motion.label>
         <motion.div variants={item} className="pt-1">
-          <button type="submit" disabled={loading} className="auth-btn">
+          <button type="submit" disabled={loading || !acceptedTerms} className="auth-btn">
             {loading ? 'Duke u regjistruar...' : 'Regjistrohu'}
           </button>
         </motion.div>
@@ -154,6 +177,11 @@ export default function RegisterPage() {
           <Link href="/kycu" className="auth-link">
             Kyçu
           </Link>
+        </p>
+        <p className="text-[11px] text-[var(--text-secondary)] mt-3">
+          <Link href="/privatesi" className="hover:underline">Privatësia</Link>
+          {' · '}
+          <Link href="/kushtet" className="hover:underline">Kushtet</Link>
         </p>
       </motion.div>
     </motion.div>
