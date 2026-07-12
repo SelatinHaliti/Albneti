@@ -8,6 +8,18 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSocket } from '@/components/SocketProvider';
 import { acquireLocalMedia, getPeerConnectionConfig } from '@/lib/webrtc';
 
+type LiveComment = {
+  _id: string;
+  text: string;
+  createdAt: string;
+  user: { username: string; avatar?: string };
+};
+
+function appendComment(prev: LiveComment[], c: LiveComment) {
+  if (prev.some((x) => x._id === c._id)) return prev;
+  return [...prev.slice(-99), c];
+}
+
 export default function StartLivePage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -19,6 +31,7 @@ export default function StartLivePage() {
   const [liveId, setLiveId] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
+  const [comments, setComments] = useState<LiveComment[]>([]);
 
   useEffect(() => {
     if (!socket || !liveId || !streamRef.current) return;
@@ -41,7 +54,7 @@ export default function StartLivePage() {
     };
 
     const onViewerJoined = (data: { liveId: string; viewerId: string }) => {
-      if (data.liveId !== liveId) return;
+      if (String(data.liveId) !== String(liveId)) return;
       void sendOfferToViewer(data.viewerId);
     };
 
@@ -91,7 +104,6 @@ export default function StartLivePage() {
         body: { title: title.trim() || 'Transmetim live' },
       });
       setLiveId(res.live._id);
-      socket?.emit('live:join', res.live._id);
     } catch (_) {}
     setStarting(false);
   };
@@ -106,10 +118,34 @@ export default function StartLivePage() {
   };
 
   useEffect(() => {
+    if (!liveId) return;
+    (async () => {
+      try {
+        const res = await api<{ live: { comments?: LiveComment[] } }>(`/api/live/${liveId}`);
+        setComments(res.live?.comments || []);
+      } catch (_) {}
+    })();
+  }, [liveId]);
+
+  useEffect(() => {
     if (!socket || !liveId) return;
+
+    const joinRoom = () => socket.emit('live:join', liveId);
+    joinRoom();
+    socket.on('connect', joinRoom);
+
     const onCount = (data: { count?: number }) => setViewerCount(data.count ?? 0);
+    const onComment = (c: LiveComment) => setComments((prev) => appendComment(prev, c));
+
     socket.on('live:viewer_count', onCount);
-    return () => { socket.off('live:viewer_count', onCount); };
+    socket.on('live:comment', onComment);
+
+    return () => {
+      socket.off('connect', joinRoom);
+      socket.emit('live:leave', liveId);
+      socket.off('live:viewer_count', onCount);
+      socket.off('live:comment', onComment);
+    };
   }, [socket, liveId]);
 
   return (
@@ -149,10 +185,22 @@ export default function StartLivePage() {
           </button>
         </div>
       )}
-      {liveId && user && (
-        <p className="absolute bottom-6 left-0 right-0 text-center text-white/70 text-[13px]">
-          @{user.username} · Transmetim aktiv
-        </p>
+      {liveId && (
+        <div className="absolute bottom-0 left-0 right-0 max-h-[35dvh] flex flex-col pointer-events-none bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {comments.map((c) => (
+              <p key={c._id} className="text-white text-[13px] drop-shadow-md">
+                <span className="font-bold mr-1">{c.user?.username}</span>
+                {c.text}
+              </p>
+            ))}
+          </div>
+          {user && (
+            <p className="px-4 pb-4 text-center text-white/70 text-[13px]">
+              @{user.username} · Transmetim aktiv
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

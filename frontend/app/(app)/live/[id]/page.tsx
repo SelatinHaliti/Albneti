@@ -15,6 +15,11 @@ type LiveComment = {
   user: { username: string; avatar?: string };
 };
 
+function appendComment(prev: LiveComment[], c: LiveComment) {
+  if (prev.some((x) => x._id === c._id)) return prev;
+  return [...prev.slice(-99), c];
+}
+
 type LiveData = {
   _id: string;
   title: string;
@@ -60,9 +65,12 @@ export default function WatchLivePage() {
 
   useEffect(() => {
     if (!socket || !liveId || !live) return;
-    socket.emit('live:join', liveId);
 
-    const onComment = (c: LiveComment) => setComments((prev) => [...prev.slice(-99), c]);
+    const joinRoom = () => socket.emit('live:join', liveId);
+    joinRoom();
+    socket.on('connect', joinRoom);
+
+    const onComment = (c: LiveComment) => setComments((prev) => appendComment(prev, c));
     const onCount = (data: { count?: number }) => setViewerCount(data.count ?? 0);
     const onEnded = () => router.replace('/live');
 
@@ -104,6 +112,7 @@ export default function WatchLivePage() {
     socket.on('live:ice', onIce);
 
     return () => {
+      socket.off('connect', joinRoom);
       socket.emit('live:leave', liveId);
       socket.off('live:comment', onComment);
       socket.off('live:viewer_count', onCount);
@@ -119,7 +128,13 @@ export default function WatchLivePage() {
     if (!text) return;
     setInput('');
     try {
-      await api(`/api/live/${liveId}/koment`, { method: 'POST', body: { text } });
+      const res = await api<{ comment: LiveComment }>(`/api/live/${liveId}/koment`, {
+        method: 'POST',
+        body: { text },
+      });
+      if (res.comment) {
+        setComments((prev) => appendComment(prev, res.comment));
+      }
     } catch (_) {}
   };
 
@@ -131,7 +146,7 @@ export default function WatchLivePage() {
     );
   }
 
-  const isHost = user?.id === live.user._id;
+  const isHost = user?.id === String(live.user._id);
 
   return (
     <div className="fixed inset-0 bg-black z-[100] flex flex-col">

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { IconLive } from '@/components/Icons';
 
 export function CreateMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -21,8 +22,8 @@ export function CreateMenu({ open, onClose }: { open: boolean; onClose: () => vo
     { href: '/krijo/post', label: 'Postim', desc: 'Ndaj foto ose video', icon: '📷' },
     { href: '/krijo/story', label: 'Story', desc: '24 orë në profil', icon: '⭕' },
     { href: '/krijo/reel', label: 'Reel', desc: 'Video vertikale me muzikë', icon: '🎬' },
-    { href: '/live/nis', label: 'Nis Live', desc: 'Transmetim live për ndjekësit', icon: '🔴', danger: true },
-  ];
+    { href: '/live/nis', label: 'Nis Live', desc: 'Transmetim live për ndjekësit', liveIcon: true, danger: true },
+  ] as const;
 
   return (
     <div className="fixed inset-0 z-[70] ig-modal-overlay flex items-end sm:items-center justify-center" onClick={onClose}>
@@ -40,7 +41,9 @@ export function CreateMenu({ open, onClose }: { open: boolean; onClose: () => vo
             onClick={onClose}
             className="flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-[var(--primary-soft)] transition-colors"
           >
-            <span className={`w-11 h-11 rounded-full flex items-center justify-center text-xl ${'danger' in item && item.danger ? 'bg-[var(--danger)]/15' : 'bg-[var(--primary-soft)]'}`}>{item.icon}</span>
+            <span className={`w-11 h-11 rounded-full flex items-center justify-center text-xl ${'danger' in item && item.danger ? 'bg-[var(--danger)]/15 text-[var(--danger)]' : 'bg-[var(--primary-soft)]'}`}>
+              {'liveIcon' in item && item.liveIcon ? <IconLive active /> : 'icon' in item ? item.icon : null}
+            </span>
             <div>
               <p className="text-[14px] font-semibold text-[var(--text)]">{item.label}</p>
               <p className="text-[12px] text-[var(--text-muted)]">{item.desc}</p>

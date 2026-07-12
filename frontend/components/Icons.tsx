@@ -58,10 +58,36 @@ export function IconReels({ active }: { active?: boolean }) {
 
 export function IconLive({ active }: { active?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="2" y="5" width="20" height="14" rx="2" fill={active ? 'currentColor' : 'none'} />
-      <circle cx="12" cy="12" r="2.5" fill={active ? 'var(--bg-card)' : 'currentColor'} />
-      <path d="M7 2v3M17 2v3" stroke={active ? 'var(--bg-card)' : 'currentColor'} />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={active ? 'none' : stroke}
+      strokeWidth={active ? 0 : strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect
+        x="2"
+        y="7"
+        width="12"
+        height="10"
+        rx="2"
+        fill={active ? 'currentColor' : 'none'}
+        stroke={active ? 'none' : stroke}
+        strokeWidth={active ? 0 : strokeWidth}
+      />
+      <path
+        d="M14 10l5-2.5v9L14 14z"
+        fill={active ? 'currentColor' : 'none'}
+        stroke={active ? 'none' : stroke}
+        strokeWidth={active ? 0 : strokeWidth}
+        strokeLinejoin="round"
+      />
+      <circle cx="18.5" cy="5.5" r="2.75" fill="var(--danger)" stroke="none" />
+      <circle cx="18.5" cy="5.5" r="1" fill="#fff" opacity="0.95" />
     </svg>
   );
 }

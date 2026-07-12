@@ -144,12 +144,12 @@ export function setupSocketIO(io) {
     // ——— Live streaming rooms ———
     socket.on('live:join', (liveId) => {
       if (!liveId) return;
-      socket.join(`live:${liveId}`);
+      socket.join(`live:${String(liveId)}`);
     });
 
     socket.on('live:leave', (liveId) => {
       if (!liveId) return;
-      socket.leave(`live:${liveId}`);
+      socket.leave(`live:${String(liveId)}`);
     });
 
     // WebRTC signaling për live broadcast (host → viewers)

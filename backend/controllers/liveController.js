@@ -63,7 +63,7 @@ export const endLive = async (req, res) => {
     await live.save();
 
     const io = getIO();
-    if (io) io.to(`live:${live._id}`).emit('live:ended', { liveId: live._id });
+    if (io) io.to(`live:${String(live._id)}`).emit('live:ended', { liveId: live._id });
 
     res.json({ success: true });
   } catch (err) {
@@ -121,7 +121,8 @@ export const joinLive = async (req, res) => {
       await live.save();
       const io = getIO();
       if (io) {
-        io.to(`live:${live._id}`).emit('live:viewer_count', {
+        const room = `live:${String(live._id)}`;
+        io.to(room).emit('live:viewer_count', {
           liveId: live._id,
           count: live.viewers.length,
         });
@@ -161,7 +162,8 @@ export const addLiveComment = async (req, res) => {
       user: populated,
     };
     const io = getIO();
-    if (io) io.to(`live:${live._id}`).emit('live:comment', payload);
+    const room = `live:${String(live._id)}`;
+    if (io) io.to(room).emit('live:comment', payload);
     res.status(201).json({ success: true, comment: payload });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
@@ -187,7 +189,7 @@ export const addLiveReaction = async (req, res) => {
     await live.save();
     const io = getIO();
     if (io) {
-      io.to(`live:${live._id}`).emit('live:reaction', {
+      io.to(`live:${String(live._id)}`).emit('live:reaction', {
         userId: req.user.id,
         type,
         username: req.user.username,
