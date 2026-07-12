@@ -183,6 +183,35 @@ export default function AdminMarketingPage() {
     }
   };
 
+  const sendActiveNow = async () => {
+    const count = stats?.eligibleActiveUsers ?? preview?.activeRecipientCount ?? 0;
+    if (!confirm(`Dërgo AlbNet Ads te ${count} përdorues AKTIVË (60 ditë)?`)) return;
+    setBlasting(true);
+    setResult(null);
+    try {
+      const res = await api<{
+        started?: boolean;
+        runKey?: string;
+        total?: number;
+        error?: string;
+        message?: string;
+      }>('/api/marketing/admin/send-active', { method: 'POST', body: {} });
+      if (res.error) {
+        setResult(`Gabim: ${res.error}`);
+        setBlasting(false);
+        return;
+      }
+      if (res.runKey) {
+        setActiveRunKey(res.runKey);
+        setResult(res.message || `Duke dërguar te ${res.total ?? count} aktivë...`);
+        pollBlastStatus(res.runKey);
+      }
+    } catch (err) {
+      setResult(err instanceof Error ? err.message : 'Gabim');
+      setBlasting(false);
+    }
+  };
+
   const aiBlast = async () => {
     const count = preview?.recipientCount ?? stats?.totalEmailUsers ?? 0;
     const subject = preview?.theme?.subject ?? 'kampanjë AI';
@@ -277,12 +306,18 @@ export default function AdminMarketingPage() {
             <button
               type="button"
               disabled={blasting || !stats.smtpConfigured}
+              onClick={sendActiveNow}
+              className="px-6 py-3 rounded-xl bg-[#c41e3a] text-white font-bold text-sm shadow-lg disabled:opacity-50"
+            >
+              {blasting ? '⏳ Duke dërguar...' : `📧 Dërgo te ${stats.eligibleActiveUsers ?? 0} AKTIVË tani`}
+            </button>
+            <button
+              type="button"
+              disabled={blasting || !stats.smtpConfigured}
               onClick={aiBlast}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#0095f6] to-[#0077cc] text-white font-bold text-sm shadow-lg disabled:opacity-50"
             >
-              {blasting
-                ? '⏳ Duke dërguar në background...'
-                : `🚀 Gjenero & Dërgo te ${preview?.recipientCount ?? stats.totalEmailUsers ?? 0} përdorues`}
+              {blasting ? '⏳ Duke dërguar...' : `🚀 Dërgo te ${preview?.recipientCount ?? stats.totalEmailUsers ?? 0} (të gjithë me email)`}
             </button>
             <button
               type="button"
@@ -302,7 +337,7 @@ export default function AdminMarketingPage() {
           <p className="text-2xl font-bold dark:text-white">{stats.totalEmailUsers ?? 0}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Aktiv (60 ditë)</p>
+          <p className="text-xs text-gray-500">Aktiv (60 ditë + email)</p>
           <p className="text-2xl font-bold dark:text-white">{stats.eligibleActiveUsers}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">

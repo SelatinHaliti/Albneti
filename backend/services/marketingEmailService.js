@@ -366,6 +366,64 @@ export async function startAIMarketingBlast({ triggeredBy = 'admin' } = {}) {
   };
 }
 
+/** Admin: nis dërgim te përdoruesit aktivë (60 ditë) në background */
+export async function startActiveMarketingSend({ triggeredBy = 'admin' } = {}) {
+  if (!isSmtpConfigured()) {
+    return { ok: false, error: 'SMTP nuk është konfiguruar. Vendos SMTP_* në Render Environment.' };
+  }
+
+  const running = await MarketingRun.findOne({ status: 'running' }).lean();
+  if (running) {
+    return {
+      ok: true,
+      alreadyRunning: true,
+      runKey: running.weekKey,
+      message: 'Një dërgim është ende në proces.',
+    };
+  }
+
+  const weekKey = getWeekKey();
+  const users = await queryEligibleUsers({ allUsers: false });
+  if (!users.length) {
+    return { ok: false, error: 'Nuk ka përdorues aktivë me email për dërgim.' };
+  }
+
+  await MarketingRun.findOneAndUpdate(
+    { weekKey, runType: 'weekly' },
+    {
+      $set: {
+        weekKey,
+        runType: 'weekly',
+        status: 'running',
+        triggeredBy,
+        sentCount: 0,
+        failedCount: 0,
+        skippedCount: 0,
+      },
+    },
+    { upsert: true }
+  );
+
+  setImmediate(async () => {
+    try {
+      await runWeeklyMarketingEmails({ force: true, triggeredBy });
+    } catch (err) {
+      await MarketingRun.findOneAndUpdate(
+        { weekKey, runType: 'weekly' },
+        { $set: { status: 'failed', errorMessage: err.message, completedAt: new Date() } }
+      );
+    }
+  });
+
+  return {
+    ok: true,
+    started: true,
+    runKey: weekKey,
+    total: users.length,
+    message: `Duke dërguar te ${users.length} përdorues aktivë (60 ditë)...`,
+  };
+}
+
 /** Status i blast-it */
 export async function getBlastStatus(runKey) {
   if (!runKey) {
@@ -481,7 +539,7 @@ export async function sendMarketingTestEmail(to) {
 
 export async function getMarketingStats() {
   const weekKey = getWeekKey();
-  const [lastRun, optedIn, optedOut, eligible, totalWithEmail, runningBlast] = await Promise.all([
+  const [lastRun, optedIn, optedOut, eligible, totalWithEmail, runningJob] = await Promise.all([
     MarketingRun.findOne().sort({ createdAt: -1 }).lean(),
     User.countDocuments({ marketingEmailsOptIn: { $ne: false }, isBlocked: false }),
     User.countDocuments({ marketingEmailsOptIn: false }),
@@ -489,6 +547,8 @@ export async function getMarketingStats() {
       isBlocked: false,
       marketingEmailsOptIn: { $ne: false },
       lastActiveAt: { $gte: new Date(Date.now() - ACTIVE_DAYS * 86400000) },
+      email: { $exists: true, $ne: '' },
+      username: { $ne: SYSTEM_USERNAME },
     }),
     User.countDocuments({
       isBlocked: false,
@@ -496,14 +556,14 @@ export async function getMarketingStats() {
       email: { $exists: true, $ne: '' },
       username: { $ne: SYSTEM_USERNAME },
     }),
-    MarketingRun.findOne({ runType: 'ai-blast', status: 'running' }).lean(),
+    MarketingRun.findOne({ status: 'running' }).sort({ createdAt: -1 }).lean(),
   ]);
   return {
     smtpConfigured: isSmtpConfigured(),
     currentWeekKey: weekKey,
     lastRun,
-    runningBlast: runningBlast
-      ? { runKey: runningBlast.weekKey, sent: runningBlast.sentCount, failed: runningBlast.failedCount }
+    runningBlast: runningJob
+      ? { runKey: runningJob.weekKey, sent: runningJob.sentCount, failed: runningJob.failedCount, runType: runningJob.runType }
       : null,
     optedIn,
     optedOut,

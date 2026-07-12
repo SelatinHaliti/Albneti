@@ -6,6 +6,7 @@ import {
   getAIMarketingPreview,
   runAIMarketingBlast,
   startAIMarketingBlast,
+  startActiveMarketingSend,
   getBlastStatus,
 } from '../services/marketingEmailService.js';
 
@@ -80,6 +81,17 @@ export const adminAIMarketingPreview = async (_req, res) => {
 export const adminAIMarketingBlast = async (req, res) => {
   try {
     const result = await startAIMarketingBlast({ triggeredBy: 'admin' });
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/** Admin: dërgo te përdoruesit aktivë (60 ditë) – background */
+export const adminSendActiveMarketing = async (_req, res) => {
+  try {
+    const result = await startActiveMarketingSend({ triggeredBy: 'admin' });
     if (!result.ok) return res.status(400).json(result);
     res.json(result);
   } catch (err) {
