@@ -56,6 +56,16 @@ export function IconReels({ active }: { active?: boolean }) {
   );
 }
 
+export function IconLive({ active }: { active?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="2" y="5" width="20" height="14" rx="2" fill={active ? 'currentColor' : 'none'} />
+      <circle cx="12" cy="12" r="2.5" fill={active ? 'var(--bg-card)' : 'currentColor'} />
+      <path d="M7 2v3M17 2v3" stroke={active ? 'var(--bg-card)' : 'currentColor'} />
+    </svg>
+  );
+}
+
 export function IconHeart({ filled }: { filled?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">

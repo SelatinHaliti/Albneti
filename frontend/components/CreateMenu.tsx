@@ -21,6 +21,7 @@ export function CreateMenu({ open, onClose }: { open: boolean; onClose: () => vo
     { href: '/krijo/post', label: 'Postim', desc: 'Ndaj foto ose video', icon: '📷' },
     { href: '/krijo/story', label: 'Story', desc: '24 orë në profil', icon: '⭕' },
     { href: '/krijo/reel', label: 'Reel', desc: 'Video vertikale me muzikë', icon: '🎬' },
+    { href: '/live/nis', label: 'Nis Live', desc: 'Transmetim live për ndjekësit', icon: '🔴', danger: true },
   ];
 
   return (
@@ -39,7 +40,7 @@ export function CreateMenu({ open, onClose }: { open: boolean; onClose: () => vo
             onClick={onClose}
             className="flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-[var(--primary-soft)] transition-colors"
           >
-            <span className="w-11 h-11 rounded-full bg-[var(--primary-soft)] flex items-center justify-center text-xl">{item.icon}</span>
+            <span className={`w-11 h-11 rounded-full flex items-center justify-center text-xl ${'danger' in item && item.danger ? 'bg-[var(--danger)]/15' : 'bg-[var(--primary-soft)]'}`}>{item.icon}</span>
             <div>
               <p className="text-[14px] font-semibold text-[var(--text)]">{item.label}</p>
               <p className="text-[12px] text-[var(--text-muted)]">{item.desc}</p>

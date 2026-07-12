@@ -311,6 +311,10 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
     padding-top: 0;
     padding-bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px));
   }
+  .app-shell-main--immersive {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
   .app-shell-main--full {
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: calc(var(--mobile-nav-h) + var(--mobile-nav-gap) + env(safe-area-inset-bottom, 0px));

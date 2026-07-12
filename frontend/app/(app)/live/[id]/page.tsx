@@ -63,7 +63,7 @@ export default function WatchLivePage() {
     socket.emit('live:join', liveId);
 
     const onComment = (c: LiveComment) => setComments((prev) => [...prev.slice(-99), c]);
-    const onCount = (data: { count: number }) => setViewerCount(data.count);
+    const onCount = (data: { count?: number }) => setViewerCount(data.count ?? 0);
     const onEnded = () => router.replace('/live');
 
     const onOffer = async (data: { fromUserId: string; sdp: RTCSessionDescriptionInit }) => {
@@ -134,7 +134,7 @@ export default function WatchLivePage() {
   const isHost = user?.id === live.user._id;
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-[100] flex flex-col">
       <video ref={videoRef} className="flex-1 object-cover w-full" playsInline autoPlay />
       <div className="absolute top-0 left-0 right-0 p-4 safe-area-pt flex items-center gap-3">
         <Link href="/live" className="text-white text-xl">←</Link>

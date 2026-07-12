@@ -113,7 +113,7 @@ export default function StartLivePage() {
   }, [socket, liveId]);
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-[100] flex flex-col">
       <video ref={videoRef} className="flex-1 object-cover w-full" playsInline muted autoPlay />
       <div className="absolute top-0 left-0 right-0 p-4 safe-area-pt flex items-center justify-between">
         {liveId ? (

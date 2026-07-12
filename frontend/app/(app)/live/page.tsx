@@ -39,11 +39,11 @@ export default function LiveListPage() {
   }, [ready, isAuthenticated, router]);
 
   return (
-    <div className="mobile-page max-w-[470px] mx-auto py-5 px-4">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mobile-page max-w-[470px] mx-auto min-h-0 flex-1 py-4 px-4 pb-6">
+      <div className="flex items-center justify-between mb-5 sticky top-0 bg-[var(--bg)] z-10 py-2 -mx-1 px-1">
         <h1 className="text-[20px] font-semibold">Live</h1>
-        <Link href="/live/nis" className="px-4 py-2 rounded-xl bg-[var(--danger)] text-white text-[14px] font-semibold">
-          Nis Live
+        <Link href="/live/nis" className="px-4 py-2.5 rounded-xl bg-[var(--danger)] text-white text-[14px] font-semibold shadow-sm">
+          + Nis Live
         </Link>
       </div>
 

@@ -9,6 +9,7 @@ import {
   IconHome,
   IconSearch,
   IconReels,
+  IconLive,
   IconMessage,
   IconHeart,
   IconGlobe,
@@ -30,6 +31,7 @@ const links = [
   { href: '/feed', label: 'Kryefaja', Icon: IconHome },
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
+  { href: '/live', label: 'Live', Icon: IconLive, highlight: true },
   { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badgeKey: 'messages' as const },
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badgeKey: 'social' as const },
   { href: '/komuniteti', label: 'Komuniteti', Icon: IconGlobe },
@@ -112,7 +114,9 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
 
         <nav className="relative z-10 flex-1 overflow-y-auto py-2 px-2">
           {links.map((item) => {
-            const isActive = pathname === item.href || (item.href === '/explore' && pathname.startsWith('/explore'));
+            const isActive = pathname === item.href
+              || (item.href === '/explore' && pathname.startsWith('/explore'))
+              || (item.href === '/live' && pathname.startsWith('/live'));
             const Icon = item.Icon;
             return (
               <Link
@@ -121,16 +125,20 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
                 onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-medium transition-colors ${
                   isActive ? 'bg-[var(--primary-soft)] text-[var(--text)] font-semibold' : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
-                }`}
+                } ${'highlight' in item && item.highlight ? 'border border-[var(--danger)]/30' : ''}`}
               >
                 <span className="relative flex-shrink-0 w-6 flex justify-center">
                   {Icon === IconHome && <IconHome active={isActive} />}
                   {Icon === IconSearch && <IconSearch />}
                   {Icon === IconReels && <IconReels active={isActive} />}
+                  {Icon === IconLive && <IconLive active={isActive} />}
                   {Icon === IconMessage && <IconMessage />}
                   {Icon === IconHeart && <IconHeart />}
                   {Icon === IconGlobe && <IconGlobe />}
                   {Icon === IconSettings && <IconSettings />}
+                  {'highlight' in item && item.highlight && (
+                    <span className="absolute -top-1 -right-2 w-2 h-2 rounded-full bg-[var(--danger)] animate-pulse-live" />
+                  )}
                   {item.badgeKey === 'social' && socialUnread > 0 && (
                     <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--danger)] text-white text-[9px] font-bold flex items-center justify-center">
                       {socialUnread > 9 ? '9+' : socialUnread}

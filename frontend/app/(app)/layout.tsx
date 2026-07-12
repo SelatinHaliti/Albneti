@@ -14,6 +14,7 @@ import {
   IconSearch,
   IconAdd,
   IconReels,
+  IconLive,
   IconMessage,
   IconHeart,
   IconSettings,
@@ -34,7 +35,7 @@ const navItems = [
   { href: '/feed', label: 'Kryefaja', Icon: IconHome },
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
-  { href: '/live', label: 'Live', Icon: IconReels },
+  { href: '/live', label: 'Live', Icon: IconLive },
   { href: '/krijo/post', label: 'Krijo', Icon: IconAdd },
   { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage },
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart },
@@ -73,6 +74,12 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const feedMode = pathname === '/feed' ? (searchParams.get('feed') === 'following' ? 'following' : 'for_you') : null;
   const isReelsPage = pathname === '/reels';
+  const isLiveFullscreen =
+    pathname === '/live/nis' ||
+    (pathname.startsWith('/live/') && pathname !== '/live/nis');
+  const isStoryViewer = pathname.startsWith('/story/');
+  const isImmersivePage = isReelsPage || isLiveFullscreen || isStoryViewer;
+  const isLiveSection = pathname === '/live' || pathname.startsWith('/live/');
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -155,7 +162,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <div className={`min-h-screen flex flex-col md:flex-row overflow-x-hidden max-w-[100vw] ${isReelsPage ? 'bg-black' : 'bg-[var(--bg)]'}`}>
         {/* ── Mobile top bar ── */}
-        {!isReelsPage && (
+        {!isImmersivePage && (
           <header className="md:hidden fixed top-0 left-0 right-0 h-[52px] px-4 grid grid-cols-3 items-center ig-nav-bar border-b z-50 safe-area-pt">
             <div className="flex items-center justify-start min-h-[52px] relative" ref={feedDropdownRefMobile}>
               {pathname === '/feed' ? (
@@ -187,8 +194,18 @@ function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex justify-center items-center min-h-[52px] text-[14px] font-semibold text-[var(--text)]">
               {pathname === '/feed' && feedMode === 'following' ? 'Ndiqet' : ''}
+              {pathname === '/live' ? 'Live' : ''}
+              {pathname.startsWith('/mesazhe') ? 'Mesazhe' : ''}
             </div>
             <div className="flex items-center justify-end gap-0 mobile-header-actions">
+              <Link
+                href="/live"
+                className={`ig-touch rounded-full hover:bg-[var(--primary-soft)] transition-colors relative ${isLiveSection ? 'text-[var(--danger)]' : 'text-[var(--text)]'}`}
+                aria-label="Live"
+              >
+                <IconLive active={isLiveSection} />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)] animate-pulse-live" />
+              </Link>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
@@ -253,7 +270,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
             {navItems.map((navItem) => {
               const isActive = navItem.href === '/feed'
                 ? pathname === '/feed'
-                : pathname === navItem.href || (navItem.href === '/explore' && pathname.startsWith('/explore'));
+                : navItem.href === '/live'
+                  ? isLiveSection
+                  : pathname === navItem.href || (navItem.href === '/explore' && pathname.startsWith('/explore'));
               const Icon = navItem.Icon;
               const inner = (
                 <>
@@ -261,6 +280,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                     {Icon === IconHome && <IconHome active={isActive} />}
                     {Icon === IconSearch && <IconSearch />}
                     {Icon === IconReels && <IconReels active={isActive} />}
+                    {Icon === IconLive && <IconLive active={isActive || (navItem.href === '/live' && isLiveSection)} />}
                     {Icon === IconAdd && (
                       <span className="ig-create-btn">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -366,8 +386,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className={`app-shell-main md:ml-[72px] lg:ml-[245px] md:pt-0 md:pb-0 ${isReelsPage ? 'app-shell-main--reels' : ''}`}>
-          {!isReelsPage && (
+        <main className={`app-shell-main md:ml-[72px] lg:ml-[245px] md:pt-0 md:pb-0 ${
+          isImmersivePage ? 'app-shell-main--immersive' : isReelsPage ? 'app-shell-main--reels' : ''
+        }`}>
+          {!isImmersivePage && (
             <div className="md:hidden px-3 pt-2 max-w-[100vw]">
               <InstallAppBanner />
               <PushNotificationPrompt />
@@ -377,6 +399,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         </main>
 
         {/* ── Mobile bottom nav ── */}
+        {!isLiveFullscreen && !isStoryViewer && (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
           <div className={`pointer-events-auto flex items-center justify-around ${isReelsPage ? 'h-[56px] bg-black/85 backdrop-blur-xl border-t border-white/10 safe-area-pb px-2' : 'liquid-nav-pill'}`}>
           {bottomNavItems.map((item) => {
@@ -423,6 +446,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
           })}
           </div>
         </nav>
+        )}
       </div>
       <MobileMenu
         open={mobileMenuOpen}
