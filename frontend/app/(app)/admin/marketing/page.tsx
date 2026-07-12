@@ -352,10 +352,10 @@ export default function AdminMarketingPage() {
         </div>
       )}
 
-      {stats.smtpConfigured && stats.smtpVerified === false && (
+      {stats.smtpConfigured && stats.smtpError && (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 text-sm">
-          <p className="font-bold">⚠️ SMTP është vendosur por lidhja dështoi</p>
-          <p>Kontrollo SMTP_PASS (Gmail App Password) dhe redeploy në Render.</p>
+          <p className="font-bold">⚠️ SMTP: {stats.smtpError}</p>
+          <p className="text-xs mt-1">Provo &quot;Dërgo test&quot; poshtë për të verifikuar dërgimin real.</p>
         </div>
       )}
 
@@ -407,7 +407,7 @@ export default function AdminMarketingPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              disabled={blasting || !stats.smtpConfigured || stats.smtpVerified === false}
+              disabled={blasting || !stats.smtpConfigured}
               onClick={sendActiveNow}
               className="px-6 py-3 rounded-xl bg-[#c41e3a] text-white font-bold text-sm shadow-lg disabled:opacity-50"
             >
@@ -415,7 +415,7 @@ export default function AdminMarketingPage() {
             </button>
             <button
               type="button"
-              disabled={blasting || !stats.smtpConfigured || stats.smtpVerified === false}
+              disabled={blasting || !stats.smtpConfigured}
               onClick={aiBlast}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#0095f6] to-[#0077cc] text-white font-bold text-sm shadow-lg disabled:opacity-50"
             >
@@ -444,16 +444,8 @@ export default function AdminMarketingPage() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
           <p className="text-xs text-gray-500">SMTP</p>
-          <p
-            className={`text-lg font-bold ${
-              stats.smtpConfigured && stats.smtpVerified !== false ? 'text-green-600' : 'text-red-600'
-            }`}
-          >
-            {stats.smtpConfigured
-              ? stats.smtpVerified === false
-                ? '⚠️ Lidhje'
-                : '✅ OK'
-              : '❌ Jo'}
+          <p className={`text-lg font-bold ${stats.smtpConfigured ? 'text-green-600' : 'text-red-600'}`}>
+            {stats.smtpConfigured ? '✅ OK' : '❌ Jo'}
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">

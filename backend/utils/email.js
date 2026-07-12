@@ -15,8 +15,14 @@ const createTransporter = () => {
   const isGmail = host === 'smtp.gmail.com' || user.endsWith('@gmail.com');
   if (isGmail) {
     return nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
       auth: { user, pass },
+      connectionTimeout: 25000,
+      greetingTimeout: 25000,
+      socketTimeout: 35000,
     });
   }
 
@@ -86,6 +92,9 @@ function normalizeMailerError(err) {
   const message = e?.message ? String(e.message) : '';
   if (code === 'EAUTH' || /BadCredentials/i.test(response + message)) {
     return 'Gmail refuzoi fjalëkalimin. Aktivizo 2FA dhe krijo App Password të ri nga myaccount.google.com/apppasswords, pastaj përditëso SMTP_PASS në .env dhe Render.';
+  }
+  if (/timeout/i.test(message)) {
+    return 'Lidhja me Gmail vonoi. SMTP mund të funksionojë gjithsesi — provo Dërgo test.';
   }
   const parts = [code, message, response].filter(Boolean);
   return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
