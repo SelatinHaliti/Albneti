@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -8,12 +8,13 @@ import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useRouter } from 'next/navigation';
-import { IconGrid } from '@/components/Icons';
+import { IconGrid, IconReels } from '@/components/Icons';
 import { PostMediaThumb } from '@/components/PostMediaThumb';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { FollowListModal } from '@/components/FollowListModal';
 import { FollowRequestsPanel, type FollowRequest } from '@/components/FollowRequestsPanel';
+import { ReportButton } from '@/components/ReportButton';
 
 type User = {
   _id: string;
@@ -42,7 +43,7 @@ type Post = {
   saved?: boolean;
 };
 
-type ProfileTab = 'postime' | 'ruajturat' | 'tagged' | 'arkivuara';
+type ProfileTab = 'postime' | 'reels' | 'ruajturat' | 'tagged' | 'arkivuara';
 
 export default function ProfilePage() {
   const params = useParams();
@@ -58,6 +59,7 @@ export default function ProfilePage() {
     followRequestPending?: boolean;
     canViewFollowLists?: boolean;
     followRequests?: FollowRequest[];
+    isBlocked?: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
@@ -74,6 +76,9 @@ export default function ProfilePage() {
   const [loadingTagged, setLoadingTagged] = useState(false);
   const [loadingArchived, setLoadingArchived] = useState(false);
   const [hasStory, setHasStory] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const toastSuccess = useToastStore((s) => s.success);
 
   useDocumentTitle(profile?.user?.username ? `@${profile.user.username}` : null);
 
@@ -91,10 +96,12 @@ export default function ProfilePage() {
           followRequestPending?: boolean;
           canViewFollowLists?: boolean;
           followRequests?: FollowRequest[];
+          isBlocked?: boolean;
         }>(`/api/users/${username}`);
         setProfile(res);
         setFollowing(res.isFollowing);
         setFollowPending(!!res.followRequestPending);
+        setIsBlocked(!!res.isBlocked);
         setFollowersCount(res.user.followersCount ?? res.user.followers?.length ?? 0);
         setFollowingCount(res.user.followingCount ?? res.user.following?.length ?? 0);
         setFollowRequests(res.followRequests || []);
@@ -141,6 +148,21 @@ export default function ProfilePage() {
   }, [profile?.user?._id, profile?.isOwnProfile]);
 
   const toastError = useToastStore((s) => s.error);
+
+  const handleBlock = async () => {
+    if (!profile?.user || profile.isOwnProfile) return;
+    setProfileMenuOpen(false);
+    try {
+      const res = await api<{ isBlocked: boolean }>(`/api/users/${profile.user._id}/blloko`, { method: 'POST' });
+      setIsBlocked(res.isBlocked);
+      setFollowing(false);
+      setFollowPending(false);
+      toastSuccess(res.isBlocked ? 'Përdoruesi u bllokua' : 'Përdoruesi u çbllokua');
+    } catch (_) {
+      toastError('Nuk u ndryshua. Provo përsëri.');
+    }
+  };
+
   const handleFollow = async () => {
     if (!profile?.user || profile.isOwnProfile) return;
     const prevFollowing = following;
@@ -227,13 +249,25 @@ export default function ProfilePage() {
         avatar: currentUser.avatar ?? user.avatar,
       }
     : user;
-  const displayPosts = tab === 'postime' ? posts : tab === 'ruajturat' ? savedPosts : tab === 'tagged' ? taggedPosts : archivedPosts;
-  const showTabs = isOwnProfile;
+  const feedPosts = posts.filter((p) => p.type !== 'reel');
+  const reelPosts = posts.filter((p) => p.type === 'reel');
+  const displayPosts =
+    tab === 'postime'
+      ? feedPosts
+      : tab === 'reels'
+        ? reelPosts
+        : tab === 'ruajturat'
+          ? savedPosts
+          : tab === 'tagged'
+            ? taggedPosts
+            : archivedPosts;
+  const showTabs = true;
   const isLoadingGrid = tab === 'ruajturat' ? loadingSaved : tab === 'tagged' ? loadingTagged : tab === 'arkivuara' ? loadingArchived : false;
 
-  const tabs: { key: ProfileTab; label: string }[] = [
-    { key: 'postime', label: 'Postime' },
-    ...(showTabs
+  const tabs: { key: ProfileTab; label: string; icon?: ReactNode }[] = [
+    { key: 'postime', label: 'Postime', icon: <IconGrid /> },
+    { key: 'reels', label: 'Reels', icon: <IconReels /> },
+    ...(isOwnProfile
       ? [
           { key: 'ruajturat' as ProfileTab, label: 'Të ruajturat' },
           { key: 'tagged' as ProfileTab, label: 'Etiketuar' },
@@ -313,7 +347,7 @@ export default function ProfilePage() {
               )}
               </div>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Link
                   href={`/mesazhe/te-rinj?username=${encodeURIComponent(user.username)}`}
                   className="ig-btn-outline px-4 py-1.5 text-[14px]"
@@ -323,6 +357,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={handleFollow}
+                  disabled={isBlocked}
                   className={
                     following
                       ? 'ig-btn-outline px-4 py-1.5 text-[14px]'
@@ -331,8 +366,36 @@ export default function ProfilePage() {
                         : 'ig-btn-follow px-4 py-1.5 text-[14px]'
                   }
                 >
-                  {following ? 'Çndiq' : followPending ? 'Kërkesë dërguar' : 'Ndiq'}
+                  {isBlocked ? 'Bllokuar' : following ? 'Çndiq' : followPending ? 'Kërkesë dërguar' : 'Ndiq'}
                 </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setProfileMenuOpen((v) => !v)}
+                    className="ig-touch w-9 h-9 rounded-full border border-[var(--border)] flex items-center justify-center text-[var(--text)]"
+                    aria-label="Opsione"
+                  >
+                    ⋯
+                  </button>
+                  {profileMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
+                      <div className="absolute right-0 top-full mt-1 py-1 min-w-[180px] ig-dropdown z-50">
+                        <button
+                          type="button"
+                          onClick={handleBlock}
+                          className="w-full text-left px-4 py-3 text-[14px] text-[var(--text)] hover:bg-[var(--bg)]"
+                        >
+                          {isBlocked ? 'Çblloko' : 'Blloko'}
+                        </button>
+                        <ReportButton
+                          reportedUser={user._id}
+                          className="block w-full text-left px-4 py-3 text-[14px] text-[var(--danger)] hover:bg-[var(--bg)]"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -340,7 +403,7 @@ export default function ProfilePage() {
           {/* Stats */}
           <div className="flex gap-6 sm:gap-10 mb-4 justify-center sm:justify-start">
             {[
-              { count: posts?.length || 0, label: 'postime', key: null },
+              { count: feedPosts?.length || 0, label: 'postime', key: null },
               { count: followersCount, label: 'ndjekës', key: 'followers' as const },
               { count: followingCount, label: 'ndjek', key: 'following' as const },
             ].map((stat) => (
@@ -395,13 +458,14 @@ export default function ProfilePage() {
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`relative text-[12px] font-semibold py-4 px-5 uppercase tracking-wider transition-colors ${
+              className={`relative text-[12px] font-semibold py-4 px-5 uppercase tracking-wider transition-colors flex items-center gap-1.5 ${
                 tab === t.key
                   ? 'text-[var(--text)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text)]'
               }`}
             >
-              {t.label}
+              {t.icon && <span className="[&>svg]:w-4 [&>svg]:h-4">{t.icon}</span>}
+              <span className="hidden sm:inline">{t.label}</span>
               {tab === t.key && (
                 <motion.span
                   layoutId="profile-tab"
@@ -419,7 +483,7 @@ export default function ProfilePage() {
               <div key={i} className="aspect-square bg-[var(--border)] animate-shimmer rounded-lg" />
             ))}
           </div>
-        ) : isPrivateLocked && tab === 'postime' ? (
+        ) : isPrivateLocked && (tab === 'postime' || tab === 'reels') ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
             <div className="w-20 h-20 rounded-full liquid-glass-ultra flex items-center justify-center mb-4 text-3xl">🔒</div>
             <p className="text-[16px] font-semibold text-[var(--text)]">Ky është një llogari private</p>
@@ -436,12 +500,14 @@ export default function ProfilePage() {
             </div>
             <p className="text-[15px] font-medium text-[var(--text)]">
               {tab === 'postime' && 'Ende nuk ka postime'}
+              {tab === 'reels' && 'Ende nuk ka reels'}
               {tab === 'ruajturat' && 'Nuk keni postime të ruajtura'}
               {tab === 'tagged' && 'Nuk jeni etiketuar ende'}
               {tab === 'arkivuara' && 'Nuk keni postime të arkivuara'}
             </p>
             <p className="text-[13px] text-[var(--text-muted)] mt-1">
               {tab === 'postime' && 'Kur të postoni, postimet tuaja shfaqen këtu.'}
+              {tab === 'reels' && 'Reels që krijoni shfaqen këtu.'}
               {tab === 'ruajturat' && 'Postimet që ruani shfaqen këtu.'}
               {tab === 'tagged' && 'Kur dikush t\'ju etiketojë, shfaqet këtu.'}
               {tab === 'arkivuara' && 'Postimet e arkivuara mund ti riktheni.'}

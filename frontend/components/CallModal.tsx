@@ -10,6 +10,8 @@ import {
   acquireLocalMedia,
   switchCamera,
   hasMultipleCameras,
+  facingFromTrack,
+  isMobileDevice,
   stopMediaStream,
   closePeerConnection,
   waitForIceGathering,
@@ -65,6 +67,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   } = props;
   const direction = props.direction;
   const mode = props.mode;
+  const showVideo = mode === 'video';
   const incomingOffer = direction === 'incoming' ? props.offerSdp : null;
   const preAcquiredStream = direction === 'outgoing' ? props.localStream : null;
 
@@ -86,24 +89,34 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
-  const [canFlipCamera, setCanFlipCamera] = useState(false);
+  const [canFlipCamera, setCanFlipCamera] = useState(showVideo);
   const [flippingCam, setFlippingCam] = useState(false);
   const [hasRemote, setHasRemote] = useState(false);
   const [durationSec, setDurationSec] = useState(0);
   const [accepting, setAccepting] = useState(false);
   const connectedRef = useRef(false);
 
-  const showVideo = mode === 'video';
-
   useEffect(() => {
     connectedRef.current = hasRemote || status === 'connected';
   }, [hasRemote, status]);
 
   // Shfaq video lokale nëse stream është marrë para mount
+  const refreshCameraFlip = useCallback(async (stream?: MediaStream | null) => {
+    if (!showVideo) {
+      setCanFlipCamera(false);
+      return;
+    }
+    const canFlip = await hasMultipleCameras(stream ?? localStreamRef.current);
+    setCanFlipCamera(canFlip || isMobileDevice());
+    const track = (stream ?? localStreamRef.current)?.getVideoTracks()[0];
+    const detected = facingFromTrack(track);
+    if (detected) setFacingMode(detected);
+  }, [showVideo]);
+
   useEffect(() => {
     if (!showVideo) return;
-    void hasMultipleCameras().then(setCanFlipCamera);
-  }, [showVideo]);
+    void refreshCameraFlip(localStreamRef.current);
+  }, [showVideo, refreshCameraFlip]);
 
   // Shfaq video lokale nëse stream është marrë para mount
   useEffect(() => {
@@ -111,8 +124,9 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     if (stream && localVideoRef.current) {
       localVideoRef.current.srcObject = stream;
       void localVideoRef.current.play().catch(() => {});
+      void refreshCameraFlip(stream);
     }
-  }, []);
+  }, [refreshCameraFlip]);
 
   const title = useMemo(() => {
     const name = otherUsername ? `@${otherUsername}` : 'Përdoruesi';
@@ -232,14 +246,15 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
 
   const getLocalStream = useCallback(async () => {
     if (localStreamRef.current) return localStreamRef.current;
-    const stream = await acquireLocalMedia(mode);
+    const stream = await acquireLocalMedia(mode, facingMode);
     localStreamRef.current = stream;
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = stream;
       void localVideoRef.current.play().catch(() => {});
     }
+    void refreshCameraFlip(stream);
     return stream;
-  }, [mode]);
+  }, [mode, facingMode, refreshCameraFlip]);
 
   const queueOrAddIce = useCallback(async (candidate: RTCIceCandidateInit) => {
     if (endedRef.current) return;
@@ -475,8 +490,13 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   const flipCamera = async () => {
     const stream = localStreamRef.current;
     const pc = pcRef.current;
-    if (!stream || flippingCam || camOff) return;
+    if (!stream || flippingCam) return;
+    if (camOff) {
+      toggleCam();
+      await new Promise((r) => setTimeout(r, 120));
+    }
     setFlippingCam(true);
+    setError('');
     try {
       const { stream: updated, facing } = await switchCamera(stream, facingMode);
       localStreamRef.current = updated;
@@ -484,14 +504,19 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       const videoTrack = updated.getVideoTracks()[0];
       if (pc && videoTrack) {
         const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
-        if (sender) await sender.replaceTrack(videoTrack);
+        if (sender) {
+          await sender.replaceTrack(videoTrack);
+        } else {
+          pc.addTrack(videoTrack, updated);
+        }
       }
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = updated;
         await localVideoRef.current.play().catch(() => {});
       }
-    } catch {
-      setError('Nuk u ndryshua kamera. Provo përsëri.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Nuk u ndryshua kamera.';
+      setError(msg.includes('kamerë') ? msg : 'Nuk u ndryshua kamera. Provo përsëri.');
     } finally {
       setFlippingCam(false);
     }
@@ -514,7 +539,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
             autoPlay
             playsInline
             muted
-            className={`absolute top-4 right-4 w-[28vw] max-w-[120px] aspect-[3/4] rounded-2xl object-cover border-2 border-white/30 shadow-lg z-10 transition-opacity ${
+            className={`absolute top-[max(1rem,env(safe-area-inset-top))] right-4 w-[30vw] max-w-[130px] min-w-[96px] aspect-[3/4] rounded-2xl object-cover border-2 border-white/30 shadow-lg z-10 transition-opacity pointer-events-none ${
               camOff ? 'opacity-30' : 'opacity-100'
             } ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
           />
@@ -557,7 +582,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
         </div>
       )}
 
-      <div className="call-controls flex-shrink-0 px-6 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <div className="call-controls relative z-30 flex-shrink-0 px-4 sm:px-6 py-6 sm:py-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 via-black/50 to-transparent">
         {direction === 'incoming' && status === 'ringing' ? (
           <div className="flex flex-col items-center gap-6">
             <p className="text-white/70 text-sm">Prek për të përgjigjur</p>
@@ -584,11 +609,11 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-5 flex-wrap">
+          <div className="flex items-center justify-center gap-4 sm:gap-5 flex-wrap">
             <button
               type="button"
               onClick={toggleMute}
-              className={`w-14 h-14 rounded-full flex flex-col items-center justify-center text-lg ${
+              className={`call-ctrl-btn ig-touch min-w-[56px] min-h-[56px] w-14 h-14 rounded-full flex items-center justify-center text-lg ${
                 muted ? 'bg-white text-black' : 'bg-white/20 text-white'
               }`}
               aria-label={muted ? 'Aktivo zërin' : 'Hesht'}
@@ -600,7 +625,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
                 <button
                   type="button"
                   onClick={toggleCam}
-                  className={`w-14 h-14 rounded-full flex flex-col items-center justify-center text-lg ${
+                  className={`call-ctrl-btn ig-touch min-w-[56px] min-h-[56px] w-14 h-14 rounded-full flex items-center justify-center text-lg ${
                     camOff ? 'bg-white text-black' : 'bg-white/20 text-white'
                   }`}
                   aria-label={camOff ? 'Aktivo kamerën' : 'Fik kamerën'}
@@ -610,12 +635,19 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
                 {canFlipCamera && (
                   <button
                     type="button"
-                    onClick={flipCamera}
-                    disabled={flippingCam || camOff}
-                    className="w-14 h-14 rounded-full flex flex-col items-center justify-center text-lg bg-white/20 text-white disabled:opacity-40"
-                    aria-label="Ndrysho kamerën"
+                    onClick={() => void flipCamera()}
+                    disabled={flippingCam}
+                    className="call-ctrl-btn ig-touch min-w-[56px] min-h-[56px] w-14 h-14 rounded-full flex items-center justify-center bg-white/20 text-white disabled:opacity-50"
+                    aria-label="Ndrysho kamerën para/pas"
+                    title="Kthe kamerën"
                   >
-                    🔄
+                    {flippingCam ? (
+                      <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                      </svg>
+                    )}
                   </button>
                 )}
               </>
@@ -623,7 +655,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
             <button
               type="button"
               onClick={onHangup}
-              className="w-[72px] h-[72px] rounded-full bg-red-500 text-white flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
+              className="call-ctrl-btn ig-touch min-w-[72px] min-h-[72px] w-[72px] h-[72px] rounded-full bg-red-500 text-white flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
               aria-label="Mbyll"
             >
               <span className="text-2xl">✕</span>

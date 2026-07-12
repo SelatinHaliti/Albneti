@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/utils/api';
 import { MusicSticker } from '@/components/MusicSticker';
+import { useAuthStore } from '@/store/useAuthStore';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 
 const IMAGE_DURATION_MS = 5000;
 const IMAGE_WITH_MUSIC_MS = 15000;
@@ -20,9 +22,12 @@ type Story = {
 };
 type StoryGroup = { user: { _id: string; username: string; avatar?: string }; stories: Story[] };
 
+type StoryViewer = { _id: string; username: string; avatar?: string; fullName?: string; isVerified?: boolean };
+
 export default function StoryViewPage() {
   const params = useParams();
   const router = useRouter();
+  const authUser = useAuthStore((s) => s.user);
   const userId = params?.userId as string;
   const [groups, setGroups] = useState<StoryGroup[]>([]);
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
@@ -32,6 +37,9 @@ export default function StoryViewPage() {
   const [paused, setPaused] = useState(false);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [musicMuted, setMusicMuted] = useState(false);
+  const [viewersOpen, setViewersOpen] = useState(false);
+  const [viewers, setViewers] = useState<StoryViewer[]>([]);
+  const [viewersLoading, setViewersLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goNextRef = useRef<() => void>(() => {});
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -62,6 +70,21 @@ export default function StoryViewPage() {
   const group = groups[currentGroupIndex];
   const story = group?.stories?.[currentStoryIndex];
   const hasMusic = !!story?.music?.url;
+  const isOwnStory = !!authUser && String(group?.user?._id) === String(authUser.id);
+
+  const openViewers = async () => {
+    if (!story || !isOwnStory) return;
+    setViewersOpen(true);
+    setViewersLoading(true);
+    try {
+      const res = await api<{ viewers: StoryViewer[] }>(`/api/stories/${story._id}/shikuesit`);
+      setViewers(res.viewers || []);
+    } catch (_) {
+      setViewers([]);
+    } finally {
+      setViewersLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!story) return;
@@ -343,7 +366,7 @@ export default function StoryViewPage() {
       <header className="absolute top-0 left-0 right-0 p-4 pt-12 flex items-center gap-3 text-white bg-gradient-to-b from-black/60 to-transparent z-10 pointer-events-none">
         <Link
           href={`/profili/${group.user.username}`}
-          className="pointer-events-auto flex items-center gap-3"
+          className="pointer-events-auto flex items-center gap-3 flex-1 min-w-0"
           onClick={(e) => e.stopPropagation()}
         >
           <img
@@ -354,10 +377,69 @@ export default function StoryViewPage() {
               (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + group.user.username;
             }}
           />
-          <span className="font-semibold">{group.user.username}</span>
+          <span className="font-semibold truncate">{group.user.username}</span>
           {hasMusic && <span className="text-white/70 text-xs">♪</span>}
         </Link>
+        {isOwnStory && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); void openViewers(); }}
+            className="pointer-events-auto flex items-center gap-1.5 text-white/90 text-[13px] font-medium px-2 py-1 rounded-lg hover:bg-white/10"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Shikuesit
+          </button>
+        )}
       </header>
+
+      {viewersOpen && (
+        <div
+          className="absolute inset-x-0 bottom-0 z-30 max-h-[55dvh] flex flex-col bg-[#1a1a1a] rounded-t-2xl text-white pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="w-10 h-1 rounded-full bg-white/30 mx-auto mt-3 mb-2" />
+          <div className="flex items-center justify-between px-4 py-2 border-b border-white/10">
+            <p className="font-semibold text-[15px]">Shikuesit</p>
+            <button type="button" onClick={() => setViewersOpen(false)} className="text-[14px] text-white/70">
+              Mbyll
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-2">
+            {viewersLoading ? (
+              <p className="text-center text-white/60 py-6 text-[14px]">Duke ngarkuar...</p>
+            ) : viewers.length === 0 ? (
+              <p className="text-center text-white/60 py-6 text-[14px]">Ende nuk ka shikues.</p>
+            ) : (
+              <ul className="space-y-2">
+                {viewers.map((v) => (
+                  <li key={v._id}>
+                    <Link href={`/profili/${v.username}`} className="flex items-center gap-3 py-2 hover:bg-white/5 rounded-lg px-1">
+                      <img
+                        src={v.avatar || ''}
+                        alt=""
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + v.username;
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[14px] truncate">
+                          {v.username}
+                          {v.isVerified && <VerifiedBadge size={12} className="ml-1" />}
+                        </p>
+                        {v.fullName && <p className="text-[12px] text-white/60 truncate">{v.fullName}</p>}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

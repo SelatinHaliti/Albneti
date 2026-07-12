@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { api } from '@/utils/api';
+import { api, apiUpload } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSocket } from '@/components/SocketProvider';
 import { useCall } from '@/components/CallProvider';
@@ -36,9 +36,11 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [typing, setTyping] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id || !user) return;
@@ -49,6 +51,7 @@ export default function ChatPage() {
         );
         setConversation(res.conversation);
         setMessages(res.messages || []);
+        await api(`/api/messages/${id}/lexuar`, { method: 'PUT' }).catch(() => {});
       } catch (_) {
         router.replace('/mesazhe');
       } finally {
@@ -131,6 +134,25 @@ export default function ChatPage() {
     setSending(false);
   };
 
+  const sendMedia = async (file: File) => {
+    if (!file || uploading) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('media', file);
+      const res = await apiUpload<{ message: Message }>(`/api/messages/${id}`, formData);
+      setMessages((m) => [...m, res.message]);
+      await api(`/api/messages/${id}/lexuar`, { method: 'PUT' }).catch(() => {});
+    } catch (_) {}
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void sendMedia(file);
+  };
+
   if (loading || !conversation) {
     return (
       <div className="mobile-page max-w-2xl mx-auto px-4 py-8">
@@ -195,7 +217,14 @@ export default function ChatPage() {
                   : 'liquid-glass-card text-[var(--text)] rounded-bl-md'
               }`}
             >
-              {msg.media?.url ? (
+              {msg.type === 'video' && msg.media?.url ? (
+                <video
+                  src={msg.media.url}
+                  controls
+                  playsInline
+                  className="rounded-lg max-h-56 max-w-full"
+                />
+              ) : msg.media?.url ? (
                 <img src={msg.media.url} alt="" className="rounded-lg max-h-48 object-cover" />
               ) : null}
               {msg.content ? <p className="text-[14px] leading-snug">{msg.content}</p> : null}
@@ -209,7 +238,26 @@ export default function ChatPage() {
       </div>
 
       <form onSubmit={sendMessage} className="p-3 sm:p-4 border-t border-[var(--border)] liquid-glass-strong flex-shrink-0">
-        <div className="flex gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={handleFilePick}
+        />
+        <div className="flex gap-2 items-center">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="ig-touch w-11 h-11 rounded-full border border-[var(--border)] hover:bg-[var(--primary-soft)] flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+            aria-label="Dërgo foto ose video"
+            title="Foto / Video"
+          >
+            <svg className="w-5 h-5 text-[var(--text)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022 18.75V5.25A2.25 2.25 0 0019.75 3H4.25A2.25 2.25 0 002 3.75v13.5A2.25 2.25 0 004.25 21z" />
+            </svg>
+          </button>
           <input
             type="text"
             value={input}
@@ -219,10 +267,10 @@ export default function ChatPage() {
           />
           <button
             type="submit"
-            disabled={sending || !input.trim()}
+            disabled={sending || uploading || !input.trim()}
             className="px-5 py-3 rounded-xl bg-[var(--ig-blue)] text-white font-semibold text-[14px] disabled:opacity-50 min-h-[48px]"
           >
-            Dërgo
+            {uploading ? '...' : 'Dërgo'}
           </button>
         </div>
       </form>

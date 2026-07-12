@@ -370,10 +370,19 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-.call-controls button {
-  transition: transform 0.15s ease, opacity 0.15s ease;
+.call-controls {
+  pointer-events: auto;
+  -webkit-user-select: none;
+  user-select: none;
 }
-.call-controls button:active {
+.call-controls button,
+.call-ctrl-btn {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.call-controls button:active,
+.call-ctrl-btn:active {
   transform: scale(0.94);
 }
 

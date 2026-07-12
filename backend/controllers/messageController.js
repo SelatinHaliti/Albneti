@@ -67,14 +67,39 @@ export const getConversationById = async (req, res) => {
  */
 export const getConversations = async (req, res) => {
   try {
+    const userId = req.user.id;
     const conversations = await Conversation.find({
-      participants: req.user.id,
+      participants: userId,
     })
       .sort({ lastMessageAt: -1 })
       .populate('participants', 'username avatar fullName')
       .populate('lastMessage')
       .lean();
-    res.json({ conversations });
+
+    const convIds = conversations.map((c) => c._id);
+    let unreadMap = {};
+    if (convIds.length > 0) {
+      const unreadAgg = await Message.aggregate([
+        {
+          $match: {
+            conversation: { $in: convIds },
+            sender: { $ne: userId },
+            readBy: { $nin: [userId] },
+          },
+        },
+        { $group: { _id: '$conversation', count: { $sum: 1 } } },
+      ]);
+      unreadMap = Object.fromEntries(
+        unreadAgg.map((u) => [u._id.toString(), u.count])
+      );
+    }
+
+    const withUnread = conversations.map((c) => ({
+      ...c,
+      unreadCount: unreadMap[c._id.toString()] || 0,
+    }));
+
+    res.json({ conversations: withUnread });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

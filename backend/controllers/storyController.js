@@ -161,3 +161,30 @@ export const deleteStory = async (req, res) => {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }
 };
+
+/**
+ * Kush e ka parë story-n (vetëm pronari)
+ */
+export const getStoryViewers = async (req, res) => {
+  try {
+    const story = await Story.findById(req.params.id)
+      .populate('views', 'username avatar fullName isVerified')
+      .lean();
+    if (!story) return res.status(404).json({ message: 'Story nuk u gjet.' });
+    if (story.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Nuk keni leje.' });
+    }
+    res.json({
+      viewers: (story.views || []).map((v) => ({
+        _id: String(v._id),
+        username: v.username,
+        avatar: v.avatar,
+        fullName: v.fullName,
+        isVerified: !!v.isVerified,
+      })),
+      count: story.views?.length || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};

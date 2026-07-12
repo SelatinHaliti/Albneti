@@ -10,6 +10,7 @@ import { MusicSticker } from '@/components/MusicSticker';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { PostMediaFrame } from '@/components/PostMediaFrame';
 import { ReportButton } from '@/components/ReportButton';
+import { CommentSheet } from '@/components/CommentSheet';
 
 type Post = {
   _id: string;
@@ -59,6 +60,8 @@ export function PostCard(props: {
   const [userPausedMusic, setUserPausedMusic] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(post.comments?.length || 0);
   const [inViewport, setInViewport] = useState(false);
   const lastTapRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -389,9 +392,20 @@ export function PostCard(props: {
             <button type="button" onClick={handleLike} className={`transition-all ${liked ? 'text-[var(--primary)]' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
               <IconHeart filled={liked} />
             </button>
-            <Link href={`/post/${post._id}`} className="text-[var(--text)] hover:opacity-70 transition-opacity" aria-label="Komentet">
+            <button
+              type="button"
+              onClick={() => {
+                if (onComment) {
+                  onComment();
+                } else {
+                  setCommentOpen(true);
+                }
+              }}
+              className="text-[var(--text)] hover:opacity-70 transition-opacity"
+              aria-label="Komentet"
+            >
               <IconComment />
-            </Link>
+            </button>
             <button type="button" onClick={handleShareClick} className="text-[var(--text)] hover:opacity-70 transition-opacity" aria-label="Ndaj">
               <IconShare />
             </button>
@@ -414,10 +428,14 @@ export function PostCard(props: {
             {post.caption}
           </p>
         )}
-        {(post.comments?.length || 0) > 0 && (
-          <Link href={`/post/${post._id}`} className="text-[14px] text-[var(--text-muted)] mt-1.5 block hover:text-[var(--text-secondary)]">
-            Shiko të gjitha {(post.comments?.length || 0) === 1 ? '1 komentin' : `${post.comments?.length} komente`}
-          </Link>
+        {(commentsCount || 0) > 0 && (
+          <button
+            type="button"
+            onClick={() => setCommentOpen(true)}
+            className="text-[14px] text-[var(--text-muted)] mt-1.5 block hover:text-[var(--text-secondary)] text-left"
+          >
+            Shiko të gjitha {commentsCount === 1 ? '1 komentin' : `${commentsCount} komente`}
+          </button>
         )}
         {post.createdAt && (
           <p className="text-[10px] text-[var(--text-secondary)] uppercase mt-2 tracking-wide">{timeAgo(post.createdAt)}</p>
@@ -432,6 +450,13 @@ export function PostCard(props: {
           </p>
         )}
       </div>
+
+      <CommentSheet
+        postId={post._id}
+        open={commentOpen}
+        onClose={() => setCommentOpen(false)}
+        onCountChange={setCommentsCount}
+      />
     </article>
   );
 }

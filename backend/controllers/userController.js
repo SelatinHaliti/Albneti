@@ -50,6 +50,12 @@ export const getProfile = async (req, res) => {
       (user.followRequests || []).some((id) => id.toString() === req.user.id);
     const canViewLists = canViewFollowLists(req.user?.id, user, isFollowing);
 
+    let isBlocked = false;
+    if (req.user && !isOwnProfile) {
+      const viewer = await User.findById(req.user.id).select('blockedUsers').lean();
+      isBlocked = (viewer?.blockedUsers || []).some((id) => id.toString() === user._id.toString());
+    }
+
     let posts = [];
     let isPrivateLocked = false;
     if (isOwnProfile || !user.isPrivate || isFollowing) {
@@ -99,6 +105,7 @@ export const getProfile = async (req, res) => {
       followRequestPending: !!followRequestPending,
       canViewFollowLists: canViewLists,
       followRequests,
+      isBlocked,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
