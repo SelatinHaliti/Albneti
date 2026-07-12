@@ -75,14 +75,96 @@ export async function getPeerConnectionConfig(): Promise<RTCConfiguration> {
   };
 }
 
-export async function acquireLocalMedia(mode: 'audio' | 'video'): Promise<MediaStream> {
-  return navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-    video:
-      mode === 'video'
-        ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-        : false,
+export type FacingMode = 'user' | 'environment';
+
+export async function acquireLocalMedia(
+  mode: 'audio' | 'video',
+  facing: FacingMode = 'user'
+): Promise<MediaStream> {
+  const videoConstraints =
+    mode === 'video'
+      ? {
+          facingMode: { ideal: facing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        }
+      : false;
+
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      video: videoConstraints,
+    });
+  } catch (err) {
+    if (mode !== 'video') throw err;
+    return navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+    });
+  }
+}
+
+/** Ndryshon kamerën para/pas (si Instagram) */
+export async function switchCamera(
+  stream: MediaStream,
+  currentFacing: FacingMode
+): Promise<{ stream: MediaStream; facing: FacingMode }> {
+  const nextFacing: FacingMode = currentFacing === 'user' ? 'environment' : 'user';
+  const oldVideo = stream.getVideoTracks()[0];
+
+  let newVideoStream: MediaStream | null = null;
+
+  const attempts: MediaTrackConstraints[] = [
+    { facingMode: { exact: nextFacing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+    { facingMode: { ideal: nextFacing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+  ];
+
+  for (const video of attempts) {
+    try {
+      newVideoStream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+      break;
+    } catch {
+      /* provo më pas */
+    }
+  }
+
+  if (!newVideoStream) {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cameras = devices.filter((d) => d.kind === 'videoinput');
+    const currentId = oldVideo?.getSettings?.()?.deviceId;
+    const other = cameras.find((c) => c.deviceId && c.deviceId !== currentId);
+    if (!other?.deviceId) {
+      throw new Error('Nuk u gjet kamerë tjetër në këtë pajisje.');
+    }
+    newVideoStream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: other.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false,
+    });
+  }
+
+  const newTrack = newVideoStream.getVideoTracks()[0];
+  if (!newTrack) throw new Error('Kamera e re nuk u aktivizua.');
+
+  if (oldVideo) {
+    stream.removeTrack(oldVideo);
+    oldVideo.stop();
+  }
+  stream.addTrack(newTrack);
+  newVideoStream.getTracks().forEach((t) => {
+    if (t !== newTrack) t.stop();
   });
+
+  return { stream, facing: nextFacing };
+}
+
+export async function hasMultipleCameras(): Promise<boolean> {
+  try {
+    if (!navigator.mediaDevices?.enumerateDevices) return false;
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter((d) => d.kind === 'videoinput').length > 1;
+  } catch {
+    return true;
+  }
 }
 
 export async function flushIceQueue(

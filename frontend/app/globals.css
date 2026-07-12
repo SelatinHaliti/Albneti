@@ -1016,7 +1016,15 @@ body.is-desktop-app .install-banner { display: none; }
     radial-gradient(ellipse 50% 35% at 80% 80%, rgba(237,73,86,0.08) 0%, transparent 65%);
 }
 
-/* ─── Instagram-style UI ─── */
+/* Teksti ALBNET në header — ngjyrë fikse, pa gradient */
+.albnet-wordmark {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #262626;
+}
+.dark .albnet-wordmark {
+  color: #f5f5f5;
+}
 .ig-btn-follow {
   padding: 7px 16px;
   border-radius: 8px;

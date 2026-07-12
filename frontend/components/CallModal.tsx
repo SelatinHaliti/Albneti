@@ -8,6 +8,8 @@ import {
   flushIceQueue,
   attachLocalTracks,
   acquireLocalMedia,
+  switchCamera,
+  hasMultipleCameras,
   stopMediaStream,
   closePeerConnection,
   waitForIceGathering,
@@ -83,6 +85,9 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   const [error, setError] = useState('');
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [canFlipCamera, setCanFlipCamera] = useState(false);
+  const [flippingCam, setFlippingCam] = useState(false);
   const [hasRemote, setHasRemote] = useState(false);
   const [durationSec, setDurationSec] = useState(0);
   const [accepting, setAccepting] = useState(false);
@@ -93,6 +98,12 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
   useEffect(() => {
     connectedRef.current = hasRemote || status === 'connected';
   }, [hasRemote, status]);
+
+  // Shfaq video lokale nëse stream është marrë para mount
+  useEffect(() => {
+    if (!showVideo) return;
+    void hasMultipleCameras().then(setCanFlipCamera);
+  }, [showVideo]);
 
   // Shfaq video lokale nëse stream është marrë para mount
   useEffect(() => {
@@ -461,6 +472,31 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
     setCamOff(next);
   };
 
+  const flipCamera = async () => {
+    const stream = localStreamRef.current;
+    const pc = pcRef.current;
+    if (!stream || flippingCam || camOff) return;
+    setFlippingCam(true);
+    try {
+      const { stream: updated, facing } = await switchCamera(stream, facingMode);
+      localStreamRef.current = updated;
+      setFacingMode(facing);
+      const videoTrack = updated.getVideoTracks()[0];
+      if (pc && videoTrack) {
+        const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
+        if (sender) await sender.replaceTrack(videoTrack);
+      }
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = updated;
+        await localVideoRef.current.play().catch(() => {});
+      }
+    } catch {
+      setError('Nuk u ndryshua kamera. Provo përsëri.');
+    } finally {
+      setFlippingCam(false);
+    }
+  };
+
   const showWaitingOverlay = !hasRemote && status !== 'connected';
 
   return (
@@ -480,7 +516,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
             muted
             className={`absolute top-4 right-4 w-[28vw] max-w-[120px] aspect-[3/4] rounded-2xl object-cover border-2 border-white/30 shadow-lg z-10 transition-opacity ${
               camOff ? 'opacity-30' : 'opacity-100'
-            }`}
+            } ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
           />
           {showWaitingOverlay && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white/90 px-6 text-center z-20 bg-black/40">
@@ -560,16 +596,29 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
               {muted ? '🔇' : '🎤'}
             </button>
             {showVideo && (
-              <button
-                type="button"
-                onClick={toggleCam}
-                className={`w-14 h-14 rounded-full flex flex-col items-center justify-center text-lg ${
-                  camOff ? 'bg-white text-black' : 'bg-white/20 text-white'
-                }`}
-                aria-label={camOff ? 'Aktivo kamerën' : 'Fik kamerën'}
-              >
-                {camOff ? '📷' : '📹'}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={toggleCam}
+                  className={`w-14 h-14 rounded-full flex flex-col items-center justify-center text-lg ${
+                    camOff ? 'bg-white text-black' : 'bg-white/20 text-white'
+                  }`}
+                  aria-label={camOff ? 'Aktivo kamerën' : 'Fik kamerën'}
+                >
+                  {camOff ? '📷' : '📹'}
+                </button>
+                {canFlipCamera && (
+                  <button
+                    type="button"
+                    onClick={flipCamera}
+                    disabled={flippingCam || camOff}
+                    className="w-14 h-14 rounded-full flex flex-col items-center justify-center text-lg bg-white/20 text-white disabled:opacity-40"
+                    aria-label="Ndrysho kamerën"
+                  >
+                    🔄
+                  </button>
+                )}
+              </>
             )}
             <button
               type="button"
