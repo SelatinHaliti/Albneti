@@ -63,3 +63,5 @@ services:
         sync: false
       - key: AI_MARKETING_MODEL
         value: gemini-2.0-flash
+      - key: AI_MARKETING_USE_SMART_ONLY
+        value: true

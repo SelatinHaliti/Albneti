@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
+scripts/render-env-to-add.env
 
 # Build / Next.js
 frontend/.next/
