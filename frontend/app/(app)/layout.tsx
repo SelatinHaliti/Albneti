@@ -80,6 +80,15 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const isStoryViewer = pathname.startsWith('/story/');
   const isImmersivePage = isReelsPage || isLiveFullscreen || isStoryViewer;
   const isLiveSection = pathname === '/live' || pathname.startsWith('/live/');
+  const hasOwnMobileHeader =
+    pathname.startsWith('/mesazhe') ||
+    pathname === '/live' ||
+    pathname === '/njoftime' ||
+    pathname === '/chat-global' ||
+    pathname.startsWith('/krijo/') ||
+    pathname === '/explore' ||
+    pathname === '/verifikim';
+  const showGlobalMobileHeader = !isImmersivePage && !hasOwnMobileHeader;
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -162,8 +171,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <div className={`min-h-screen flex flex-col md:flex-row overflow-x-hidden max-w-[100vw] ${isReelsPage ? 'bg-black' : 'bg-[var(--bg)]'}`}>
         {/* ── Mobile top bar ── */}
-        {!isImmersivePage && (
-          <header className="md:hidden fixed top-0 left-0 right-0 h-[52px] px-4 grid grid-cols-3 items-center ig-nav-bar border-b z-50 safe-area-pt">
+        {!showGlobalMobileHeader ? null : (
+          <header className="md:hidden fixed top-0 left-0 right-0 h-[52px] px-4 grid grid-cols-[1fr_auto] items-center ig-nav-bar border-b z-50 safe-area-pt">
             <div className="flex items-center justify-start min-h-[52px] relative" ref={feedDropdownRefMobile}>
               {pathname === '/feed' ? (
                 <>
@@ -192,20 +201,17 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
               )}
             </div>
-            <div className="flex justify-center items-center min-h-[52px] text-[14px] font-semibold text-[var(--text)]">
-              {pathname === '/feed' && feedMode === 'following' ? 'Ndiqet' : ''}
-              {pathname === '/live' ? 'Live' : ''}
-              {pathname.startsWith('/mesazhe') ? 'Mesazhe' : ''}
-            </div>
             <div className="flex items-center justify-end gap-0 mobile-header-actions">
+              {!isLiveSection && (
               <Link
                 href="/live"
-                className={`ig-touch rounded-full hover:bg-[var(--primary-soft)] transition-colors relative ${isLiveSection ? 'text-[var(--danger)]' : 'text-[var(--text)]'}`}
+                className="ig-touch rounded-full hover:bg-[var(--primary-soft)] transition-colors relative text-[var(--text)]"
                 aria-label="Live"
               >
-                <IconLive active={isLiveSection} />
+                <IconLive active={false} />
                 <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)] animate-pulse-live" />
               </Link>
+              )}
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
@@ -312,7 +318,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                       </>
                     )}
                   </span>
-                  <span className="hidden lg:inline text-[15px]">{navItem.label}</span>
+                  <span className="hidden lg:inline text-[15px] truncate">{navItem.label}</span>
                 </>
               );
               if (navItem.href === '/krijo/post') {
@@ -332,7 +338,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   key={navItem.href}
                   href={navItem.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : navItem.href}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`group flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-150 ${
+                  className={`group flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-150 md:justify-center lg:justify-start md:px-2 lg:px-3 overflow-hidden ${
                     isActive ? 'text-[var(--text)] font-bold' : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
                   }`}
                 >
@@ -387,9 +393,15 @@ function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <main className={`app-shell-main md:ml-[72px] lg:ml-[245px] md:pt-0 md:pb-0 ${
-          isImmersivePage ? 'app-shell-main--immersive' : isReelsPage ? 'app-shell-main--reels' : ''
+          isImmersivePage
+            ? 'app-shell-main--immersive'
+            : hasOwnMobileHeader
+              ? 'app-shell-main--page-header'
+              : isReelsPage
+                ? 'app-shell-main--reels'
+                : ''
         }`}>
-          {!isImmersivePage && (
+          {showGlobalMobileHeader && (
             <div className="md:hidden px-3 pt-2 max-w-[100vw]">
               <InstallAppBanner />
               <PushNotificationPrompt />
@@ -422,6 +434,15 @@ function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={
+                  item.icon === 'avatar'
+                    ? 'Profili'
+                    : item.href === '/feed'
+                      ? 'Kryefaja'
+                      : item.href === '/explore'
+                        ? 'Eksploro'
+                        : 'Reels'
+                }
                 aria-current={isActive ? 'page' : undefined}
                 className={`relative flex items-center justify-center flex-1 min-h-[48px] min-w-0 transition-colors ${
                   isActive ? 'text-[var(--text)]' : isReelsPage ? 'text-white/60' : 'text-[var(--text)]'

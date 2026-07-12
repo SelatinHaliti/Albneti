@@ -255,7 +255,7 @@ export default function ChatPage() {
 
   return (
     <div className="mobile-page max-w-2xl mx-auto flex flex-col mobile-chat-shell md:h-[calc(100dvh-2rem)]">
-      <header className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-b border-[var(--border)] liquid-glass-strong flex-shrink-0">
+      <header className="ig-page-header flex items-center gap-2 sm:gap-3 p-3 sm:p-4 flex-shrink-0 safe-area-pt">
         <Link href="/mesazhe" className="ig-touch text-xl text-[var(--text)]">←</Link>
         {isGroup ? (
           <div className="flex-1 min-w-0">

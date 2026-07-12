@@ -223,7 +223,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="mobile-page max-w-[560px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
-      <div className="ig-page-header ig-nav-bar sticky top-0 z-10 px-5 py-3">
+      <div className="ig-page-header px-5 py-3">
         <div className="flex items-center justify-between">
           <h1 className="text-[16px] font-semibold text-[var(--text)]">Njoftime</h1>
           {unreadCount > 0 && (

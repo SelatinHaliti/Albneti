@@ -83,7 +83,7 @@ export default function MessagesPage() {
 
   return (
     <div className="mobile-page max-w-[470px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
-      <div className="ig-page-header ig-nav-bar sticky top-0 z-10 px-4 py-3 flex items-center justify-between">
+      <div className="ig-page-header px-4 py-3 flex items-center justify-between">
         <h1 className="text-[16px] font-semibold text-[var(--text)]">Mesazhe</h1>
         <Link href="/mesazhe/te-rinj" className="ig-link-btn text-[14px]">
           E re
