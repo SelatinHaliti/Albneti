@@ -12,6 +12,8 @@ import { IconGrid } from '@/components/Icons';
 import { PostMediaThumb } from '@/components/PostMediaThumb';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { FollowListModal } from '@/components/FollowListModal';
+import { FollowRequestsPanel, type FollowRequest } from '@/components/FollowRequestsPanel';
 
 type User = {
   _id: string;
@@ -23,8 +25,10 @@ type User = {
   location?: string;
   isVerified?: boolean;
   isPrivate?: boolean;
-  followers: unknown[];
-  following: unknown[];
+  followersCount?: number;
+  followingCount?: number;
+  followers?: unknown[];
+  following?: unknown[];
 };
 
 type Post = {
@@ -52,10 +56,16 @@ export default function ProfilePage() {
     isOwnProfile: boolean;
     isPrivateLocked?: boolean;
     followRequestPending?: boolean;
+    canViewFollowLists?: boolean;
+    followRequests?: FollowRequest[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
   const [followPending, setFollowPending] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
+  const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null);
   const [tab, setTab] = useState<ProfileTab>('postime');
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [taggedPosts, setTaggedPosts] = useState<Post[]>([]);
@@ -79,10 +89,15 @@ export default function ProfilePage() {
           isOwnProfile: boolean;
           isPrivateLocked?: boolean;
           followRequestPending?: boolean;
+          canViewFollowLists?: boolean;
+          followRequests?: FollowRequest[];
         }>(`/api/users/${username}`);
         setProfile(res);
         setFollowing(res.isFollowing);
         setFollowPending(!!res.followRequestPending);
+        setFollowersCount(res.user.followersCount ?? res.user.followers?.length ?? 0);
+        setFollowingCount(res.user.followingCount ?? res.user.following?.length ?? 0);
+        setFollowRequests(res.followRequests || []);
       } catch (_) {
         setProfile(null);
       } finally {
@@ -137,12 +152,22 @@ export default function ProfilePage() {
       setFollowPending(true);
     }
     try {
-      const res = await api<{ isFollowing: boolean; followRequestPending?: boolean }>(
+      const res = await api<{ isFollowing: boolean; followRequestPending?: boolean; followersCount?: number }>(
         `/api/users/${profile.user._id}/ndiq`,
         { method: 'POST' }
       );
       setFollowing(res.isFollowing);
       setFollowPending(!!res.followRequestPending);
+      if (typeof res.followersCount === 'number') {
+        setFollowersCount(res.followersCount);
+      } else if (prevFollowing && !res.isFollowing) {
+        setFollowersCount((c) => Math.max(0, c - 1));
+      } else if (!prevFollowing && res.isFollowing) {
+        setFollowersCount((c) => c + 1);
+      }
+      if (res.isFollowing && profile.isPrivateLocked) {
+        setProfile((p) => (p ? { ...p, isPrivateLocked: false } : p));
+      }
     } catch (_) {
       setFollowing(prevFollowing);
       setFollowPending(prevPending);
@@ -191,7 +216,7 @@ export default function ProfilePage() {
     );
   }
 
-  const { user, posts, isOwnProfile, isPrivateLocked } = profile;
+  const { user, posts, isOwnProfile, isPrivateLocked, canViewFollowLists } = profile;
   const displayUser = isOwnProfile && currentUser
     ? {
         ...user,
@@ -219,6 +244,16 @@ export default function ProfilePage() {
 
   return (
     <div className="mobile-page max-w-[935px] mx-auto py-6 sm:py-8">
+      {isOwnProfile && followRequests.length > 0 && (
+        <FollowRequestsPanel
+          requests={followRequests}
+          onUpdate={(next, delta) => {
+            setFollowRequests(next);
+            if (delta) setFollowersCount((c) => c + delta);
+          }}
+        />
+      )}
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -305,14 +340,26 @@ export default function ProfilePage() {
           {/* Stats */}
           <div className="flex gap-8 sm:gap-10 mb-5 justify-center sm:justify-start">
             {[
-              { count: tab === 'postime' ? posts?.length || 0 : tab === 'ruajturat' ? savedPosts.length : taggedPosts.length, label: 'postime' },
-              { count: user.followers?.length || 0, label: 'ndjekës' },
-              { count: user.following?.length || 0, label: 'ndjek' },
+              { count: posts?.length || 0, label: 'postime', key: null },
+              { count: followersCount, label: 'ndjekës', key: 'followers' as const },
+              { count: followingCount, label: 'ndjek', key: 'following' as const },
             ].map((stat) => (
-              <div key={stat.label} className="text-center sm:text-left">
-                <span className="text-[17px] font-bold text-[var(--text)] block">{stat.count}</span>
-                <span className="text-[13px] text-[var(--text-muted)]">{stat.label}</span>
-              </div>
+              stat.key ? (
+                <button
+                  key={stat.label}
+                  type="button"
+                  onClick={() => setFollowModal(stat.key)}
+                  className="text-center sm:text-left hover:opacity-80 transition-opacity"
+                >
+                  <span className="text-[17px] font-bold text-[var(--text)] block">{stat.count}</span>
+                  <span className="text-[13px] text-[var(--text-muted)]">{stat.label}</span>
+                </button>
+              ) : (
+                <div key={stat.label} className="text-center sm:text-left">
+                  <span className="text-[17px] font-bold text-[var(--text)] block">{stat.count}</span>
+                  <span className="text-[13px] text-[var(--text-muted)]">{stat.label}</span>
+                </div>
+              )
             ))}
           </div>
 
@@ -453,6 +500,23 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      <FollowListModal
+        open={followModal === 'followers'}
+        onClose={() => setFollowModal(null)}
+        userId={user._id}
+        username={user.username}
+        type="followers"
+        canView={canViewFollowLists !== false}
+      />
+      <FollowListModal
+        open={followModal === 'following'}
+        onClose={() => setFollowModal(null)}
+        userId={user._id}
+        username={user.username}
+        type="following"
+        canView={canViewFollowLists !== false}
+      />
     </div>
   );
 }

@@ -22,21 +22,22 @@ import { VerifiedBadge } from '@/components/VerifiedBadge';
 type MobileMenuProps = {
   open: boolean;
   onClose: () => void;
-  unreadCount?: number;
+  socialUnread?: number;
+  messageUnread?: number;
 };
 
 const links = [
   { href: '/feed', label: 'Kryefaja', Icon: IconHome },
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
-  { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage },
-  { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badge: true },
+  { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badgeKey: 'messages' as const },
+  { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badgeKey: 'social' as const },
   { href: '/komuniteti', label: 'Komuniteti', Icon: IconGlobe },
   { href: '/chat-global', label: 'Chat Global', Icon: IconGlobe },
   { href: '/verifikim', label: 'Verifikim', Icon: IconSettings },
 ];
 
-export function MobileMenu({ open, onClose, unreadCount = 0 }: MobileMenuProps) {
+export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 }: MobileMenuProps) {
   const router = useRouter();
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
@@ -130,9 +131,14 @@ export function MobileMenu({ open, onClose, unreadCount = 0 }: MobileMenuProps) 
                   {Icon === IconHeart && <IconHeart />}
                   {Icon === IconGlobe && <IconGlobe />}
                   {Icon === IconSettings && <IconSettings />}
-                  {item.badge && unreadCount > 0 && (
+                  {item.badgeKey === 'social' && socialUnread > 0 && (
                     <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--danger)] text-white text-[9px] font-bold flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                      {socialUnread > 9 ? '9+' : socialUnread}
+                    </span>
+                  )}
+                  {item.badgeKey === 'messages' && messageUnread > 0 && (
+                    <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[var(--danger)] text-white text-[9px] font-bold flex items-center justify-center">
+                      {messageUnread > 9 ? '9+' : messageUnread}
                     </span>
                   )}
                 </span>

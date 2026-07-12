@@ -1,8 +1,30 @@
 import User from '../models/User.js';
 import Post from '../models/Post.js';
-import Notification from '../models/Notification.js';
-import { notifyUser, buildPushFromNotification } from '../services/pushService.js';
+import { dispatchSocialNotification } from '../services/notificationService.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.js';
+
+const USER_LIST_FIELDS = 'username avatar fullName isVerified isPrivate';
+
+function canViewFollowLists(viewerId, targetUser, isFollowing) {
+  const isOwn = viewerId && viewerId === targetUser._id.toString();
+  if (isOwn) return true;
+  if (!targetUser.isPrivate) return true;
+  return !!isFollowing;
+}
+
+function enrichFollowUsers(list, viewerId, viewerFollowingSet) {
+  return list.map((u) => ({
+    _id: String(u._id),
+    username: u.username,
+    fullName: u.fullName,
+    avatar: u.avatar,
+    isVerified: !!u.isVerified,
+    isPrivate: !!u.isPrivate,
+    isFollowing: viewerFollowingSet?.has(u._id.toString()) ?? false,
+    followRequestPending: false,
+    isOwn: viewerId === u._id.toString(),
+  }));
+}
 
 /**
  * Merr profilin e një përdoruesi (me username)
@@ -12,8 +34,8 @@ export const getProfile = async (req, res) => {
     const { username } = req.params;
     const user = await User.findOne({ username, isBlocked: false })
       .select('-password -verificationToken -resetPasswordToken')
-      .populate('followers', 'username avatar fullName')
-      .populate('following', 'username avatar fullName');
+      .populate('followers', USER_LIST_FIELDS)
+      .populate('following', USER_LIST_FIELDS);
     if (!user) {
       return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
     }
@@ -26,6 +48,7 @@ export const getProfile = async (req, res) => {
       !isFollowing &&
       !isOwnProfile &&
       (user.followRequests || []).some((id) => id.toString() === req.user.id);
+    const canViewLists = canViewFollowLists(req.user?.id, user, isFollowing);
 
     let posts = [];
     let isPrivateLocked = false;
@@ -36,6 +59,20 @@ export const getProfile = async (req, res) => {
         .lean();
     } else {
       isPrivateLocked = true;
+    }
+
+    let followRequests = [];
+    if (isOwnProfile) {
+      const pending = await User.find({ _id: { $in: user.followRequests || [] } })
+        .select(USER_LIST_FIELDS)
+        .lean();
+      followRequests = pending.map((u) => ({
+        _id: String(u._id),
+        username: u.username,
+        fullName: u.fullName,
+        avatar: u.avatar,
+        isVerified: !!u.isVerified,
+      }));
     }
 
     res.json({
@@ -49,8 +86,10 @@ export const getProfile = async (req, res) => {
         location: user.location,
         isVerified: user.isVerified,
         isPrivate: user.isPrivate,
-        followers: user.followers,
-        following: user.following,
+        followersCount: user.followers?.length || 0,
+        followingCount: user.following?.length || 0,
+        followers: canViewLists ? user.followers : undefined,
+        following: canViewLists ? user.following : undefined,
         verifiedSubscription: user.verifiedSubscription,
       },
       posts,
@@ -58,6 +97,8 @@ export const getProfile = async (req, res) => {
       isOwnProfile,
       isPrivateLocked,
       followRequestPending: !!followRequestPending,
+      canViewFollowLists: canViewLists,
+      followRequests,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
@@ -158,26 +199,20 @@ export const toggleFollow = async (req, res) => {
       if (!hasRequested) {
         targetUser.followRequests = targetUser.followRequests || [];
         targetUser.followRequests.push(req.user.id);
-        const notif = await Notification.create({
-          recipient: targetUser._id,
-          sender: req.user.id,
+        void dispatchSocialNotification({
+          recipientId: targetUser._id,
+          senderId: req.user.id,
           type: 'follow',
           text: 'kërkoi të të ndjekë',
-        });
-        void notifyUser(targetUser._id, {
-          push: buildPushFromNotification(notif, req.user.username),
         });
       }
     } else {
       currentUser.following.push(userId);
       targetUser.followers.push(req.user.id);
-      const notif = await Notification.create({
-        recipient: targetUser._id,
-        sender: req.user.id,
+      void dispatchSocialNotification({
+        recipientId: targetUser._id,
+        senderId: req.user.id,
         type: 'follow',
-      });
-      void notifyUser(targetUser._id, {
-        push: buildPushFromNotification(notif, req.user.username),
       });
     }
     await currentUser.save();
@@ -193,7 +228,190 @@ export const toggleFollow = async (req, res) => {
       isFollowing: nowFollowing,
       followRequestPending: requestPending,
       followersCount: targetUser.followers.length,
+      followingCount: currentUser.following.length,
     });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Lista e ndjekësve
+ */
+export const getFollowers = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 30, 50);
+    const q = String(req.query.q || '').trim().toLowerCase();
+
+    const user = await User.findById(userId)
+      .select('followers following isPrivate username')
+      .populate({
+        path: 'followers',
+        select: USER_LIST_FIELDS,
+        options: { sort: { username: 1 } },
+      });
+    if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+
+    const isFollowing = user.followers.some((f) => f._id.toString() === req.user.id);
+    if (!canViewFollowLists(req.user.id, user, isFollowing)) {
+      return res.status(403).json({ message: 'Ky profil është privat.' });
+    }
+
+    let list = user.followers || [];
+    if (q) {
+      list = list.filter(
+        (u) =>
+          u.username?.toLowerCase().includes(q) ||
+          u.fullName?.toLowerCase().includes(q)
+      );
+    }
+    const total = list.length;
+    const skip = (page - 1) * limit;
+    const slice = list.slice(skip, skip + limit);
+    const viewer = await User.findById(req.user.id).select('following').lean();
+    const followingSet = new Set((viewer?.following || []).map((id) => id.toString()));
+    const users = enrichFollowUsers(slice, req.user.id, followingSet);
+
+    res.json({ users, total, page, hasMore: skip + slice.length < total });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Lista e ndjekjeve
+ */
+export const getFollowing = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 30, 50);
+    const q = String(req.query.q || '').trim().toLowerCase();
+
+    const user = await User.findById(userId)
+      .select('followers following isPrivate username')
+      .populate({
+        path: 'following',
+        select: USER_LIST_FIELDS,
+        options: { sort: { username: 1 } },
+      });
+    if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+
+    const viewer = await User.findById(req.user.id).select('following').lean();
+    const isFollowing = (viewer?.following || []).some((id) => id.toString() === userId);
+    if (!canViewFollowLists(req.user.id, user, isFollowing)) {
+      return res.status(403).json({ message: 'Ky profil është privat.' });
+    }
+
+    let list = user.following || [];
+    if (q) {
+      list = list.filter(
+        (u) =>
+          u.username?.toLowerCase().includes(q) ||
+          u.fullName?.toLowerCase().includes(q)
+      );
+    }
+    const total = list.length;
+    const skip = (page - 1) * limit;
+    const slice = list.slice(skip, skip + limit);
+    const followingSet = new Set((viewer?.following || []).map((id) => id.toString()));
+    const users = enrichFollowUsers(slice, req.user.id, followingSet);
+
+    res.json({ users, total, page, hasMore: skip + slice.length < total });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Kërkesat e pritshme për të ndjekur (llogaria private)
+ */
+export const getFollowRequests = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('followRequests').lean();
+    const ids = user?.followRequests || [];
+    if (ids.length === 0) return res.json({ requests: [] });
+
+    const requests = await User.find({ _id: { $in: ids } })
+      .select(USER_LIST_FIELDS)
+      .lean();
+
+    res.json({
+      requests: requests.map((u) => ({
+        _id: String(u._id),
+        username: u.username,
+        fullName: u.fullName,
+        avatar: u.avatar,
+        isVerified: !!u.isVerified,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Prano kërkesë ndjekjeje
+ */
+export const acceptFollowRequest = async (req, res) => {
+  try {
+    const { requesterId } = req.params;
+    const user = await User.findById(req.user.id);
+    const requester = await User.findById(requesterId);
+    if (!user || !requester) {
+      return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+    }
+
+    const hasRequest = (user.followRequests || []).some((id) => id.toString() === requesterId);
+    if (!hasRequest) {
+      return res.status(400).json({ message: 'Kërkesa nuk ekziston.' });
+    }
+
+    user.followRequests = user.followRequests.filter((id) => id.toString() !== requesterId);
+    if (!user.followers.some((id) => id.toString() === requesterId)) {
+      user.followers.push(requesterId);
+    }
+    if (!requester.following.some((id) => id.toString() === user._id.toString())) {
+      requester.following.push(user._id);
+    }
+
+    await user.save();
+    await requester.save();
+
+    void dispatchSocialNotification({
+      recipientId: requesterId,
+      senderId: user._id,
+      type: 'follow',
+      text: 'pranoi kërkesën tënde për ndjekje',
+    });
+
+    res.json({
+      success: true,
+      followersCount: user.followers.length,
+      requestsLeft: user.followRequests.length,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/**
+ * Refuzo kërkesë ndjekjeje
+ */
+export const declineFollowRequest = async (req, res) => {
+  try {
+    const { requesterId } = req.params;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+
+    user.followRequests = (user.followRequests || []).filter(
+      (id) => id.toString() !== requesterId
+    );
+    await user.save();
+
+    res.json({ success: true, requestsLeft: user.followRequests.length });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

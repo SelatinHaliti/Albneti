@@ -1,7 +1,7 @@
 import Story from '../models/Story.js';
 import User from '../models/User.js';
-import Notification from '../models/Notification.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.js';
+import { dispatchSocialNotification } from '../services/notificationService.js';
 
 const STORY_EXPIRY_HOURS = 24;
 
@@ -118,9 +118,9 @@ export const viewStory = async (req, res) => {
       story.views.push(req.user.id);
       await story.save();
       if (story.user.toString() !== req.user.id) {
-        await Notification.create({
-          recipient: story.user,
-          sender: req.user.id,
+        void dispatchSocialNotification({
+          recipientId: story.user,
+          senderId: req.user.id,
           type: 'story_view',
           story: story._id,
         });

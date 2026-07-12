@@ -2,10 +2,10 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
-import Notification from '../models/Notification.js';
 import GlobalChatMessage from '../models/GlobalChatMessage.js';
 import GlobalChatBan from '../models/GlobalChatBan.js';
-import { sendIncomingCallPush, notifyUser, buildPushFromNotification } from '../services/pushService.js';
+import { sendIncomingCallPush } from '../services/pushService.js';
+import { notifyDmInbox } from '../services/messageNotifyService.js';
 
 const userSockets = new Map(); // userId -> Set(socketId)
 const GLOBAL_CHAT_ROOM = 'global-chat';
@@ -97,23 +97,16 @@ export function setupSocketIO(io) {
         await conversation.save();
         const populated = await Message.findById(message._id).populate('sender', 'username avatar');
         io.to(`conv:${conversationId}`).emit('message', populated);
-        io.to(`user:${recipientId}`).emit('new_message_notification', { conversationId, message: populated });
 
-        const notif = await Notification.create({
-          recipient: recipientId,
-          sender: userId,
-          type: 'message',
-          message: message._id,
-          text: (content || '').slice(0, 50) || 'Një mesazh i ri',
-        });
-        const senderName = populated?.sender?.username;
-        void notifyUser(recipientId, {
-          socket: { type: 'message', _id: notif._id, text: notif.text },
-          push: {
-            ...buildPushFromNotification(notif, senderName),
-            url: `/mesazhe/${conversationId}`,
-            tag: `msg-${conversationId}`,
-          },
+        const senderName = populated?.sender?.username || 'Dikush';
+        const preview =
+          (content || '').slice(0, 80) ||
+          (type === 'video' ? '🎬 Video' : type === 'image' ? '📷 Foto' : 'Mesazh i ri');
+        void notifyDmInbox(recipientId, {
+          conversationId,
+          message: populated,
+          senderUsername: senderName,
+          preview,
         });
       } catch (err) {
         socket.emit('error', { message: err.message });

@@ -59,8 +59,13 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const logout = useAuthStore((s) => s.logout);
   const theme = useUIStore((s) => s.theme);
   const toggleTheme = useUIStore((s) => s.toggleTheme);
-  const { unreadNotifications: socketUnread } = useSocket();
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const {
+    unreadNotifications: socialUnread,
+    unreadMessages,
+    refreshNotifications,
+    refreshUnreadMessages,
+    clearNotificationBadge,
+  } = useSocket();
   const [feedDropdownOpen, setFeedDropdownOpen] = useState(false);
   const feedDropdownRefMobile = useRef<HTMLDivElement>(null);
   const feedDropdownRefDesktop = useRef<HTMLDivElement>(null);
@@ -90,15 +95,16 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready || !user) return;
-    api<{ unreadCount: number }>('/api/notifications?limit=1')
-      .then((r) => setUnreadNotifications(r.unreadCount ?? 0))
-      .catch(() => {});
+    if (pathname === '/njoftime') {
+      clearNotificationBadge();
+    } else {
+      void refreshNotifications();
+    }
+    void refreshUnreadMessages();
     import('@/lib/pushNotifications').then((m) => {
       if (m.getNotificationPermission() === 'granted') void m.syncPushSubscriptionIfGranted();
     });
-  }, [user, pathname, socketUnread, ready]);
-
-  const totalUnread = Math.max(unreadNotifications, socketUnread);
+  }, [user, pathname, ready, refreshNotifications, refreshUnreadMessages, clearNotificationBadge]);
 
   if (!ready || !isAuthenticated || !user) {
     return (
@@ -192,12 +198,15 @@ function AppShell({ children }: { children: React.ReactNode }) {
               </button>
               <Link href="/njoftime" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors relative" aria-label="Njoftime">
                 <IconHeart />
-                {totalUnread > 0 && (
+                {socialUnread > 0 && (
                   <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)]" />
                 )}
               </Link>
-              <Link href="/mesazhe" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors" aria-label="Mesazhe">
+              <Link href="/mesazhe" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors relative" aria-label="Mesazhe">
                 <IconMessage />
+                {unreadMessages > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)]" />
+                )}
               </Link>
             </div>
           </header>
@@ -253,18 +262,29 @@ function AppShell({ children }: { children: React.ReactNode }) {
                       </span>
                     )}
                     {Icon === IconGlobe && <IconGlobe />}
-                    {Icon === IconMessage && <IconMessage />}
-                    {navItem.href === '/njoftime' ? (
+                    {navItem.href === '/mesazhe' ? (
+                      <>
+                        <IconMessage />
+                        {unreadMessages > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[var(--danger)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--bg-card)]">
+                            {unreadMessages > 9 ? '9+' : unreadMessages}
+                          </span>
+                        )}
+                      </>
+                    ) : navItem.href === '/njoftime' ? (
                       <>
                         <IconHeart />
-                        {totalUnread > 0 && (
+                        {socialUnread > 0 && (
                           <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-[var(--danger)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--bg-card)]">
-                            {totalUnread > 9 ? '9+' : totalUnread}
+                            {socialUnread > 9 ? '9+' : socialUnread}
                           </span>
                         )}
                       </>
                     ) : (
-                      Icon === IconHeart && <IconHeart />
+                      <>
+                        {Icon === IconMessage && <IconMessage />}
+                        {Icon === IconHeart && <IconHeart />}
+                      </>
                     )}
                   </span>
                   <span className="hidden lg:inline text-[15px]">{navItem.label}</span>
@@ -399,7 +419,12 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
       </div>
-      <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} unreadCount={totalUnread} />
+      <MobileMenu
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        socialUnread={socialUnread}
+        messageUnread={unreadMessages}
+      />
       <CreateMenu open={createMenuOpen} onClose={() => setCreateMenuOpen(false)} />
       <Toaster />
     </>

@@ -1,9 +1,8 @@
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
-import { notifyUser, buildPushFromNotification } from '../services/pushService.js';
 import User from '../models/User.js';
-import Notification from '../models/Notification.js';
 import { uploadToCloudinary } from '../utils/uploadMedia.js';
+import { notifyDmInbox } from '../services/messageNotifyService.js';
 
 /**
  * Merr ose krijo bisedë me një përdorues
@@ -120,27 +119,21 @@ export const sendMessage = async (req, res) => {
     const recipientId = conversation.participants.find(
       (p) => p.toString() !== req.user.id
     );
-    const notif = await Notification.create({
-      recipient: recipientId,
-      sender: req.user.id,
-      type: 'message',
-      message: message._id,
-      text: content?.slice(0, 50) || 'Një mesazh i ri',
-    });
-
-    void notifyUser(recipientId, {
-      socket: { type: 'message', _id: notif._id, text: notif.text },
-      push: {
-        ...buildPushFromNotification(notif, req.user.username),
-        url: `/mesazhe/${conversationId}`,
-        tag: `msg-${conversationId}`,
-      },
-    });
-
     const populated = await Message.findById(message._id).populate(
       'sender',
       'username avatar'
     );
+    const preview =
+      content?.slice(0, 80) ||
+      (message.type === 'image' ? '📷 Foto' : message.type === 'video' ? '🎬 Video' : 'Mesazh i ri');
+
+    void notifyDmInbox(recipientId, {
+      conversationId,
+      message: populated,
+      senderUsername: req.user.username,
+      preview,
+    });
+
     res.status(201).json({ success: true, message: populated });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });

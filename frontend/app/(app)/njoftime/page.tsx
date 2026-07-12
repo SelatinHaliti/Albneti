@@ -1,32 +1,26 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useAuthReady } from '@/hooks/useAuthReady';
+import { useSocket, type SocialNotification } from '@/components/SocketProvider';
 
-type Notification = {
-  _id: string;
-  type: string;
-  isRead: boolean;
-  sender?: { _id: string; username: string; avatar?: string; fullName?: string };
+type Notification = SocialNotification & {
   post?: string | { _id: string };
-  event?: string;
-  text?: string;
-  createdAt: string;
 };
 
 const EVENT_TYPES = ['event_interest', 'event_reminder', 'event_update', 'event_promo'];
 
 const typeLabels: Record<string, string> = {
   like: 'pelqeu postimin tënd',
-  comment: 'komentoi',
+  comment: 'komentoi postimin tënd',
   follow: 'të ndoqi',
   mention: 'të përmendi',
   share: 'ndau postimin tënd',
   story_view: 'shikoi story-n tënd',
-  message: 'dërgoi një mesazh',
   event_interest: 'regjistrim eventi',
   event_reminder: 'kujtesë eventi',
   event_update: 'përditësim eventi',
@@ -41,7 +35,6 @@ const typeIcons: Record<string, string> = {
   mention: '@',
   share: '↗️',
   story_view: '👁',
-  message: '✉️',
   event_interest: '✅',
   event_reminder: '🔔',
   event_update: '📅',
@@ -60,7 +53,31 @@ function timeAgo(date: string): string {
   return d.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' });
 }
 
+function getActionLabel(n: Notification): string {
+  if (n.type === 'follow' && n.text?.includes('kërkoi')) return 'kërkoi të të ndjekë';
+  if (n.type === 'mention' && n.text) return n.text;
+  return typeLabels[n.type] || n.type;
+}
+
+function getPostId(n: Notification): string | null {
+  if (!n.post) return null;
+  if (typeof n.post === 'object') return String((n.post as { _id: string })._id);
+  return String(n.post);
+}
+
+function getNotificationHref(n: Notification): string | null {
+  const postId = getPostId(n);
+  if (postId) return `/post/${postId}`;
+  if (EVENT_TYPES.includes(n.type)) return '/komuniteti';
+  if (n.type === 'verification') return '/verifikim';
+  if (n.type === 'follow' && n.sender?.username) return `/profili/${n.sender.username}`;
+  return null;
+}
+
 export default function NotificationsPage() {
+  const router = useRouter();
+  const { ready, isAuthenticated } = useAuthReady();
+  const { socket, lastNotification, refreshNotifications, clearNotificationBadge } = useSocket();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -70,29 +87,69 @@ export default function NotificationsPage() {
   useDocumentTitle('Njoftime');
 
   const loadNotifications = useCallback(async () => {
+    if (!isAuthenticated) return;
     setError(null);
     setLoading(true);
     try {
-      const res = await api<{ notifications: Notification[]; unreadCount: number }>('/api/notifications?limit=50');
+      const res = await api<{ notifications: Notification[]; unreadCount: number }>(
+        '/api/notifications?limit=50',
+        { timeout: 90000 }
+      );
       setNotifications(res.notifications || []);
       setUnreadCount(res.unreadCount || 0);
-    } catch (_) {
+      clearNotificationBadge();
+    } catch (e) {
       setNotifications([]);
-      setError('Nuk u ngarkuan njoftimet. Provo përsëri.');
+      const msg = e instanceof Error ? e.message : 'Gabim i panjohur';
+      setError(msg.includes('kyçur') || msg.includes('Sesioni')
+        ? 'Sesioni ka skaduar. Kyçu përsëri.'
+        : msg || 'Nuk u ngarkuan njoftimet. Provo përsëri.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated, clearNotificationBadge]);
 
   useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+    if (!ready) return;
+    if (!isAuthenticated) {
+      router.replace('/kycu');
+      return;
+    }
+    void loadNotifications();
+    void refreshNotifications();
+  }, [ready, isAuthenticated, router, loadNotifications, refreshNotifications]);
+
+  useEffect(() => {
+    if (!lastNotification || lastNotification.type === 'message') return;
+    setNotifications((prev) => {
+      if (prev.some((n) => n._id === lastNotification._id)) return prev;
+      return [lastNotification as Notification, ...prev].slice(0, 50);
+    });
+    setUnreadCount((c) => c + 1);
+  }, [lastNotification]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const onNotif = (payload: Notification) => {
+      if (!payload || payload.type === 'message') return;
+      setNotifications((prev) => {
+        if (prev.some((n) => n._id === payload._id)) return prev;
+        return [payload, ...prev].slice(0, 50);
+      });
+      setUnreadCount((c) => c + 1);
+    };
+    socket.on('notification', onNotif);
+    return () => {
+      socket.off('notification', onNotif);
+    };
+  }, [socket]);
 
   const markAllRead = async () => {
     try {
       await api('/api/notifications/lexo-te-gjitha', { method: 'PUT' });
       setNotifications((n) => n.map((x) => ({ ...x, isRead: true })));
       setUnreadCount(0);
+      clearNotificationBadge();
     } catch (_) {}
   };
 
@@ -104,13 +161,61 @@ export default function NotificationsPage() {
     } catch (_) {}
   };
 
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const isFollowRequest = (n: Notification) =>
+    n.type === 'follow' && n.text?.includes('kërkoi');
+
+  const handleAcceptRequest = async (n: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!n.sender?._id) return;
+    setActionLoading(n._id);
+    try {
+      await api(`/api/users/me/kerkesa-ndjekje/${n.sender._id}/prano`, { method: 'POST' });
+      if (!n.isRead) await markOneRead(n._id);
+      setNotifications((list) => list.filter((x) => x._id !== n._id));
+      setUnreadCount((c) => Math.max(0, c - (n.isRead ? 0 : 1)));
+    } catch (_) {}
+    finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeclineRequest = async (n: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!n.sender?._id) return;
+    setActionLoading(n._id);
+    try {
+      await api(`/api/users/me/kerkesa-ndjekje/${n.sender._id}/refuzo`, { method: 'POST' });
+      if (!n.isRead) await markOneRead(n._id);
+      setNotifications((list) => list.filter((x) => x._id !== n._id));
+      setUnreadCount((c) => Math.max(0, c - (n.isRead ? 0 : 1)));
+    } catch (_) {}
+    finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openNotification = async (n: Notification) => {
+    if (!n.isRead) await markOneRead(n._id);
+    const href = getNotificationHref(n);
+    if (href) router.push(href);
+  };
+
   const filtered = filter === 'te-palexuara'
     ? notifications.filter((n) => !n.isRead)
     : notifications;
 
+  if (!ready || !isAuthenticated) {
+    return (
+      <div className="mobile-page max-w-[560px] mx-auto min-h-screen flex items-center justify-center">
+        <p className="text-[var(--text-muted)] text-sm">Duke u ngarkuar...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mobile-page max-w-[560px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
-      {/* Header */}
       <div className="sticky top-0 z-10 ig-nav-bar border-b border-[var(--border)] px-5 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-[22px] font-bold text-[var(--text)] tracking-tight">Njoftime</h1>
@@ -124,7 +229,9 @@ export default function NotificationsPage() {
             </button>
           )}
         </div>
-        {/* Filter pills */}
+        <p className="text-[12px] text-[var(--text-muted)] mt-1">
+          Pëlqime, komente, ndjekje — mesazhet shkojnë te Mesazhe
+        </p>
         <div className="flex gap-2 mt-3">
           {[
             { key: 'te-gjitha' as const, label: 'Të gjitha' },
@@ -172,129 +279,137 @@ export default function NotificationsPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center py-20 text-center px-4"
           >
-            <div className="w-16 h-16 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center mb-4 shadow-[var(--shadow-sm)]">
-              <svg className="w-8 h-8 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
-            </div>
             <p className="text-[15px] font-medium text-[var(--text)] mb-1">{error}</p>
-            <p className="text-[13px] text-[var(--text-muted)] mb-5">Kontrollo lidhjen dhe provo përsëri.</p>
+            <p className="text-[13px] text-[var(--text-muted)] mb-5">
+              Nëse serveri po zgjohet, prit 30–60 sekonda.
+            </p>
             <button
               type="button"
               onClick={loadNotifications}
-              className="px-6 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold hover:opacity-90 shadow-md shadow-[var(--primary)]/20 transition-opacity"
+              className="px-6 py-2.5 rounded-xl bg-[var(--primary)] text-white text-[14px] font-semibold hover:opacity-90"
             >
               Provo përsëri
             </button>
           </motion.div>
         ) : filtered.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center py-20 text-center"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center mb-4 shadow-[var(--shadow-sm)]">
-              <svg className="w-8 h-8 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-              </svg>
-            </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-20 text-center">
             <p className="text-[15px] font-medium text-[var(--text)]">
               {filter === 'te-palexuara' ? 'Nuk keni njoftime të palexuara' : 'Nuk keni njoftime ende'}
             </p>
-            <p className="text-[13px] text-[var(--text-muted)] mt-1.5 max-w-[260px] leading-relaxed">
-              {filter === 'te-palexuara'
-                ? 'Kur të keni të reja, ato do të shfaqen këtu.'
-                : 'Kur dikush të pelqen, komentojë ose të ndiqë, do të shfaqet këtu.'}
+            <p className="text-[13px] text-[var(--text-muted)] mt-1.5 max-w-[260px]">
+              Kur dikush të pelqen, komentojë ose të ndiqë, do të shfaqet këtu.
             </p>
           </motion.div>
         ) : (
           <div className="space-y-0.5">
             {filtered.map((n, i) => (
-              <motion.div
+              isFollowRequest(n) ? (
+                <motion.div
+                  key={n._id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  className={`flex items-center gap-3 p-3 rounded-2xl ${
+                    n.isRead ? '' : 'bg-[var(--primary-soft)]'
+                  }`}
+                >
+                  <button type="button" onClick={() => n.sender?.username && router.push(`/profili/${n.sender.username}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                    <img
+                      src={n.sender?.avatar || ''}
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover bg-[var(--border)]"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          'https://api.dicebear.com/7.x/avataaars/svg?seed=' + n.sender?.username;
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[14px] text-[var(--text)]">
+                        <span className="font-semibold">{n.sender?.username}</span>
+                        <span className="text-[var(--text-muted)]"> {getActionLabel(n)}</span>
+                      </p>
+                      <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">{timeAgo(n.createdAt)}</p>
+                    </div>
+                  </button>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      disabled={actionLoading === n._id}
+                      onClick={(e) => handleAcceptRequest(n, e)}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-50"
+                    >
+                      Prano
+                    </button>
+                    <button
+                      type="button"
+                      disabled={actionLoading === n._id}
+                      onClick={(e) => handleDeclineRequest(n, e)}
+                      className="px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--text)] text-[12px] font-semibold disabled:opacity-50"
+                    >
+                      Refuzo
+                    </button>
+                  </div>
+                </motion.div>
+              ) : (
+              <motion.button
                 key={n._id}
+                type="button"
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.025 }}
-                className={`flex items-center gap-3 p-3 rounded-2xl transition-colors cursor-pointer ${
-                  n.isRead
-                    ? 'hover:bg-[var(--bg-card)]'
-                    : 'bg-[var(--primary-soft)] hover:bg-[var(--primary-glow)]'
+                transition={{ delay: i * 0.02 }}
+                onClick={() => openNotification(n)}
+                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-colors text-left ${
+                  n.isRead ? 'hover:bg-[var(--bg-card)]' : 'bg-[var(--primary-soft)] hover:bg-[var(--primary-glow)]'
                 }`}
-                onClick={() => !n.isRead && markOneRead(n._id)}
               >
-                {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   {n.sender ? (
-                    <Link href={`/profili/${n.sender.username}`} onClick={() => markOneRead(n._id)}>
-                      <img
-                        src={n.sender.avatar || ''}
-                        alt=""
-                        className="w-12 h-12 rounded-full object-cover bg-[var(--border)] ring-2 ring-[var(--bg)]"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + n.sender?.username;
-                        }}
-                      />
-                    </Link>
+                    <img
+                      src={n.sender.avatar || ''}
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover bg-[var(--border)] ring-2 ring-[var(--bg)]"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          'https://api.dicebear.com/7.x/avataaars/svg?seed=' + n.sender?.username;
+                      }}
+                    />
                   ) : EVENT_TYPES.includes(n.type) ? (
                     <div className="w-12 h-12 rounded-full bg-[var(--albanian-red)]/15 flex items-center justify-center text-xl">
                       {typeIcons[n.type] || '📅'}
                     </div>
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-[var(--border)] flex items-center justify-center text-[var(--text-muted)] text-sm font-medium">
-                      ?
-                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[var(--border)] flex items-center justify-center text-sm">?</div>
                   )}
                   <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center text-[10px]">
                     {typeIcons[n.type] || '🔔'}
                   </span>
                 </div>
-
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] text-[var(--text)] leading-snug">
                     {EVENT_TYPES.includes(n.type) ? (
-                      <span className="font-semibold text-[var(--text)]">AlbNet Komuniteti</span>
-                    ) : n.sender ? (
-                      <Link href={`/profili/${n.sender.username}`} className="font-semibold hover:underline" onClick={() => markOneRead(n._id)}>
-                        {n.sender.username}
-                      </Link>
+                      <span className="font-semibold">AlbNet Komuniteti</span>
                     ) : (
-                      <span className="font-semibold">Dikush</span>
+                      <span className="font-semibold">{n.sender?.username || 'Dikush'}</span>
                     )}
                     {!EVENT_TYPES.includes(n.type) && (
-                      <>
-                        {' '}
-                        <span className="text-[var(--text-muted)]">{typeLabels[n.type] || n.type}</span>
-                      </>
+                      <span className="text-[var(--text-muted)]"> {getActionLabel(n)}</span>
                     )}
-                    {n.text && <span className="text-[var(--text-muted)]">{EVENT_TYPES.includes(n.type) ? n.text : ` — ${n.text}`}</span>}
+                    {n.text && EVENT_TYPES.includes(n.type) && (
+                      <span className="text-[var(--text-muted)]"> — {n.text}</span>
+                    )}
+                    {n.text && n.type === 'comment' && (
+                      <span className="text-[var(--text-muted)]">: {n.text}</span>
+                    )}
                   </p>
-                  <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">
-                    {timeAgo(n.createdAt)}
-                  </p>
+                  <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">{timeAgo(n.createdAt)}</p>
                 </div>
-
-                {/* Post / event link or unread dot */}
-                {n.post ? (
-                  <Link
-                    href={`/post/${typeof n.post === 'object' && n.post && '_id' in n.post ? n.post._id : n.post}`}
-                    className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[var(--primary)] bg-[var(--primary-soft)] hover:bg-[var(--primary)]/15 transition-colors"
-                    onClick={() => markOneRead(n._id)}
-                  >
-                    Shiko
-                  </Link>
-                ) : EVENT_TYPES.includes(n.type) ? (
-                  <Link
-                    href="/komuniteti"
-                    className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[var(--primary)] bg-[var(--primary-soft)] hover:bg-[var(--primary)]/15 transition-colors"
-                    onClick={() => markOneRead(n._id)}
-                  >
-                    Evente
-                  </Link>
-                ) : !n.isRead ? (
+                {!n.isRead ? (
                   <span className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-[var(--primary)]" />
+                ) : getNotificationHref(n) ? (
+                  <span className="flex-shrink-0 text-[var(--text-muted)]">›</span>
                 ) : null}
-              </motion.div>
+              </motion.button>
+              )
             ))}
           </div>
         )}

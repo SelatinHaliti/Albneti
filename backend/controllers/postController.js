@@ -1,6 +1,6 @@
 import Post from '../models/Post.js';
 import User from '../models/User.js';
-import Notification from '../models/Notification.js';
+import { dispatchSocialNotification } from '../services/notificationService.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.js';
 import { parseMentionsFromCaption } from '../utils/mentions.js';
 import { rankPosts } from '../services/feedAlgorithm.js';
@@ -65,9 +65,9 @@ export const createPost = async (req, res) => {
     });
     for (const mentioned of mentionUsers) {
       if (mentioned._id.toString() !== req.user.id) {
-        await Notification.create({
-          recipient: mentioned._id,
-          sender: req.user.id,
+        void dispatchSocialNotification({
+          recipientId: mentioned._id,
+          senderId: req.user.id,
           type: 'mention',
           post: post._id,
           text: 'të përmendi në një postim',
@@ -333,9 +333,9 @@ export const toggleLike = async (req, res) => {
     } else {
       post.likes.push(req.user.id);
       if (post.user.toString() !== req.user.id) {
-        await Notification.create({
-          recipient: post.user,
-          sender: req.user.id,
+        void dispatchSocialNotification({
+          recipientId: post.user,
+          senderId: req.user.id,
           type: 'like',
           post: post._id,
         });
@@ -363,9 +363,9 @@ export const addComment = async (req, res) => {
     post.comments.push(comment);
     await post.save();
     if (post.user.toString() !== req.user.id) {
-      await Notification.create({
-        recipient: post.user,
-        sender: req.user.id,
+      void dispatchSocialNotification({
+        recipientId: post.user,
+        senderId: req.user.id,
         type: 'comment',
         post: post._id,
         comment: post.comments[post.comments.length - 1]._id,
@@ -488,9 +488,9 @@ export const sharePost = async (req, res) => {
     if (!post.shares.some((id) => id.toString() === req.user.id)) {
       post.shares.push(req.user.id);
       if (post.user.toString() !== req.user.id) {
-        await Notification.create({
-          recipient: post.user,
-          sender: req.user.id,
+        void dispatchSocialNotification({
+          recipientId: post.user,
+          senderId: req.user.id,
           type: 'share',
           post: post._id,
         });

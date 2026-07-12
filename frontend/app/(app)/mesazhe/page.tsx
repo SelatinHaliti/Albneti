@@ -1,39 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
-import { useAuthStore } from '@/store/useAuthStore';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useAuthReady } from '@/hooks/useAuthReady';
+import { useSocket } from '@/components/SocketProvider';
 
 type Conversation = {
   _id: string;
   participants: { _id: string; username: string; avatar?: string; fullName?: string }[];
   lastMessageAt: string;
   lastMessage?: { content: string; sender: string };
+  unreadCount?: number;
 };
 
 export default function MessagesPage() {
-  const user = useAuthStore((s) => s.user);
+  const { ready, isAuthenticated, user } = useAuthReady();
+  const { socket, refreshUnreadMessages } = useSocket();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useDocumentTitle('Mesazhe');
 
+  const loadConversations = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoading(true);
+    try {
+      const res = await api<{ conversations: Conversation[] }>('/api/messages', { timeout: 90000 });
+      setConversations(res.conversations || []);
+      void refreshUnreadMessages();
+    } catch (_) {
+      setConversations([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, refreshUnreadMessages]);
+
   useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const res = await api<{ conversations: Conversation[] }>('/api/messages');
-        setConversations(res.conversations || []);
-      } catch (_) {
-        setConversations([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [user]);
+    if (!ready || !isAuthenticated) return;
+    void loadConversations();
+  }, [ready, isAuthenticated, loadConversations]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const onNew = () => { void loadConversations(); };
+    socket.on('new_message_notification', onNew);
+    return () => { socket.off('new_message_notification', onNew); };
+  }, [socket, loadConversations]);
 
   const getOther = (c: Conversation) => c.participants?.find((p) => p._id !== user?.id);
 
@@ -94,18 +109,25 @@ export default function MessagesPage() {
                     }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[14px] text-[var(--text)] truncate">
+                    <p className={`text-[14px] truncate ${c.unreadCount ? 'font-bold text-[var(--text)]' : 'font-semibold text-[var(--text)]'}`}>
                       {other?.username}
                     </p>
-                    <p className="text-[13px] text-[var(--text-muted)] truncate">
+                    <p className={`text-[13px] truncate ${c.unreadCount ? 'text-[var(--text)] font-medium' : 'text-[var(--text-muted)]'}`}>
                       {c.lastMessage?.content || 'Bisedë e re'}
                     </p>
                   </div>
-                  <span className="text-[11px] text-[var(--text-secondary)] flex-shrink-0">
-                    {c.lastMessageAt
-                      ? new Date(c.lastMessageAt).toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' })
-                      : ''}
-                  </span>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className="text-[11px] text-[var(--text-secondary)]">
+                      {c.lastMessageAt
+                        ? new Date(c.lastMessageAt).toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' })
+                        : ''}
+                    </span>
+                    {c.unreadCount ? (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--primary)] text-white text-[10px] font-bold flex items-center justify-center">
+                        {c.unreadCount > 9 ? '9+' : c.unreadCount}
+                      </span>
+                    ) : null}
+                  </div>
                 </motion.div>
               </Link>
             );

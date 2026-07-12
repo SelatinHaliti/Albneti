@@ -3,6 +3,7 @@
 import { useEffect, createContext, useContext, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore, getAuthToken } from '@/store/useAuthStore';
+import { api } from '@/utils/api';
 
 const SOCKET_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -12,18 +13,37 @@ const SOCKET_URL =
     ? 'https://albneti-api.onrender.com'
     : 'http://localhost:5000');
 
+export type SocialNotification = {
+  _id: string;
+  type: string;
+  isRead?: boolean;
+  sender?: { _id: string; username: string; avatar?: string; fullName?: string };
+  post?: string;
+  event?: string;
+  text?: string;
+  createdAt: string;
+};
+
 type SocketContextType = {
   socket: Socket | null;
   isConnected: boolean;
   unreadNotifications: number;
-  bumpNotifications: () => void;
+  unreadMessages: number;
+  lastNotification: SocialNotification | null;
+  refreshNotifications: () => Promise<void>;
+  refreshUnreadMessages: () => Promise<void>;
+  clearNotificationBadge: () => void;
 };
 
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,
   unreadNotifications: 0,
-  bumpNotifications: () => {},
+  unreadMessages: 0,
+  lastNotification: null,
+  refreshNotifications: async () => {},
+  refreshUnreadMessages: async () => {},
+  clearNotificationBadge: () => {},
 });
 
 export function useSocket() {
@@ -36,10 +56,37 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [lastNotification, setLastNotification] = useState<SocialNotification | null>(null);
 
-  const bumpNotifications = useCallback(() => {
-    setUnreadNotifications((n) => n + 1);
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const res = await api<{ unreadCount: number }>('/api/notifications?limit=1');
+      setUnreadNotifications(res.unreadCount ?? 0);
+    } catch {
+      /* ignore */
+    }
   }, []);
+
+  const refreshUnreadMessages = useCallback(async () => {
+    try {
+      const res = await api<{ conversations: { unreadCount?: number }[] }>('/api/messages');
+      const total = (res.conversations || []).reduce((s, c) => s + (c.unreadCount || 0), 0);
+      setUnreadMessages(total);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const clearNotificationBadge = useCallback(() => {
+    setUnreadNotifications(0);
+  }, []);
+
+  useEffect(() => {
+    if (!token && !getAuthToken()) return;
+    void refreshNotifications();
+    void refreshUnreadMessages();
+  }, [token, hasHydrated, refreshNotifications, refreshUnreadMessages]);
 
   useEffect(() => {
     const authToken = token || getAuthToken();
@@ -57,20 +104,40 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       reconnectionDelay: 1000,
     });
     setSocket(s);
-    s.on('connect', () => setIsConnected(true));
+    s.on('connect', () => {
+      setIsConnected(true);
+      void refreshNotifications();
+      void refreshUnreadMessages();
+    });
     s.on('disconnect', () => setIsConnected(false));
-    s.on('notification', () => {
+    s.on('notification', (payload?: SocialNotification) => {
+      if (!payload || payload.type === 'message') return;
       setUnreadNotifications((n) => n + 1);
+      setLastNotification(payload);
+    });
+    s.on('new_message_notification', () => {
+      setUnreadMessages((n) => n + 1);
     });
     return () => {
       s.close();
       setSocket(null);
       setIsConnected(false);
     };
-  }, [token, hasHydrated]);
+  }, [token, hasHydrated, refreshNotifications, refreshUnreadMessages]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected, unreadNotifications, bumpNotifications }}>
+    <SocketContext.Provider
+      value={{
+        socket,
+        isConnected,
+        unreadNotifications,
+        unreadMessages,
+        lastNotification,
+        refreshNotifications,
+        refreshUnreadMessages,
+        clearNotificationBadge,
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );

@@ -79,8 +79,9 @@ export async function sendPushToUser(userId, payload) {
 }
 
 /** Socket + push njëkohësisht */
-export async function notifyUser(userId, { socket, push }) {
-  if (socket) emitNotification(String(userId), socket);
+export async function notifyUser(userId, { socket, push, notification }) {
+  const payload = notification || socket;
+  if (payload) emitNotification(String(userId), payload);
   if (push) await sendPushToUser(String(userId), push);
 }
 
@@ -101,7 +102,10 @@ export function buildPushFromNotification(notif, senderUsername) {
     event_promo: { title: 'AlbNet', body: notif.text || 'Lajm nga komuniteti', url: '/komuniteti' },
   };
   const base = map[notif.type] || { title: 'AlbNet', body: notif.text || 'Njoftim i ri', url: '/njoftime' };
-  if (notif.text && notif.type === 'message') base.body = `${user}: ${notif.text}`;
+  if (notif.text && notif.type === 'comment') base.body = `${user} komentoi: ${notif.text}`;
+  if (notif.post && ['like', 'comment', 'share', 'mention'].includes(notif.type)) {
+    base.url = `/post/${notif.post}`;
+  }
   return {
     ...base,
     tag: `notif-${notif.type}`,
