@@ -630,7 +630,7 @@ export async function sendMarketingTestEmail(to) {
 export async function getMarketingStats() {
   await resetStuckMarketingRuns();
   const weekKey = getWeekKey();
-  const [lastRun, optedIn, optedOut, eligible, totalWithEmail, runningJob] = await Promise.all([
+  const [lastRun, optedIn, optedOut, eligible, totalWithEmail, runningJob, smtpCheck] = await Promise.all([
     MarketingRun.findOne().sort({ createdAt: -1 }).lean(),
     User.countDocuments({ marketingEmailsOptIn: { $ne: false }, isBlocked: false }),
     User.countDocuments({ marketingEmailsOptIn: false }),
@@ -648,10 +648,12 @@ export async function getMarketingStats() {
       username: { $ne: SYSTEM_USERNAME },
     }),
     MarketingRun.findOne({ status: 'running' }).sort({ createdAt: -1 }).lean(),
+    verifySmtpConnection({ timeoutMs: 6000, useCache: true }),
   ]);
   return {
     smtpConfigured: isSmtpConfigured(),
-    smtpVerified: (await verifySmtpConnection()).ok,
+    smtpVerified: smtpCheck.ok,
+    smtpError: smtpCheck.ok ? undefined : smtpCheck.error,
     currentWeekKey: weekKey,
     lastRun,
     runningBlast: runningJob

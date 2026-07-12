@@ -78,14 +78,25 @@ export default function AdminMarketingPage() {
   const [result, setResult] = useState<string | null>(null);
   const [activeRunKey, setActiveRunKey] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
   const MAX_POLL_TICKS = 200;
 
   const load = useCallback(() => {
-    api<MarketingStats>('/api/marketing/admin/stats')
-      .then(setStats)
-      .catch(() => setStats(null));
+    setStatsLoading(true);
+    setStatsError(null);
+    api<MarketingStats>('/api/marketing/admin/stats', { timeout: 90000 })
+      .then((data) => {
+        setStats(data);
+        setStatsError(null);
+      })
+      .catch((err) => {
+        setStats(null);
+        setStatsError(err instanceof Error ? err.message : 'Nuk u ngarkuan statistikat.');
+      })
+      .finally(() => setStatsLoading(false));
   }, []);
 
   const loadPreview = useCallback(async () => {
@@ -296,7 +307,32 @@ export default function AdminMarketingPage() {
     }
   };
 
-  if (!stats) return <p className="text-gray-500">Duke ngarkuar...</p>;
+  if (statsLoading && !stats) {
+    return (
+      <div className="space-y-4">
+        <p className="text-gray-500">Duke ngarkuar AlbNet Ads...</p>
+        <p className="text-xs text-gray-400">Nëse zgjat më shumë se 1 minutë, serveri po zgjohet (Render free).</p>
+      </div>
+    );
+  }
+
+  if (statsError && !stats) {
+    return (
+      <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/5 space-y-3">
+        <p className="font-semibold text-red-700 dark:text-red-300">Nuk u ngarkua paneli i marketing</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{statsError}</p>
+        <button
+          type="button"
+          onClick={load}
+          className="px-4 py-2 rounded-lg bg-[#0095f6] text-white text-sm font-semibold"
+        >
+          Provo përsëri
+        </button>
+      </div>
+    );
+  }
+
+  if (!stats) return null;
 
   const theme = preview?.theme;
   const aiProvider = preview?.ai?.provider || stats.ai?.provider || 'smart';

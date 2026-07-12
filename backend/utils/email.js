@@ -43,17 +43,37 @@ function getTransporter() {
 }
 
 /** Verifikon SMTP një herë (për test/diagnostikë) */
-export async function verifySmtpConnection() {
+let smtpVerifyCache = null;
+const SMTP_VERIFY_CACHE_MS = 5 * 60 * 1000;
+
+export async function verifySmtpConnection({ timeoutMs = 8000, useCache = true } = {}) {
   const transporter = getTransporter();
   if (!transporter) return { ok: false, error: 'SMTP nuk është konfiguruar.' };
+
+  if (useCache && smtpVerifyCache && Date.now() - smtpVerifyCache.at < SMTP_VERIFY_CACHE_MS) {
+    return smtpVerifyCache.result;
+  }
+
   try {
-    if (!verifyPromise) {
-      verifyPromise = transporter.verify().finally(() => { verifyPromise = null; });
-    }
-    await verifyPromise;
-    return { ok: true };
+    const verifyTask = (async () => {
+      if (!verifyPromise) {
+        verifyPromise = transporter.verify().finally(() => { verifyPromise = null; });
+      }
+      await verifyPromise;
+      return { ok: true };
+    })();
+
+    const timeoutTask = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('SMTP verify timeout')), timeoutMs);
+    });
+
+    const result = await Promise.race([verifyTask, timeoutTask]);
+    smtpVerifyCache = { at: Date.now(), result };
+    return result;
   } catch (err) {
-    return { ok: false, error: normalizeMailerError(err) };
+    const result = { ok: false, error: normalizeMailerError(err) };
+    smtpVerifyCache = { at: Date.now(), result };
+    return result;
   }
 }
 
