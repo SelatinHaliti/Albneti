@@ -33,7 +33,7 @@ import { initMonitoring, errorHandler } from './middleware/monitoring.js';
 import { seedCommunityEvents } from './services/eventSeed.js';
 import { runScheduledEventPromos } from './services/eventAdsService.js';
 import { runWeeklyMarketingEmails, resetStuckMarketingRuns } from './services/marketingEmailService.js';
-import { isSmtpConfigured, isEmailConfigured } from './utils/email.js';
+import { isSmtpConfigured, isEmailConfigured, getBlastDeliveryInfo } from './utils/email.js';
 import { isStripeConfigured } from './services/stripeService.js';
 
 connectDB().then(() => {
@@ -143,11 +143,14 @@ app.get('/api/health', async (req, res) => {
   const dbOk = dbState === 1;
   const status = dbOk ? 'ok' : 'degraded';
   const statusCode = dbOk ? 200 : 503;
+  const email = getBlastDeliveryInfo();
   res.status(statusCode).json({
     status,
     message: dbOk ? 'AlbNet API është aktiv' : 'Baza e të dhënave nuk është e lidhur',
     db: dbOk ? 'connected' : 'disconnected',
     smtpConfigured: isEmailConfigured(),
+    blastReady: email.blastReady,
+    blastVia: email.blastVia,
     stripeConfigured: isStripeConfigured(),
     timestamp: new Date().toISOString(),
   });

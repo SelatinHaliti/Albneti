@@ -21,6 +21,9 @@ type MarketingStats = {
   emailProvider?: 'resend' | 'smtp' | null;
   resendNeedsDomain?: boolean;
   deliveryNote?: string | null;
+  blastReady?: boolean;
+  blastProvider?: 'smtp' | 'resend';
+  blastVia?: string;
   currentWeekKey: string;
   optedIn: number;
   optedOut: number;
@@ -347,17 +350,29 @@ export default function AdminMarketingPage() {
         <p className="text-sm text-gray-500">Gjenero marketing profesional me AI dhe dërgo me 1 klik</p>
       </div>
 
-      {stats.resendNeedsDomain && (
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 text-sm space-y-2">
-          <p className="font-bold">⚠️ Resend: domain nuk është verifikuar</p>
-          <p>{stats.deliveryNote || 'Blast-i përdor Gmail SMTP derisa të verifikosh domain në resend.com/domains.'}</p>
-          <p className="text-xs">
-            Pas verifikimit, vendos në Render: <code className="text-xs">RESEND_FROM=AlbNet &lt;noreply@domaini-yt.com&gt;</code>
-          </p>
+      {stats.blastReady && (
+        <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/40 text-green-800 dark:text-green-200 text-sm">
+          <p className="font-bold">✅ Blast gati për dërgim</p>
+          <p>Përdoret <strong>{stats.blastVia || 'Gmail SMTP'}</strong> për të dërguar te përdoruesit aktivë.</p>
         </div>
       )}
 
-      {!stats.smtpConfigured && (
+      {stats.resendNeedsDomain && stats.blastReady && (
+        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/40 text-blue-900 dark:text-blue-200 text-sm space-y-1">
+          <p className="font-semibold">ℹ️ Resend (opsionale)</p>
+          <p className="text-xs">{stats.deliveryNote}</p>
+          <p className="text-xs">Për dërgim më të shpejtë: verifiko domain në resend.com/domains → vendos RESEND_FROM në Render.</p>
+        </div>
+      )}
+
+      {stats.resendNeedsDomain && !stats.blastReady && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 text-sm space-y-2">
+          <p className="font-bold">⚠️ Email nuk është gati për blast</p>
+          <p>Vendos SMTP_HOST, SMTP_USER, SMTP_PASS në Render, ose verifiko domain në Resend.</p>
+        </div>
+      )}
+
+      {!stats.smtpConfigured && !stats.blastReady && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/40 text-red-800 dark:text-red-200 text-sm space-y-2">
           <p className="font-bold">❌ Email nuk është konfiguruar në production (Render)</p>
           <p>Vendos <strong>RESEND_API_KEY</strong> ose SMTP_* në Render Dashboard → albneti-api → Environment.</p>
@@ -365,10 +380,11 @@ export default function AdminMarketingPage() {
         </div>
       )}
 
-      {stats.smtpConfigured && stats.smtpError && (
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 text-sm">
-          <p className="font-bold">⚠️ SMTP: {stats.smtpError}</p>
-          <p className="text-xs mt-1">Provo &quot;Dërgo test&quot; poshtë për të verifikuar dërgimin real.</p>
+      {stats.smtpError && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/40 text-red-800 dark:text-red-200 text-sm">
+          <p className="font-bold">❌ Dërgimi i fundit dështoi</p>
+          <p className="text-xs mt-1">{stats.smtpError}</p>
+          <p className="text-xs mt-1">Provo &quot;Dërgo test&quot; poshtë përpara blast-it.</p>
         </div>
       )}
 
@@ -420,7 +436,7 @@ export default function AdminMarketingPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              disabled={blasting || !stats.smtpConfigured}
+              disabled={blasting || !stats.blastReady}
               onClick={sendActiveNow}
               className="px-6 py-3 rounded-xl bg-[#c41e3a] text-white font-bold text-sm shadow-lg disabled:opacity-50"
             >
@@ -428,7 +444,7 @@ export default function AdminMarketingPage() {
             </button>
             <button
               type="button"
-              disabled={blasting || !stats.smtpConfigured}
+              disabled={blasting || !stats.blastReady}
               onClick={aiBlast}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#0095f6] to-[#0077cc] text-white font-bold text-sm shadow-lg disabled:opacity-50"
             >
@@ -457,15 +473,11 @@ export default function AdminMarketingPage() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
           <p className="text-xs text-gray-500">Email</p>
-          <p className={`text-lg font-bold ${stats.smtpConfigured && stats.smtpVerified !== false ? 'text-green-600' : stats.smtpConfigured ? 'text-amber-600' : 'text-red-600'}`}>
-            {stats.smtpConfigured
-              ? stats.smtpVerified === false
-                ? '⚠️ SMTP'
-                : stats.emailProvider === 'resend'
-                  ? '✅ Resend'
-                  : stats.resendNeedsDomain
-                    ? '✅ Gmail SMTP'
-                    : '✅ SMTP'
+          <p className={`text-lg font-bold ${stats.blastReady ? 'text-green-600' : 'text-red-600'}`}>
+            {stats.blastReady
+              ? stats.blastVia === 'Resend'
+                ? '✅ Resend'
+                : '✅ Gmail SMTP'
               : '❌ Jo'}
           </p>
         </div>
@@ -498,7 +510,7 @@ export default function AdminMarketingPage() {
           />
           <button
             type="button"
-            disabled={testing || !stats.smtpConfigured || !testEmail.trim()}
+            disabled={testing || !stats.blastReady || !testEmail.trim()}
             onClick={sendTest}
             className="px-4 py-2 rounded-lg border font-semibold text-sm disabled:opacity-50"
           >

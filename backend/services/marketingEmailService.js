@@ -4,7 +4,7 @@ import Post from '../models/Post.js';
 import Event from '../models/Event.js';
 import LiveStream from '../models/LiveStream.js';
 import MarketingRun from '../models/MarketingRun.js';
-import { sendAlbnetAdsEmail, isEmailConfigured, resetSmtpTransporter, getEmailProvider, getEmailDeliveryInfo, verifySmtpConnection } from '../utils/email.js';
+import { sendAlbnetAdsEmail, isEmailConfigured, resetSmtpTransporter, resetResendSession, getEmailProvider, getBlastDeliveryInfo } from '../utils/email.js';
 import { generateMarketingTheme, getAiMarketingStatus } from './aiMarketingService.js';
 
 const BATCH_SIZE = 5;
@@ -172,6 +172,9 @@ async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey
     );
     return { sent: 0, failed: users.length, skipped: 0, total: users.length, lastError: err };
   }
+
+  resetResendSession();
+  resetSmtpTransporter();
 
   const minEmailGap = new Date(Date.now() - MIN_DAYS_BETWEEN_EMAILS * 86400000);
   let sent = 0;
@@ -642,16 +645,7 @@ export async function sendMarketingTestEmail(to) {
 export async function getMarketingStats() {
   await resetStuckMarketingRuns();
   const weekKey = getWeekKey();
-  const delivery = getEmailDeliveryInfo();
-  let smtpVerified = delivery.smtpConfigured;
-  let smtpError = null;
-  if (delivery.smtpConfigured) {
-    const verify = await verifySmtpConnection({ timeoutMs: 20000, useCache: true });
-    smtpVerified = verify.ok;
-    if (!verify.ok) smtpError = verify.error;
-  } else if (delivery.resendNeedsDomain) {
-    smtpError = delivery.deliveryNote;
-  }
+  const blast = getBlastDeliveryInfo();
   const [lastRun, optedIn, optedOut, eligible, totalWithEmail, runningJob] = await Promise.all([
     MarketingRun.findOne().sort({ createdAt: -1 }).lean(),
     User.countDocuments({ marketingEmailsOptIn: { $ne: false }, isBlocked: false }),
@@ -673,10 +667,13 @@ export async function getMarketingStats() {
   ]);
   return {
     smtpConfigured: isEmailConfigured(),
-    smtpVerified,
-    smtpError,
+    smtpVerified: blast.blastReady,
+    smtpError: lastRun?.errorMessage && (lastRun.failedCount || 0) > 0 && !(lastRun.sentCount || 0) ? lastRun.errorMessage : null,
+    blastReady: blast.blastReady,
+    blastProvider: blast.blastProvider,
+    blastVia: blast.blastVia,
     emailProvider: getEmailProvider(),
-    ...delivery,
+    ...blast,
     currentWeekKey: weekKey,
     lastRun,
     runningBlast: runningJob

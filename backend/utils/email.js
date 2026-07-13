@@ -14,18 +14,20 @@ const createTransporter = () => {
 
   const isGmail = host === 'smtp.gmail.com' || user.endsWith('@gmail.com');
   if (isGmail) {
+    const useAlt = process.env.SMTP_USE_ALT_PORT === 'true';
     return nodemailer.createTransport({
       pool: true,
       maxConnections: 1,
-      maxMessages: 100,
+      maxMessages: 50,
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: useAlt ? 587 : 465,
+      secure: !useAlt,
+      requireTLS: useAlt,
       family: 4,
       auth: { user, pass },
-      connectionTimeout: 120000,
-      greetingTimeout: 60000,
-      socketTimeout: 120000,
+      connectionTimeout: 90000,
+      greetingTimeout: 45000,
+      socketTimeout: 90000,
       tls: { minVersion: 'TLSv1.2' },
     });
   }
@@ -75,9 +77,26 @@ export function getEmailDeliveryInfo() {
     resendConfigured: hasResendKey,
     smtpConfigured: hasSmtp,
     deliveryNote: resendNeedsDomain
-      ? 'Resend onboarding@resend.dev dërgon vetëm te llogaria Resend. Blast përdor Gmail SMTP derisa të verifikosh domain.'
+      ? 'Blast përdor Gmail SMTP. Resend aktivizohet vetëm pas verifikimit të domain-it.'
       : null,
   };
+}
+
+/** Gati për blast marketing (SMTP ose Resend me domain të verifikuar) */
+export function getBlastDeliveryInfo() {
+  const delivery = getEmailDeliveryInfo();
+  const blastProvider = delivery.resendNeedsDomain ? 'smtp' : (delivery.provider || 'smtp');
+  const blastReady = delivery.smtpConfigured || isResendFromVerifiedDomain();
+  return {
+    ...delivery,
+    blastProvider,
+    blastReady,
+    blastVia: blastProvider === 'smtp' ? 'Gmail SMTP' : 'Resend',
+  };
+}
+
+export function resetResendSession() {
+  resendSessionBlocked = false;
 }
 
 export function getEmailProvider() {
@@ -225,15 +244,19 @@ async function sendMail({ to, subject, html }) {
     try {
       const sendTask = transporter.sendMail(mailOptions);
       const timeoutTask = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('send timeout')), 60000);
+        setTimeout(() => reject(new Error('send timeout')), 45000);
       });
       await Promise.race([sendTask, timeoutTask]);
       return { ok: true, provider: 'smtp' };
     } catch (err) {
       const error = normalizeMailerError(err);
-      if (attempt < maxAttempts && isRetryableSmtpError(err)) {
+      const retryable = isRetryableSmtpError(err);
+      if (attempt < maxAttempts && retryable) {
+        if (attempt === 1 && (process.env.SMTP_USER || '').includes('@gmail.com')) {
+          process.env.SMTP_USE_ALT_PORT = process.env.SMTP_USE_ALT_PORT === 'true' ? 'false' : 'true';
+        }
         resetSmtpTransporter();
-        await sleep(2000 * attempt);
+        await sleep(1500 * attempt);
         continue;
       }
       return { ok: false, error };
