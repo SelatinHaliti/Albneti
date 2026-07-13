@@ -203,8 +203,8 @@ export default function FeedPage() {
         </div>
       )}
 
-      {feedMode !== 'following' && <TrendingShqip />}
-      <MobileAlbanianBanner />
+      {feedMode !== 'following' && <div className="hidden md:block"><TrendingShqip /></div>}
+      <div className="hidden md:block"><MobileAlbanianBanner /></div>
 
       {loading ? (
         <div className="space-y-5 pb-6 pt-4 px-3">

@@ -153,7 +153,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <Link
         href="/feed"
         onClick={() => setFeedDropdownOpen(false)}
-        className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'for_you' ? 'font-semibold text-[var(--text)] bg-[var(--primary-soft)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}
+        className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'for_you' ? 'font-semibold text-[var(--text)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}
       >
         <span className="w-6 h-6 rounded-full bg-[var(--ig-gradient)] flex items-center justify-center text-white text-[11px] font-bold">P</span>
         Për ty
@@ -161,7 +161,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <Link
         href="/feed?feed=following"
         onClick={() => setFeedDropdownOpen(false)}
-        className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'following' ? 'font-semibold text-[var(--text)] bg-[var(--primary-soft)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}
+        className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'following' ? 'font-semibold text-[var(--text)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}
       >
         <span className="w-6 h-6 rounded-full border-2 border-[var(--text)] flex items-center justify-center text-[11px] font-bold">N</span>
         Ndiqet
@@ -174,7 +174,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <div className={`min-h-screen flex flex-col md:flex-row overflow-x-hidden max-w-[100vw] ${isReelsPage ? 'bg-black' : 'bg-[var(--bg)]'}`}>
         {/* ── Mobile top bar ── */}
         {!showGlobalMobileHeader ? null : (
-          <header className="md:hidden fixed top-0 left-0 right-0 h-[52px] px-4 grid grid-cols-[1fr_auto] items-center ig-nav-bar border-b z-50 safe-area-pt">
+          <header className="md:hidden fixed top-0 left-0 right-0 h-[var(--mobile-header-h)] px-4 grid grid-cols-[1fr_auto] items-center ig-nav-bar border-b z-50 safe-area-pt">
             <div className="flex items-center justify-start min-h-[52px] relative" ref={feedDropdownRefMobile}>
               {pathname === '/feed' ? (
                 <>
@@ -204,40 +204,30 @@ function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </div>
             <div className="flex items-center justify-end gap-0 mobile-header-actions">
-              {!isLiveSection && (
-              <Link
-                href="/live"
-                className="ig-touch rounded-full hover:bg-[var(--primary-soft)] transition-colors relative text-[var(--text)]"
-                aria-label="Live"
-              >
-                <IconLive active={false} />
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)] animate-pulse-live" />
+              <Link href="/njoftime" className="ig-touch text-[var(--text)] relative" aria-label="Njoftime">
+                <IconHeart />
+                {socialUnread > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)]" />
+                )}
               </Link>
-              )}
+              <Link href="/mesazhe" className="ig-touch text-[var(--text)] relative" aria-label="Mesazhe">
+                <IconMessage />
+                {unreadMessages > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)]" />
+                )}
+              </Link>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
-                className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors"
-                aria-label="Hap menunë"
+                className="ig-touch text-[var(--text)]"
+                aria-label="Më shumë"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="4" y1="7" x2="20" y2="7" />
-                  <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="4" y1="17" x2="20" y2="17" />
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="1.75" />
+                  <circle cx="12" cy="12" r="1.75" />
+                  <circle cx="12" cy="19" r="1.75" />
                 </svg>
               </button>
-              <Link href="/njoftime" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors relative" aria-label="Njoftime">
-                <IconHeart />
-                {socialUnread > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)]" />
-                )}
-              </Link>
-              <Link href="/mesazhe" className="ig-touch text-[var(--text)] rounded-full hover:bg-[var(--primary-soft)] transition-colors relative" aria-label="Mesazhe">
-                <IconMessage />
-                {unreadMessages > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--bg-card)]" />
-                )}
-              </Link>
             </div>
           </header>
         )}
@@ -286,7 +276,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
               const renderIcon = () => {
                 if (Icon === IconHome) return <IconHome active={isActive} />;
-                if (Icon === IconSearch) return <IconSearch />;
+                if (Icon === IconSearch) return <IconSearch active={isActive} />;
                 if (Icon === IconReels) return <IconReels active={isActive} />;
                 if (Icon === IconLive) return <IconLive active={isActive || (navItem.href === '/live' && isLiveSection)} />;
                 if (Icon === IconCommunity) return <IconCommunity active={isActive} />;
@@ -319,10 +309,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 </>
               );
 
-              const linkClass = `desktop-sidebar-link group flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 rounded-xl transition-all duration-150 md:justify-center lg:justify-start min-h-[40px] lg:min-h-[42px] ${
+              const linkClass = `desktop-sidebar-link group flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 rounded-lg transition-opacity duration-150 md:justify-center lg:justify-start min-h-[48px] lg:min-h-[48px] ${
                 isActive
-                  ? 'text-[var(--text)] font-bold bg-[var(--primary-soft)]'
-                  : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
+                  ? 'desktop-sidebar-link--active text-[var(--text)]'
+                  : 'text-[var(--text)]'
               }`;
 
               if ('isCreate' in navItem && navItem.isCreate) {
@@ -354,23 +344,23 @@ function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={toggleTheme}
-              className="desktop-sidebar-link w-full flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[40px] rounded-xl text-[var(--text)] hover:bg-[var(--primary-soft)] transition-colors md:justify-center lg:justify-start"
+              className="desktop-sidebar-link w-full flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[48px] rounded-lg text-[var(--text)] transition-opacity md:justify-center lg:justify-start"
             >
               <span className="flex-shrink-0">{theme === 'dark' ? <IconSun /> : <IconMoon />}</span>
               <span className="hidden lg:inline text-[14px]">{theme === 'dark' ? 'Ndriço' : 'Errëso'}</span>
             </button>
             {(user.role === 'admin' || user.role === 'moderator') && (
-              <Link href="/admin" className="desktop-sidebar-link flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[40px] rounded-xl text-[var(--text)] hover:bg-[var(--primary-soft)] transition-colors md:justify-center lg:justify-start">
+              <Link href="/admin" className="desktop-sidebar-link flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[48px] rounded-lg text-[var(--text)] transition-opacity md:justify-center lg:justify-start">
                 <span className="flex-shrink-0"><IconSettings /></span>
                 <span className="hidden lg:inline text-[14px]">Admin</span>
               </Link>
             )}
             <Link
               href={`/profili/${user.username}`}
-              className={`desktop-sidebar-link flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[40px] rounded-xl transition-colors md:justify-center lg:justify-start ${
+              className={`desktop-sidebar-link flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[48px] rounded-lg transition-opacity md:justify-center lg:justify-start ${
                 pathname.startsWith('/profili')
-                  ? 'font-bold text-[var(--text)] bg-[var(--primary-soft)]'
-                  : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
+                  ? 'desktop-sidebar-link--active text-[var(--text)]'
+                  : 'text-[var(--text)]'
               }`}
             >
               <img
@@ -384,7 +374,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => { logout(); router.push('/'); }}
-              className="desktop-sidebar-link w-full flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[40px] rounded-xl text-[var(--text-muted)] hover:bg-[var(--primary-soft)] hover:text-[var(--danger)] transition-colors md:justify-center lg:justify-start"
+              className="desktop-sidebar-link w-full flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[48px] rounded-lg text-[var(--text-muted)] hover:text-[var(--danger)] transition-opacity md:justify-center lg:justify-start"
               aria-label="Dil nga llogaria"
               title="Dil"
             >
@@ -415,7 +405,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         {/* ── Mobile bottom nav ── */}
         {!isLiveFullscreen && !isStoryViewer && (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-          <div className={`pointer-events-auto flex items-center justify-around ${isReelsPage ? 'h-[56px] bg-black/85 backdrop-blur-xl border-t border-white/10 safe-area-pb px-2' : 'liquid-nav-pill'}`}>
+          <div className={`pointer-events-auto flex items-center justify-around ${isReelsPage ? 'h-[50px] bg-black border-t border-white/10 safe-area-pb px-1' : 'ig-bottom-bar'}`}>
           {bottomNavItems.map((item) => {
             const isActive = item.icon === 'avatar'
               ? pathname.startsWith('/profili')
@@ -460,7 +450,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 ) : (
                   <span className="flex items-center justify-center">
                     {item.Icon === IconHome && <IconHome active={isActive} />}
-                    {item.Icon === IconSearch && <IconSearch />}
+                    {item.Icon === IconSearch && <IconSearch active={isActive} />}
                     {item.Icon === IconReels && <IconReels active={isActive} />}
                   </span>
                 )}

@@ -41,9 +41,10 @@
   --glass-blur-heavy: 48px;
   --liquid-highlight: rgba(255, 255, 255, 0.45);
   --liquid-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
-  --mobile-header-h: 52px;
-  --mobile-nav-h: 60px;
-  --mobile-nav-gap: 10px;
+  --mobile-header-h: 44px;
+  --mobile-nav-h: 50px;
+  --mobile-nav-gap: 0px;
+  --ig-like: #ed4956;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -184,6 +185,16 @@ body {
   min-height: var(--mobile-nav-h);
 }
 
+/* Instagram-style flat bottom bar */
+.ig-bottom-bar {
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  min-height: var(--mobile-nav-h);
+  padding: 0 8px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: none;
+}
+
 /* ─── Albanian identity card ─── */
 .albanian-card {
   background: var(--bg-glass);
@@ -202,18 +213,17 @@ body {
 
 /* ─── Post block ─── */
 .post-block {
-  background: var(--bg-glass);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  background: var(--bg-card);
   border: none;
   border-radius: 0;
   overflow: hidden;
 }
 @media (min-width: 768px) {
   .post-block {
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-sm);
+    box-shadow: none;
   }
 }
 
@@ -231,8 +241,8 @@ body {
   border-radius: 50%;
   background: var(--ig-gradient-ring);
   flex-shrink: 0;
-  width: 66px;
-  height: 66px;
+  width: 62px;
+  height: 62px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,8 +344,9 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .mobile-menu-panel {
+  background: var(--bg-card);
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
-  border-left: 1px solid var(--border-glass);
+  border-left: 1px solid var(--border);
 }
 
 @media (max-width: 767px) {
@@ -354,9 +365,9 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
     width: 58px;
     height: 58px;
   }
-  .liquid-nav-pill {
-    margin-left: 6px;
-    margin-right: 6px;
+  .ig-bottom-bar {
+    padding-left: 4px;
+    padding-right: 4px;
   }
   .verify-plan-card {
     padding: 14px;
@@ -649,10 +660,17 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .ig-nav-bar {
-  background: var(--bg-glass-strong);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  background: var(--bg-card);
   border-color: var(--border);
+}
+
+.desktop-sidebar-link--active {
+  font-weight: 700;
+}
+
+.desktop-sidebar-link:not(.desktop-sidebar-link--active):hover {
+  background: transparent;
+  opacity: 0.65;
 }
 
 /* Desktop sidebar – pa scroll, të gjitha linket të dukshme */
@@ -760,9 +778,7 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .ig-dropdown {
-  background: var(--bg-glass-strong);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow-lg);
@@ -1196,14 +1212,26 @@ body.is-desktop-app .install-banner { display: none; }
     radial-gradient(ellipse 50% 35% at 80% 80%, rgba(237,73,86,0.08) 0%, transparent 65%);
 }
 
-/* Teksti ALBNET në header — ngjyrë fikse, pa gradient */
+/* Teksti ALBNET në header — stil si Instagram */
 .albnet-wordmark {
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 800;
+  font-size: 1.15em;
+  letter-spacing: -0.04em;
   color: #262626;
 }
 .dark .albnet-wordmark {
   color: #f5f5f5;
+}
+
+.ig-post-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ig-liked {
+  color: var(--ig-like) !important;
 }
 .ig-btn-follow {
   padding: 7px 16px;

@@ -286,7 +286,7 @@ export function PostCard(props: {
       {/* Share modal */}
       {showShareModal && (
         <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center ig-modal-overlay" onClick={() => setShowShareModal(false)}>
-          <div className="w-full max-w-[400px] liquid-glass-strong rounded-t-2xl sm:rounded-2xl p-5 pb-8 safe-area-pb" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-[400px] bg-[var(--bg-card)] rounded-t-2xl sm:rounded-2xl p-5 pb-8 safe-area-pb border border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto mb-4 sm:hidden" />
             <p className="text-[15px] font-semibold text-[var(--text)] mb-4">Ndaj postimin</p>
             <div className="space-y-1">
@@ -387,9 +387,9 @@ export function PostCard(props: {
 
       {/* Actions & caption */}
       <div className="px-3 pt-2 pb-3">
-        <div className="flex items-center mb-1.5">
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={handleLike} className={`transition-all ${liked ? 'text-[var(--primary)]' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
+        <div className="flex items-center mb-2">
+          <div className="ig-post-actions">
+            <button type="button" onClick={handleLike} className={`p-1 -ml-1 transition-opacity ${liked ? 'ig-liked' : 'text-[var(--text)] hover:opacity-60'}`} aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
               <IconHeart filled={liked} />
             </button>
             <button
@@ -401,16 +401,16 @@ export function PostCard(props: {
                   setCommentOpen(true);
                 }
               }}
-              className="text-[var(--text)] hover:opacity-70 transition-opacity"
+              className="p-1 text-[var(--text)] hover:opacity-60 transition-opacity"
               aria-label="Komentet"
             >
               <IconComment />
             </button>
-            <button type="button" onClick={handleShareClick} className="text-[var(--text)] hover:opacity-70 transition-opacity" aria-label="Ndaj">
+            <button type="button" onClick={handleShareClick} className="p-1 text-[var(--text)] hover:opacity-60 transition-opacity" aria-label="Ndaj">
               <IconShare />
             </button>
           </div>
-          <button type="button" onClick={handleSave} className={`ml-auto transition-all ${saved ? 'text-[var(--text)]' : 'text-[var(--text)] hover:opacity-70'}`} aria-label={saved ? 'Hiq nga të ruajturat' : 'Ruaj'}>
+          <button type="button" onClick={handleSave} className="p-1 ml-auto text-[var(--text)] hover:opacity-60 transition-opacity" aria-label={saved ? 'Hiq nga të ruajturat' : 'Ruaj'}>
             <IconBookmark filled={saved} />
           </button>
         </div>

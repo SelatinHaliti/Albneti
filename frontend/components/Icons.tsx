@@ -20,7 +20,14 @@ export function IconHome({ active }: { active?: boolean }) {
   );
 }
 
-export function IconSearch() {
+export function IconSearch({ active }: { active?: boolean }) {
+  if (active) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+        <path fillRule="evenodd" clipRule="evenodd" d="M3.5 11a7.5 7.5 0 1 1 15 0 7.5 7.5 0 0 1-15 0Zm7.5-9.5a9.5 9.5 0 1 0 6.32 16.61l3.57 3.57 1.42-1.41-3.57-3.57A9.5 9.5 0 0 0 11 1.5Z" />
+      </svg>
+    );
+  }
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
@@ -93,9 +100,16 @@ export function IconLive({ active }: { active?: boolean }) {
 }
 
 export function IconHeart({ filled }: { filled?: boolean }) {
+  if (filled) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M16.792 3.904A4.989 4.989 0 0 0 12 6.225 4.989 4.989 0 0 0 7.208 3.9c-2.674 0-4.88 2.18-4.88 4.87 0 4.143 4.435 7.49 9.672 11.91 5.237-4.42 9.672-7.767 9.672-11.91 0-2.69-2.206-4.87-4.88-4.87Z" />
+      </svg>
+    );
+  }
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16.792 3.904A4.989 4.989 0 0 0 12 6.225 4.989 4.989 0 0 0 7.208 3.9c-2.674 0-4.88 2.18-4.88 4.87 0 4.143 4.435 7.49 9.672 11.91 5.237-4.42 9.672-7.767 9.672-11.91 0-2.69-2.206-4.87-4.88-4.87Z" />
     </svg>
   );
 }
@@ -103,7 +117,7 @@ export function IconHeart({ filled }: { filled?: boolean }) {
 export function IconComment() {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <path d="M20.656 17.008a9.993 9.993 0 1 0-3.59 3.615L22 22Z" />
     </svg>
   );
 }
@@ -111,9 +125,8 @@ export function IconComment() {
 export function IconShare() {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-      <polyline points="16 6 12 2 8 6" />
-      <line x1="12" y1="2" x2="12" y2="15" />
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
     </svg>
   );
 }
@@ -200,11 +213,7 @@ export function IconNotification() {
 export function IconMessage({ filled }: { filled?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke={filled ? 'none' : stroke} strokeWidth={filled ? 0 : strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      {filled ? (
-        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-      ) : (
-        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-      )}
+      <path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM7 9h10v2H7V9zm0 4h7v2H7v-2z" />
     </svg>
   );
 }

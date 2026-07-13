@@ -82,11 +82,9 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
       />
       <div
         ref={panelRef}
-        className="mobile-menu-panel absolute right-0 top-0 bottom-0 w-[min(100vw-48px,320px)] liquid-glass-ultra flex flex-col safe-area-pt safe-area-pb"
+        className="mobile-menu-panel absolute right-0 top-0 bottom-0 w-[min(100vw-48px,320px)] flex flex-col safe-area-pt safe-area-pb"
       >
-        <div className="liquid-shine" aria-hidden />
-
-        <div className="relative z-10 flex items-center justify-between px-4 py-4 border-b border-[var(--border-glass)]">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-3 min-w-0">
             <img
               src={user.avatar || ''}
@@ -114,7 +112,7 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
           </button>
         </div>
 
-        <nav className="relative z-10 flex-1 overflow-y-auto py-2 px-2">
+        <nav className="flex-1 overflow-y-auto py-2 px-2">
           {links.map((item) => {
             const isActive = pathname === item.href
               || (item.href === '/explore' && pathname.startsWith('/explore'))
@@ -125,13 +123,13 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-colors ${
-                  isActive ? 'bg-[var(--primary-soft)] text-[var(--text)] font-semibold' : 'text-[var(--text)] hover:bg-[var(--primary-soft)]'
-                } ${'highlight' in item && item.highlight ? 'border border-[var(--danger)]/30' : ''}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[15px] transition-opacity ${
+                  isActive ? 'font-semibold text-[var(--text)]' : 'font-medium text-[var(--text)] hover:opacity-70'
+                } ${'highlight' in item && item.highlight ? '' : ''}`}
               >
                 <span className="relative flex-shrink-0 w-6 flex justify-center">
                   {Icon === IconHome && <IconHome active={isActive} />}
-                  {Icon === IconSearch && <IconSearch />}
+                  {Icon === IconSearch && <IconSearch active={isActive} />}
                   {Icon === IconReels && <IconReels active={isActive} />}
                   {Icon === IconLive && <IconLive active={isActive} />}
                   {Icon === IconMessage && <IconMessage />}
@@ -161,7 +159,7 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
           <Link
             href="/profili/redakto"
             onClick={onClose}
-            className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-medium text-[var(--text)] hover:bg-[var(--primary-soft)]"
+            className="flex items-center gap-3 px-4 py-3.5 rounded-lg text-[15px] font-medium text-[var(--text)] hover:opacity-70"
           >
             <span className="w-6 flex justify-center"><IconSettings /></span>
             Redakto profilin
@@ -171,7 +169,7 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
             <Link
               href="/admin"
               onClick={onClose}
-              className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-medium text-[var(--text)] hover:bg-[var(--primary-soft)]"
+              className="flex items-center gap-3 px-4 py-3.5 rounded-lg text-[15px] font-medium text-[var(--text)] hover:opacity-70"
             >
               <span className="w-6 flex justify-center"><IconSettings /></span>
               Admin
@@ -179,11 +177,11 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
           )}
         </nav>
 
-        <div className="relative z-10 p-3 border-t border-[var(--border-glass)] space-y-1">
+        <div className="p-3 border-t border-[var(--border)] space-y-1">
           <button
             type="button"
             onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-medium text-[var(--text)] hover:bg-[var(--primary-soft)]"
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-lg text-[15px] font-medium text-[var(--text)] hover:opacity-70"
           >
             <span className="w-6 flex justify-center">{theme === 'dark' ? <IconSun /> : <IconMoon />}</span>
             {theme === 'dark' ? 'Ndriço ekranin' : 'Errëso ekranin'}
@@ -191,7 +189,7 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-[15px] font-semibold text-[var(--danger)] hover:bg-[var(--primary-soft)] bg-[var(--primary-soft)]/50"
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-lg text-[15px] font-semibold text-[var(--danger)] hover:opacity-80"
           >
             <span className="w-6 flex justify-center"><IconLogout /></span>
             Dil nga llogaria
