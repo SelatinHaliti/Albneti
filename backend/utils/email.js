@@ -54,6 +54,7 @@ export function isRenderSmtpBlocked() {
 
 export function isResendFromVerifiedDomain() {
   const from = process.env.RESEND_FROM?.trim() || 'AlbNet <onboarding@resend.dev>';
+  if (resendDomainCache?.from && !/@resend\.dev/i.test(resendDomainCache.from)) return true;
   return Boolean(process.env.RESEND_API_KEY?.trim().startsWith('re_')) && !/@resend\.dev/i.test(from);
 }
 
@@ -221,10 +222,51 @@ async function sendViaBrevo({ to, subject, html }) {
   }
 }
 
+/** Zbulon domain të verifikuar në Resend dhe përditëson RESEND_FROM automatikisht */
+let resendDomainCache = null;
+const RESEND_DOMAIN_CACHE_MS = 10 * 60 * 1000;
+
+export async function resolveResendFromAddress() {
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key?.startsWith('re_')) return null;
+
+  const manualFrom = process.env.RESEND_FROM?.trim();
+  if (manualFrom && !/@resend\.dev/i.test(manualFrom)) return manualFrom;
+
+  if (resendDomainCache && Date.now() - resendDomainCache.at < RESEND_DOMAIN_CACHE_MS) {
+    return resendDomainCache.from;
+  }
+
+  try {
+    const res = await fetch('https://api.resend.com/domains', {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) return manualFrom || 'AlbNet <onboarding@resend.dev>';
+    const data = await res.json();
+    const verified = (data?.data || []).find((d) => d.status === 'verified');
+    if (verified?.name) {
+      const from = `AlbNet <noreply@${verified.name}>`;
+      resendDomainCache = { at: Date.now(), from };
+      return from;
+    }
+  } catch {
+    /* ignore */
+  }
+  return manualFrom || 'AlbNet <onboarding@resend.dev>';
+}
+
+export async function refreshResendDomainStatus() {
+  resendDomainCache = null;
+  resendSessionBlocked = false;
+  const from = await resolveResendFromAddress();
+  const verified = Boolean(from && !/@resend\.dev/i.test(from));
+  return { from, verified };
+}
+
 async function sendViaResend({ to, subject, html }) {
   const key = process.env.RESEND_API_KEY?.trim();
   if (!key?.startsWith('re_')) return null;
-  const fromAddr = process.env.RESEND_FROM?.trim() || 'AlbNet <onboarding@resend.dev>';
+  const fromAddr = await resolveResendFromAddress();
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -267,24 +309,31 @@ async function sendMail({ to, subject, html }) {
     process.env.SMTP_FROM ||
     (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
 
-  if (shouldTryResend()) {
-    const resendResult = await sendViaResend({ to, subject, html });
-    if (resendResult?.ok) return resendResult;
-    if (isResendDomainRestrictionError(resendResult)) resendSessionBlocked = true;
-  }
-
+  // 1) Brevo HTTP API – funksionon në Render FREE (pa SMTP)
   if (process.env.BREVO_API_KEY?.trim()) {
     const brevoResult = await sendViaBrevo({ to, subject, html });
     if (brevoResult?.ok) return brevoResult;
     if (!isSmtpConfigured() || isRenderSmtpBlocked()) return brevoResult;
   }
 
+  // 2) Resend HTTP API – kërkon domain të verifikuar për blast
+  if (shouldTryResend()) {
+    const resendResult = await sendViaResend({ to, subject, html });
+    if (resendResult?.ok) return resendResult;
+    if (isResendDomainRestrictionError(resendResult)) resendSessionBlocked = true;
+  }
+
   if (isRenderSmtpBlocked()) {
-    return {
-      ok: false,
-      error:
-        'Render FREE bllokon Gmail SMTP. Zgjidh: (1) Verifiko domain në resend.com/domains, (2) Brevo API falas te brevo.com, (3) Upgrade Render Starter.',
-    };
+    const hasResend = Boolean(process.env.RESEND_API_KEY?.trim().startsWith('re_'));
+    const hasBrevo = Boolean(process.env.BREVO_API_KEY?.trim());
+    let error =
+      'Render FREE bllokon Gmail SMTP. Zgjidh: (1) Brevo API falas te brevo.com, (2) Verifiko domain në resend.com/domains, (3) Upgrade Render Starter.';
+    if (hasResend && !isResendFromVerifiedDomain()) {
+      error = 'Resend: verifiko domain në resend.com/domains (onboarding@resend.dev dërgon vetëm te emaili i llogarisë). Ose vendos BREVO_API_KEY.';
+    } else if (!hasBrevo && !hasResend) {
+      error = 'Email nuk është konfiguruar në Render. Vendos BREVO_API_KEY ose RESEND_API_KEY + domain.';
+    }
+    return { ok: false, error };
   }
 
   const mailOptions = { from, to, subject, html };

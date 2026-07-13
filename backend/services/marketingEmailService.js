@@ -4,7 +4,7 @@ import Post from '../models/Post.js';
 import Event from '../models/Event.js';
 import LiveStream from '../models/LiveStream.js';
 import MarketingRun from '../models/MarketingRun.js';
-import { sendAlbnetAdsEmail, isEmailConfigured, resetSmtpTransporter, resetResendSession, getEmailProvider, getBlastDeliveryInfo } from '../utils/email.js';
+import { sendAlbnetAdsEmail, isEmailConfigured, resetSmtpTransporter, resetResendSession, getEmailProvider, getBlastDeliveryInfo, refreshResendDomainStatus } from '../utils/email.js';
 import { generateMarketingTheme, getAiMarketingStatus } from './aiMarketingService.js';
 
 const BATCH_SIZE = 5;
@@ -642,6 +642,7 @@ export async function sendMarketingTestEmail(to) {
 
 export async function getMarketingStats() {
   await resetStuckMarketingRuns();
+  await refreshResendDomainStatus().catch(() => ({}));
   const weekKey = getWeekKey();
   const blast = getBlastDeliveryInfo();
   const [lastRun, optedIn, optedOut, eligible, totalWithEmail, runningJob] = await Promise.all([

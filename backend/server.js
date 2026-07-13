@@ -33,11 +33,14 @@ import { initMonitoring, errorHandler } from './middleware/monitoring.js';
 import { seedCommunityEvents } from './services/eventSeed.js';
 import { runScheduledEventPromos } from './services/eventAdsService.js';
 import { runWeeklyMarketingEmails, resetStuckMarketingRuns } from './services/marketingEmailService.js';
-import { isSmtpConfigured, isEmailConfigured, getBlastDeliveryInfo } from './utils/email.js';
+import { isSmtpConfigured, isEmailConfigured, getBlastDeliveryInfo, refreshResendDomainStatus } from './utils/email.js';
 import { isStripeConfigured } from './services/stripeService.js';
 
 connectDB().then(() => {
   void initMonitoring();
+  void refreshResendDomainStatus().then((r) => {
+    if (r.verified) console.log('Resend: domain i verifikuar –', r.from);
+  }).catch(() => {});
   seedCommunityEvents();
   resetStuckMarketingRuns().catch(() => {});
   setTimeout(() => runScheduledEventPromos().catch(() => {}), 15000);
