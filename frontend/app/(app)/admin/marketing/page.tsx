@@ -457,13 +457,15 @@ export default function AdminMarketingPage() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
           <p className="text-xs text-gray-500">Email</p>
-          <p className={`text-lg font-bold ${stats.smtpConfigured ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-lg font-bold ${stats.smtpConfigured && stats.smtpVerified !== false ? 'text-green-600' : stats.smtpConfigured ? 'text-amber-600' : 'text-red-600'}`}>
             {stats.smtpConfigured
-              ? stats.emailProvider === 'resend'
-                ? '✅ Resend'
-                : stats.resendNeedsDomain
-                  ? '✅ Gmail SMTP'
-                  : '✅ SMTP'
+              ? stats.smtpVerified === false
+                ? '⚠️ SMTP'
+                : stats.emailProvider === 'resend'
+                  ? '✅ Resend'
+                  : stats.resendNeedsDomain
+                    ? '✅ Gmail SMTP'
+                    : '✅ SMTP'
               : '❌ Jo'}
           </p>
         </div>

@@ -20,7 +20,7 @@ const KEYS = {
   SMTP_PASS: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
   SMTP_FROM: process.env.SMTP_FROM || (process.env.SMTP_USER ? `AlbNet <${process.env.SMTP_USER}>` : ''),
   RESEND_API_KEY: process.env.RESEND_API_KEY,
-  RESEND_FROM: process.env.RESEND_FROM || 'AlbNet <onboarding@resend.dev>',
+  ...(process.env.RESEND_FROM ? { RESEND_FROM: process.env.RESEND_FROM } : {}),
   EMAIL_USE_SMTP_FALLBACK: 'true',
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   FRONTEND_URL: process.env.FRONTEND_URL || 'https://albneti.vercel.app',

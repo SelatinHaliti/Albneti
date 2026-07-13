@@ -33,7 +33,7 @@ export function CallControlButton({
         onClick={onClick}
         disabled={disabled}
         aria-label={ariaLabel}
-        className={`call-ctrl-btn ig-touch ${variantClass}`}
+        className={`call-ctrl-btn alb-touch ${variantClass}`}
       >
         {children}
       </button>

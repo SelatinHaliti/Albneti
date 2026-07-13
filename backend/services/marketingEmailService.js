@@ -4,19 +4,24 @@ import Post from '../models/Post.js';
 import Event from '../models/Event.js';
 import LiveStream from '../models/LiveStream.js';
 import MarketingRun from '../models/MarketingRun.js';
-import { sendAlbnetAdsEmail, isEmailConfigured, isSmtpConfigured, resetSmtpTransporter, getEmailProvider, getEmailDeliveryInfo } from '../utils/email.js';
+import { sendAlbnetAdsEmail, isEmailConfigured, resetSmtpTransporter, getEmailProvider, getEmailDeliveryInfo, verifySmtpConnection } from '../utils/email.js';
 import { generateMarketingTheme, getAiMarketingStatus } from './aiMarketingService.js';
 
-const BATCH_SIZE = 8;
-const BATCH_DELAY_MS = 4000;
+const BATCH_SIZE = 5;
+const BATCH_DELAY_MS = 3000;
 const ACTIVE_DAYS = 60;
 const MIN_DAYS_BETWEEN_EMAILS = 6;
 const SYSTEM_USERNAME = 'albnet_official';
-const STUCK_RUN_MS = 15 * 60 * 1000;
+const STUCK_RUN_MS = 90 * 60 * 1000;
 
 function isResendDomainRestrictionHint(error) {
   const msg = String(error || '');
   return /Resend 403/i.test(msg) && /verify a domain|only send testing emails/i.test(msg);
+}
+
+function isFatalEmailError(error) {
+  const msg = String(error || '');
+  return /EAUTH|BadCredentials|Gmail refuzoi|SMTP nuk është konfiguruar|authentication/i.test(msg);
 }
 
 const WEEKLY_THEMES = [
@@ -200,22 +205,20 @@ async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey
         failed++;
         consecutiveFails++;
         if (!lastError) lastError = result.error;
-        if (consecutiveFails >= 5 && sent === 0) {
-          lastError = isResendDomainRestrictionHint(result.error)
-            ? 'Resend kërkon domain të verifikuar. Duke përdorur Gmail SMTP – kontrollo SMTP_PASS në Render.'
-            : (result.error || 'Dërgimi dështoi pas 5 përpjekjeve radhazi.');
+        if (consecutiveFails >= 3 && sent === 0 && isFatalEmailError(result.error)) {
+          lastError = result.error || 'Autentifikimi SMTP dështoi. Kontrollo SMTP_PASS në Render.';
           break;
         }
       }
+
+      await MarketingRun.findOneAndUpdate(
+        { weekKey: runKey, runType },
+        { $set: { sentCount: sent, failedCount: failed, skippedCount: skipped } }
+      );
     }
-    if (consecutiveFails >= 5 && sent === 0) break;
+    if (consecutiveFails >= 3 && sent === 0 && isFatalEmailError(lastError)) break;
 
     if (i + BATCH_SIZE < users.length) await sleep(BATCH_DELAY_MS);
-
-    await MarketingRun.findOneAndUpdate(
-      { weekKey: runKey, runType },
-      { $set: { sentCount: sent, failedCount: failed, skippedCount: skipped } }
-    );
   }
 
   await MarketingRun.findOneAndUpdate(
@@ -639,6 +642,16 @@ export async function sendMarketingTestEmail(to) {
 export async function getMarketingStats() {
   await resetStuckMarketingRuns();
   const weekKey = getWeekKey();
+  const delivery = getEmailDeliveryInfo();
+  let smtpVerified = delivery.smtpConfigured;
+  let smtpError = null;
+  if (delivery.smtpConfigured) {
+    const verify = await verifySmtpConnection({ timeoutMs: 20000, useCache: true });
+    smtpVerified = verify.ok;
+    if (!verify.ok) smtpError = verify.error;
+  } else if (delivery.resendNeedsDomain) {
+    smtpError = delivery.deliveryNote;
+  }
   const [lastRun, optedIn, optedOut, eligible, totalWithEmail, runningJob] = await Promise.all([
     MarketingRun.findOne().sort({ createdAt: -1 }).lean(),
     User.countDocuments({ marketingEmailsOptIn: { $ne: false }, isBlocked: false }),
@@ -660,9 +673,10 @@ export async function getMarketingStats() {
   ]);
   return {
     smtpConfigured: isEmailConfigured(),
-    smtpVerified: isEmailConfigured(),
+    smtpVerified,
+    smtpError,
     emailProvider: getEmailProvider(),
-    ...getEmailDeliveryInfo(),
+    ...delivery,
     currentWeekKey: weekKey,
     lastRun,
     runningBlast: runningJob

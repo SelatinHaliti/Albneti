@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSocket } from '@/components/SocketProvider';
-import { acquireLocalMedia, getPeerConnectionConfig } from '@/lib/webrtc';
+import { acquireLocalMedia, getPeerConnectionConfig, switchCamera, hasMultipleCameras } from '@/lib/webrtc';
+import { CallControlButton } from '@/components/CallControls';
+import { IconCallMic, IconCallMicOff, IconCallFlip, IconCallEnd } from '@/components/Icons';
 
 type LiveComment = {
   _id: string;
@@ -32,6 +34,10 @@ export default function StartLivePage() {
   const [starting, setStarting] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
   const [comments, setComments] = useState<LiveComment[]>([]);
+  const [muted, setMuted] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [canFlip, setCanFlip] = useState(false);
+  const [flipping, setFlipping] = useState(false);
 
   useEffect(() => {
     if (!socket || !liveId || !streamRef.current) return;
@@ -99,6 +105,7 @@ export default function StartLivePage() {
         videoRef.current.srcObject = stream;
         void videoRef.current.play();
       }
+      setCanFlip(await hasMultipleCameras(stream));
       const res = await api<{ live: { _id: string } }>('/api/live/nis', {
         method: 'POST',
         body: { title: title.trim() || 'Transmetim live' },
@@ -115,6 +122,35 @@ export default function StartLivePage() {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       router.push('/live');
     } catch (_) {}
+  };
+
+  const toggleMute = () => {
+    const stream = streamRef.current;
+    if (!stream) return;
+    const next = !muted;
+    stream.getAudioTracks().forEach((t) => { t.enabled = !next; });
+    setMuted(next);
+  };
+
+  const flipCamera = async () => {
+    const stream = streamRef.current;
+    if (!stream || flipping) return;
+    setFlipping(true);
+    try {
+      const { stream: updated, facing } = await switchCamera(stream, facingMode);
+      streamRef.current = updated;
+      setFacingMode(facing);
+      if (videoRef.current) {
+        videoRef.current.srcObject = updated;
+        await videoRef.current.play().catch(() => {});
+      }
+      peerMapRef.current.forEach((pc) => {
+        const videoTrack = updated.getVideoTracks()[0];
+        const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
+        if (sender && videoTrack) void sender.replaceTrack(videoTrack);
+      });
+    } catch (_) {}
+    setFlipping(false);
   };
 
   useEffect(() => {
@@ -150,24 +186,26 @@ export default function StartLivePage() {
 
   return (
     <div className="fixed inset-0 bg-black z-[100] flex flex-col">
-      <video ref={videoRef} className="flex-1 object-cover w-full" playsInline muted autoPlay />
-      <div className="absolute top-0 left-0 right-0 p-4 safe-area-pt flex items-center justify-between">
+      <video
+        ref={videoRef}
+        className="call-video-native flex-1 object-cover w-full"
+        playsInline
+        muted
+        autoPlay
+        disablePictureInPicture
+      />
+      <div className="absolute top-0 left-0 right-0 p-4 safe-area-pt flex items-center justify-between z-20">
         {liveId ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--danger)] text-white text-[13px] font-bold">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--albanian-red)] text-white text-[13px] font-bold">
+            <span className="w-2 h-2 rounded-full bg-[var(--albanian-gold)] animate-pulse" />
             LIVE · {viewerCount} shikues
           </div>
         ) : (
           <Link href="/live" className="text-white text-xl">←</Link>
         )}
-        {liveId && (
-          <button type="button" onClick={endLive} className="px-4 py-2 rounded-lg bg-white/20 text-white font-semibold text-[14px]">
-            Përfundo
-          </button>
-        )}
       </div>
       {!liveId && (
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent z-20">
           <input
             type="text"
             value={title}
@@ -179,28 +217,45 @@ export default function StartLivePage() {
             type="button"
             onClick={startLive}
             disabled={starting}
-            className="w-full py-3.5 rounded-xl bg-[var(--danger)] text-white font-bold text-[15px] disabled:opacity-50"
+            className="w-full py-3.5 rounded-xl bg-[var(--albanian-red)] text-white font-bold text-[15px] disabled:opacity-50"
           >
             {starting ? 'Duke nisur...' : 'Nis transmetimin'}
           </button>
         </div>
       )}
       {liveId && (
-        <div className="absolute bottom-0 left-0 right-0 max-h-[35dvh] flex flex-col pointer-events-none bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-            {comments.map((c) => (
-              <p key={c._id} className="text-white text-[13px] drop-shadow-md">
-                <span className="font-bold mr-1">{c.user?.username}</span>
-                {c.text}
+        <>
+          <div className="absolute bottom-0 left-0 right-0 max-h-[35dvh] flex flex-col pointer-events-none bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {comments.map((c) => (
+                <p key={c._id} className="text-white text-[13px] drop-shadow-md">
+                  <span className="font-bold mr-1">{c.user?.username}</span>
+                  {c.text}
+                </p>
+              ))}
+            </div>
+            {user && (
+              <p className="px-4 pb-24 text-center text-white/70 text-[13px]">
+                @{user.username} · Transmetim aktiv
               </p>
-            ))}
+            )}
           </div>
-          {user && (
-            <p className="px-4 pb-4 text-center text-white/70 text-[13px]">
-              @{user.username} · Transmetim aktiv
-            </p>
-          )}
-        </div>
+          <div className="absolute bottom-0 left-0 right-0 z-30 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black/90 to-transparent">
+            <div className="call-controls-row justify-center">
+              <CallControlButton onClick={toggleMute} ariaLabel={muted ? 'Aktivo zërin' : 'Hesht'} label={muted ? 'Heshtur' : 'Zëri'} variant={muted ? 'glass-active' : 'glass'}>
+                {muted ? <IconCallMicOff /> : <IconCallMic />}
+              </CallControlButton>
+              {canFlip && (
+                <CallControlButton onClick={() => void flipCamera()} ariaLabel="Kthe kamerën" label="Kthe" variant="glass" disabled={flipping}>
+                  <IconCallFlip />
+                </CallControlButton>
+              )}
+              <CallControlButton onClick={endLive} ariaLabel="Përfundo live" label="Përfundo" variant="danger">
+                <IconCallEnd size={26} />
+              </CallControlButton>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

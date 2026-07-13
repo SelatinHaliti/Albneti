@@ -20,6 +20,27 @@ function getMessagePreview(message, content) {
   return 'Mesazh i ri';
 }
 
+async function assertCanMessageUsers(currentUserId, otherUserIds) {
+  const ids = [...new Set(otherUserIds.map(String))].filter((id) => id !== String(currentUserId));
+  if (!ids.length) return;
+  const current = await User.findById(currentUserId).select('blockedUsers').lean();
+  const others = await User.find({ _id: { $in: ids } }).select('blockedUsers isBlocked').lean();
+  for (const other of others) {
+    if (other.isBlocked) {
+      const err = new Error('Ky përdorues nuk është i disponueshëm.');
+      err.statusCode = 403;
+      throw err;
+    }
+    const blocked = (current?.blockedUsers || []).some((id) => id.toString() === other._id.toString());
+    const blockedBy = (other.blockedUsers || []).some((id) => id.toString() === String(currentUserId));
+    if (blocked || blockedBy) {
+      const err = new Error('Nuk mund të dërgoni mesazhe — përdoruesi është bllokuar.');
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+}
+
 async function notifyConversationParticipants(conversation, senderId, payload) {
   const recipients = conversation.participants.filter(
     (p) => p.toString() !== String(senderId)
@@ -67,6 +88,7 @@ export const getOrCreateConversation = async (req, res) => {
     if (userId === currentUserId) {
       return res.status(400).json({ message: 'Nuk mund të dërgoni mesazhe vetes.' });
     }
+    await assertCanMessageUsers(currentUserId, [userId]);
     let conversation = await Conversation.findOne({
       participants: { $all: [currentUserId, userId], $size: 2 },
       type: { $ne: 'group' },
@@ -89,7 +111,7 @@ export const getOrCreateConversation = async (req, res) => {
     await markConversationRead(conversation._id, currentUserId);
     res.json({ conversation, messages });
   } catch (err) {
-    res.status(500).json({ message: err.message || 'Gabim.' });
+    res.status(err.statusCode || 500).json({ message: err.message || 'Gabim.' });
   }
 };
 
@@ -144,6 +166,7 @@ export const replyToStory = async (req, res) => {
     if (storyOwnerId === req.user.id) {
       return res.status(400).json({ message: 'Nuk mund të përgjigjeni story-t tuaj.' });
     }
+    await assertCanMessageUsers(req.user.id, [storyOwnerId]);
 
     let conversation = await Conversation.findOne({
       participants: { $all: [req.user.id, storyOwnerId], $size: 2 },
@@ -303,6 +326,10 @@ export const sendMessage = async (req, res) => {
     if (!conversation.participants.some((p) => p.toString() === req.user.id)) {
       return res.status(403).json({ message: 'Nuk keni akses.' });
     }
+    const recipients = conversation.participants
+      .map((p) => p.toString())
+      .filter((id) => id !== req.user.id);
+    await assertCanMessageUsers(req.user.id, recipients);
 
     const message = await Message.create({
       conversation: conversationId,
@@ -331,7 +358,7 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json({ success: true, message: populated });
   } catch (err) {
-    res.status(500).json({ message: err.message || 'Gabim.' });
+    res.status(err.statusCode || 500).json({ message: err.message || 'Gabim.' });
   }
 };
 

@@ -314,8 +314,8 @@ export function IconCallMicOff({ size: s = 22 }: { size?: number }) {
 export function IconCallVideo({ size: s = 22 }: { size?: number }) {
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="2" y="6" width="14" height="12" rx="2" />
-      <path d="M16 10l6-3v10l-6-3v-4z" />
+      <path d="M4 9h4l2-2h4l2 2h4v8H4V9z" />
+      <circle cx="12" cy="13" r="2.8" />
     </svg>
   );
 }
@@ -323,9 +323,9 @@ export function IconCallVideo({ size: s = 22 }: { size?: number }) {
 export function IconCallVideoOff({ size: s = 22 }: { size?: number }) {
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="2" y="6" width="14" height="12" rx="2" />
-      <path d="M16 10l6-3v10l-6-3v-4z" />
-      <line x1="2" y1="2" x2="22" y2="22" strokeWidth={2} />
+      <path d="M4 9h4l2-2h4l2 2h4v8H4V9z" />
+      <circle cx="12" cy="13" r="2.8" />
+      <line x1="2" y1="2" x2="22" y2="22" strokeWidth={2.25} />
     </svg>
   );
 }
@@ -333,39 +333,40 @@ export function IconCallVideoOff({ size: s = 22 }: { size?: number }) {
 export function IconCallFlip({ size: s = 22 }: { size?: number }) {
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={callStroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M16 3h5v5" />
-      <path d="M8 21H3v-5" />
-      <path d="M21 3l-7.5 7.5" />
-      <path d="M3 21l7.5-7.5" />
-      <circle cx="12" cy="12" r="3" />
+      <rect x="5" y="8" width="9" height="8" rx="1.5" />
+      <circle cx="9.5" cy="12" r="1.5" />
+      <path d="M18 9v6" />
+      <path d="M15 10l3-1 0 2" />
+      <path d="M21 15l-3 1 0-2" />
     </svg>
   );
 }
 
 export function IconCallEnd({ size: s = 26 }: { size?: number }) {
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <g transform="rotate(135 12 12)">
-        <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.36 11.36 0 003.47.56 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 .78 11.36 11.36 0 00.56 3.47 1 1 0 01-.21 1.11l-2.24 2.43z" />
-      </g>
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" aria-hidden>
+      <path d="M7 10v2a3 3 0 003 3h4a3 3 0 003-3v-2" />
+      <path d="M5 10h14l-1.2-3.6A2 2 0 0015.9 5H8.1a2 2 0 00-1.9 1.4L5 10z" />
+      <line x1="9" y1="18" x2="15" y2="18" />
     </svg>
   );
 }
 
 export function IconCallAccept({ size: s = 26 }: { size?: number }) {
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.36 11.36 0 003.47.56 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 .78 11.36 11.36 0 00.56 3.47 1 1 0 01-.21 1.11l-2.24 2.43z" />
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12.5l2.5 2.5L16 9" />
     </svg>
   );
 }
 
 export function IconCallDecline({ size: s = 26 }: { size?: number }) {
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <g transform="rotate(135 12 12)">
-        <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.36 11.36 0 003.47.56 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 .78 11.36 11.36 0 00.56 3.47 1 1 0 01-.21 1.11l-2.24 2.43z" />
-      </g>
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+      <line x1="15" y1="9" x2="9" y2="15" />
     </svg>
   );
 }

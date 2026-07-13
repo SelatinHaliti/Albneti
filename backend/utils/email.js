@@ -225,7 +225,7 @@ async function sendMail({ to, subject, html }) {
     try {
       const sendTask = transporter.sendMail(mailOptions);
       const timeoutTask = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('send timeout')), 120000);
+        setTimeout(() => reject(new Error('send timeout')), 60000);
       });
       await Promise.race([sendTask, timeoutTask]);
       return { ok: true, provider: 'smtp' };

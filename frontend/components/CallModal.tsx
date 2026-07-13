@@ -583,20 +583,22 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            className="absolute inset-0 w-full h-full object-cover bg-zinc-900"
+            disablePictureInPicture
+            className="call-video-native absolute inset-0 w-full h-full object-cover bg-zinc-900"
           />
           <video
             ref={localVideoRef}
             autoPlay
             playsInline
             muted
-            className={`absolute top-[max(1rem,env(safe-area-inset-top))] right-4 w-[30vw] max-w-[130px] min-w-[96px] aspect-[3/4] rounded-2xl object-cover border-2 border-white/30 shadow-lg z-10 transition-opacity pointer-events-none ${
+            disablePictureInPicture
+            className={`call-video-native absolute top-[max(1rem,env(safe-area-inset-top))] right-4 w-[30vw] max-w-[130px] min-w-[96px] aspect-[3/4] rounded-2xl object-cover border-2 border-[var(--albanian-gold)]/50 shadow-lg z-10 transition-opacity pointer-events-none ${
               camOff ? 'opacity-30' : 'opacity-100'
             } ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
           />
           {showWaitingOverlay && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white/90 px-6 text-center z-20 bg-black/40">
-              <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center mb-4 animate-pulse text-white">
+              <div className="w-20 h-20 rounded-full bg-[var(--albanian-red)]/25 backdrop-blur-md border-2 border-[var(--albanian-gold)]/40 flex items-center justify-center mb-4 animate-pulse text-white">
                 <IconCallVideo size={36} />
               </div>
               <p className="text-lg font-semibold">{title}</p>
@@ -607,7 +609,7 @@ export function CallModal(props: OutgoingProps | IncomingProps) {
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-white px-6 text-center">
           <audio ref={remoteAudioRef} autoPlay playsInline />
-          <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-[var(--ig-blue)]/50 to-indigo-600/40 flex items-center justify-center mb-6 ring-4 ring-white/10 backdrop-blur-sm ${
+          <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-[var(--albanian-red)]/60 to-[var(--albanian-black)]/80 flex items-center justify-center mb-6 ring-4 ring-[var(--albanian-gold)]/30 backdrop-blur-sm ${
             status === 'ringing' ? 'animate-pulse' : ''
           }`}>
             {otherUsername ? (

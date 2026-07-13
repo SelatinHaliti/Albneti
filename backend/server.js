@@ -42,8 +42,10 @@ connectDB().then(() => {
   resetStuckMarketingRuns().catch(() => {});
   setTimeout(() => runScheduledEventPromos().catch(() => {}), 15000);
   setInterval(() => runScheduledEventPromos().catch(() => {}), 6 * 60 * 60 * 1000);
-  setTimeout(() => runWeeklyMarketingEmails().catch(() => {}), 45000);
-  setInterval(() => runWeeklyMarketingEmails().catch(() => {}), 24 * 60 * 60 * 1000);
+  if (process.env.ENABLE_MARKETING_CRON === 'true') {
+    setTimeout(() => runWeeklyMarketingEmails().catch(() => {}), 45000);
+    setInterval(() => runWeeklyMarketingEmails().catch(() => {}), 24 * 60 * 60 * 1000);
+  }
 });
 
 const app = express();

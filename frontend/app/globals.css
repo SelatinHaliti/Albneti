@@ -453,11 +453,11 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   min-width: 4rem;
   min-height: 4rem;
   color: #fff;
-  background: linear-gradient(145deg, #ef4444 0%, #dc2626 100%);
-  box-shadow: 0 8px 28px rgba(239, 68, 68, 0.45);
+  background: linear-gradient(145deg, var(--albanian-red) 0%, #8b0000 100%);
+  box-shadow: 0 8px 28px rgba(196, 30, 58, 0.45);
 }
 .call-ctrl-btn--danger:hover:not(:disabled) {
-  background: linear-gradient(145deg, #f87171 0%, #ef4444 100%);
+  background: linear-gradient(145deg, #e63950 0%, var(--albanian-red) 100%);
 }
 .call-ctrl-btn--success {
   width: 4rem;
@@ -465,11 +465,33 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   min-width: 4rem;
   min-height: 4rem;
   color: #fff;
-  background: linear-gradient(145deg, #22c55e 0%, #16a34a 100%);
-  box-shadow: 0 8px 28px rgba(34, 197, 94, 0.45);
+  background: linear-gradient(145deg, var(--albanian-gold) 0%, #b8860b 100%);
+  box-shadow: 0 8px 28px rgba(212, 175, 55, 0.4);
 }
 .call-ctrl-btn--success:hover:not(:disabled) {
-  background: linear-gradient(145deg, #4ade80 0%, #22c55e 100%);
+  background: linear-gradient(145deg, #f0d060 0%, var(--albanian-gold) 100%);
+}
+.call-video-native {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.call-video-native::-webkit-media-controls,
+.call-video-native::-webkit-media-controls-enclosure,
+.call-video-native::-webkit-media-controls-panel,
+.call-video-native::-webkit-media-controls-start-playback-button,
+.call-video-native::-webkit-media-controls-overlay-play-button {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.alb-touch {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .call-controls button,
 .call-ctrl-btn {
