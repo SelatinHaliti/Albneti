@@ -20,6 +20,8 @@ type MarketingStats = {
   smtpError?: string;
   emailProvider?: 'resend' | 'smtp' | null;
   resendNeedsDomain?: boolean;
+  smtpBlockedOnHost?: boolean;
+  brevoConfigured?: boolean;
   deliveryNote?: string | null;
   blastReady?: boolean;
   blastProvider?: 'smtp' | 'resend';
@@ -350,6 +352,19 @@ export default function AdminMarketingPage() {
         <p className="text-sm text-gray-500">Gjenero marketing profesional me AI dhe dërgo me 1 klik</p>
       </div>
 
+      {!stats.blastReady && stats.smtpBlockedOnHost && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/40 text-red-800 dark:text-red-200 text-sm space-y-2">
+          <p className="font-bold">🚫 Render FREE bllokon Gmail SMTP</p>
+          <p>{stats.deliveryNote}</p>
+          <p className="text-xs font-semibold">Zgjidh një nga këto (5 min):</p>
+          <ol className="text-xs list-decimal list-inside space-y-1">
+            <li><strong>Brevo (falas, rekomandohet):</strong> brevo.com → API Key → verifiko email-in → vendos BREVO_API_KEY në Render</li>
+            <li><strong>Resend:</strong> resend.com/domains → verifiko domain → RESEND_FROM=noreply@domaini-yt.com</li>
+            <li><strong>Render Starter ($7/muaj):</strong> Dashboard → albneti-api → Upgrade → Gmail SMTP funksionon</li>
+          </ol>
+        </div>
+      )}
+
       {stats.blastReady && (
         <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/40 text-green-800 dark:text-green-200 text-sm">
           <p className="font-bold">✅ Blast gati për dërgim</p>
@@ -477,7 +492,9 @@ export default function AdminMarketingPage() {
             {stats.blastReady
               ? stats.blastVia === 'Resend'
                 ? '✅ Resend'
-                : '✅ Gmail SMTP'
+                : stats.blastVia === 'Brevo'
+                  ? '✅ Brevo'
+                  : '✅ Gmail SMTP'
               : '❌ Jo'}
           </p>
         </div>

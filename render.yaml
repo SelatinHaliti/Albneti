@@ -4,7 +4,7 @@ services:
     name: albneti-api
     repo: https://github.com/SelatinHaliti/Albneti
     rootDir: backend
-    plan: free
+    plan: starter
     branch: main
     buildCommand: npm install
     startCommand: npm start

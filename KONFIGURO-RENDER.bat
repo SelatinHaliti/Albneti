@@ -3,8 +3,12 @@ title AlbNet - Konfiguro Render
 cd /d "%~dp0"
 echo.
 echo ============================================
-echo   AlbNet - Vendos SMTP, Stripe, VAPID ne Render
+echo   AlbNet - Vendos SMTP, Stripe, VAPID, Brevo ne Render
 echo ============================================
+echo.
+echo SHENIM: Render FREE bllokon Gmail SMTP!
+echo Per email blast vendos BREVO_API_KEY (falas te brevo.com)
+echo ose verifiko domain ne Resend, ose upgrade Render Starter.
 echo.
 echo Hapi 1: Hap ne browser:
 echo   https://dashboard.render.com/u/settings#api-keys

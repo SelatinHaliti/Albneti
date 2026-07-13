@@ -46,6 +46,12 @@ export const isSmtpConfigured = () => Boolean(getTransporter());
 
 let resendSessionBlocked = false;
 
+export function isRenderSmtpBlocked() {
+  if (process.env.EMAIL_SMTP_ALLOWED === 'true') return false;
+  if (process.env.RENDER !== 'true') return false;
+  return true;
+}
+
 export function isResendFromVerifiedDomain() {
   const from = process.env.RESEND_FROM?.trim() || 'AlbNet <onboarding@resend.dev>';
   return Boolean(process.env.RESEND_API_KEY?.trim().startsWith('re_')) && !/@resend\.dev/i.test(from);
@@ -64,35 +70,55 @@ function shouldTryResend() {
 
 export function getEmailDeliveryInfo() {
   const hasResendKey = Boolean(process.env.RESEND_API_KEY?.trim().startsWith('re_'));
-  const hasSmtp = isSmtpConfigured();
+  const hasBrevoKey = Boolean(process.env.BREVO_API_KEY?.trim());
+  const smtpBlocked = isRenderSmtpBlocked();
+  const hasSmtp = isSmtpConfigured() && !smtpBlocked;
   const resendNeedsDomain = hasResendKey && !isResendFromVerifiedDomain();
   let provider = null;
   if (shouldTryResend()) provider = 'resend';
+  else if (hasBrevoKey) provider = 'brevo';
   else if (hasSmtp) provider = 'smtp';
   else if (hasResendKey) provider = 'resend';
+
+  let deliveryNote = null;
+  if (smtpBlocked && !isResendFromVerifiedDomain() && !hasBrevoKey) {
+    deliveryNote =
+      'Render FREE bllokon Gmail SMTP (portet 465/587). Verifiko domain në resend.com/domains OSE vendos BREVO_API_KEY (falas) OSE upgrade Render Starter.';
+  } else if (resendNeedsDomain && !hasBrevoKey) {
+    deliveryNote = 'Verifiko domain në Resend për blast, ose përdor Brevo API (falas, pa domain).';
+  }
 
   return {
     provider,
     resendNeedsDomain,
     resendConfigured: hasResendKey,
+    brevoConfigured: hasBrevoKey,
     smtpConfigured: hasSmtp,
-    deliveryNote: resendNeedsDomain
-      ? 'Blast përdor Gmail SMTP. Resend aktivizohet vetëm pas verifikimit të domain-it.'
-      : null,
+    smtpBlockedOnHost: smtpBlocked,
+    deliveryNote,
   };
 }
 
-/** Gati për blast marketing (SMTP ose Resend me domain të verifikuar) */
+/** Gati për blast marketing */
 export function getBlastDeliveryInfo() {
   const delivery = getEmailDeliveryInfo();
-  const blastProvider = delivery.resendNeedsDomain ? 'smtp' : (delivery.provider || 'smtp');
-  const blastReady = delivery.smtpConfigured || isResendFromVerifiedDomain();
-  return {
-    ...delivery,
-    blastProvider,
-    blastReady,
-    blastVia: blastProvider === 'smtp' ? 'Gmail SMTP' : 'Resend',
-  };
+  const canResend = isResendFromVerifiedDomain();
+  const canBrevo = delivery.brevoConfigured;
+  const canSmtp = delivery.smtpConfigured;
+  const blastReady = canResend || canBrevo || canSmtp;
+  let blastProvider = 'none';
+  let blastVia = 'Asnjë';
+  if (canResend) {
+    blastProvider = 'resend';
+    blastVia = 'Resend';
+  } else if (canBrevo) {
+    blastProvider = 'brevo';
+    blastVia = 'Brevo';
+  } else if (canSmtp) {
+    blastProvider = 'smtp';
+    blastVia = 'Gmail SMTP';
+  }
+  return { ...delivery, blastProvider, blastReady, blastVia };
 }
 
 export function resetResendSession() {
@@ -103,10 +129,7 @@ export function getEmailProvider() {
   return getEmailDeliveryInfo().provider;
 }
 
-export const isEmailConfigured = () => {
-  const { smtpConfigured, resendConfigured } = getEmailDeliveryInfo();
-  return smtpConfigured || (resendConfigured && isResendFromVerifiedDomain());
-};
+export const isEmailConfigured = () => getBlastDeliveryInfo().blastReady;
 
 /** Singleton – mos krijo transport të ri për çdo email */
 let cachedTransporter = null;
@@ -171,6 +194,33 @@ export async function verifySmtpConnection({ timeoutMs = 45000, useCache = true 
   }
 }
 
+async function sendViaBrevo({ to, subject, html }) {
+  const key = process.env.BREVO_API_KEY?.trim();
+  if (!key) return null;
+  const senderEmail = (process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || '').trim();
+  if (!senderEmail) return { ok: false, error: 'BREVO_SENDER_EMAIL mungon.' };
+  const senderName = process.env.BREVO_SENDER_NAME?.trim() || 'AlbNet';
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, error: `Brevo ${res.status}: ${body.slice(0, 220)}` };
+    }
+    return { ok: true, provider: 'brevo' };
+  } catch (err) {
+    return { ok: false, error: String(err?.message || err) };
+  }
+}
+
 async function sendViaResend({ to, subject, html }) {
   const key = process.env.RESEND_API_KEY?.trim();
   if (!key?.startsWith('re_')) return null;
@@ -201,8 +251,11 @@ function normalizeMailerError(err) {
   if (code === 'EAUTH' || /BadCredentials/i.test(response + message)) {
     return 'Gmail refuzoi fjalëkalimin. Aktivizo 2FA dhe krijo App Password të ri nga myaccount.google.com/apppasswords, pastaj përditëso SMTP_PASS në .env dhe Render.';
   }
-  if (/timeout/i.test(message)) {
-    return 'Lidhja me Gmail vonoi. Provo përsëri ose vendos RESEND_API_KEY për dërgim më të shpejtë.';
+  if (/timeout|ETIMEDOUT|ECONNECTION|ECONNRESET|ENOTFOUND|Network is unreachable|socket/i.test(message)) {
+    if (isRenderSmtpBlocked()) {
+      return 'Render FREE bllokon SMTP. Përdor Resend me domain të verifikuar, Brevo API (falas), ose upgrade Render Starter ($7/muaj).';
+    }
+    return 'Lidhja me Gmail vonoi. Provo Brevo API ose Resend me domain të verifikuar.';
   }
   const parts = [code, message, response].filter(Boolean);
   return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
@@ -214,55 +267,41 @@ async function sendMail({ to, subject, html }) {
     process.env.SMTP_FROM ||
     (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
 
-  let resendResult = null;
   if (shouldTryResend()) {
-    resendResult = await sendViaResend({ to, subject, html });
+    const resendResult = await sendViaResend({ to, subject, html });
     if (resendResult?.ok) return resendResult;
     if (isResendDomainRestrictionError(resendResult)) resendSessionBlocked = true;
   }
 
-  const canUseSmtp =
-    isSmtpConfigured() &&
-    (!process.env.RESEND_API_KEY?.trim().startsWith('re_') ||
-      process.env.EMAIL_USE_SMTP_FALLBACK === 'true' ||
-      !shouldTryResend() ||
-      isResendDomainRestrictionError(resendResult) ||
-      resendSessionBlocked);
+  if (process.env.BREVO_API_KEY?.trim()) {
+    const brevoResult = await sendViaBrevo({ to, subject, html });
+    if (brevoResult?.ok) return brevoResult;
+    if (!isSmtpConfigured() || isRenderSmtpBlocked()) return brevoResult;
+  }
 
-  if (!canUseSmtp) {
-    return resendResult || { ok: false, error: 'Resend nuk u përgjigj.' };
+  if (isRenderSmtpBlocked()) {
+    return {
+      ok: false,
+      error:
+        'Render FREE bllokon Gmail SMTP. Zgjidh: (1) Verifiko domain në resend.com/domains, (2) Brevo API falas te brevo.com, (3) Upgrade Render Starter.',
+    };
   }
 
   const mailOptions = { from, to, subject, html };
-  const maxAttempts = 3;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const transporter = getTransporter();
-    if (!transporter) {
-      return resendResult || { ok: false, error: 'SMTP nuk është konfiguruar në server.' };
-    }
-    try {
-      const sendTask = transporter.sendMail(mailOptions);
-      const timeoutTask = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('send timeout')), 45000);
-      });
-      await Promise.race([sendTask, timeoutTask]);
-      return { ok: true, provider: 'smtp' };
-    } catch (err) {
-      const error = normalizeMailerError(err);
-      const retryable = isRetryableSmtpError(err);
-      if (attempt < maxAttempts && retryable) {
-        if (attempt === 1 && (process.env.SMTP_USER || '').includes('@gmail.com')) {
-          process.env.SMTP_USE_ALT_PORT = process.env.SMTP_USE_ALT_PORT === 'true' ? 'false' : 'true';
-        }
-        resetSmtpTransporter();
-        await sleep(1500 * attempt);
-        continue;
-      }
-      return { ok: false, error };
-    }
+  const transporter = getTransporter();
+  if (!transporter) {
+    return { ok: false, error: 'SMTP nuk është konfiguruar.' };
   }
-  return { ok: false, error: 'Dërgimi i email-it dështoi pas disa përpjekjeve.' };
+  try {
+    const sendTask = transporter.sendMail(mailOptions);
+    const timeoutTask = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('send timeout')), 30000);
+    });
+    await Promise.race([sendTask, timeoutTask]);
+    return { ok: true, provider: 'smtp' };
+  } catch (err) {
+    return { ok: false, error: normalizeMailerError(err) };
+  }
 }
 
 /* Brand colors – përputhen me app (primary #0095f6, theks i kuq) */

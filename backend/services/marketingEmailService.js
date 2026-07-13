@@ -21,7 +21,7 @@ function isResendDomainRestrictionHint(error) {
 
 function isFatalEmailError(error) {
   const msg = String(error || '');
-  return /EAUTH|BadCredentials|Gmail refuzoi|SMTP nuk është konfiguruar|authentication/i.test(msg);
+  return /EAUTH|BadCredentials|Gmail refuzoi|Render FREE bllokon|Brevo \d|Resend 403|verify a domain|SMTP nuk është/i.test(msg);
 }
 
 const WEEKLY_THEMES = [
@@ -208,10 +208,8 @@ async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey
         failed++;
         consecutiveFails++;
         if (!lastError) lastError = result.error;
-        if (consecutiveFails >= 3 && sent === 0 && isFatalEmailError(result.error)) {
-          lastError = result.error || 'Autentifikimi SMTP dështoi. Kontrollo SMTP_PASS në Render.';
-          break;
-        }
+        if (isFatalEmailError(result.error)) break;
+        if (consecutiveFails >= 2 && sent === 0) break;
       }
 
       await MarketingRun.findOneAndUpdate(
@@ -219,7 +217,7 @@ async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey
         { $set: { sentCount: sent, failedCount: failed, skippedCount: skipped } }
       );
     }
-    if (consecutiveFails >= 3 && sent === 0 && isFatalEmailError(lastError)) break;
+    if (consecutiveFails >= 2 && sent === 0) break;
 
     if (i + BATCH_SIZE < users.length) await sleep(BATCH_DELAY_MS);
   }
