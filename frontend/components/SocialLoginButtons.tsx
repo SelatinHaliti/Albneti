@@ -62,6 +62,11 @@ export function SocialLoginButtons({ onError }: Props) {
         onError?.('Përgjigja e serverit është e paplotë.');
         return;
       }
+      if (!normalized.emailVerified) {
+        onError?.('Verifikoni email-in përpara se të hyni në platformë.');
+        router.push(`/prit-verifikimin?email=${encodeURIComponent(normalized.email || '')}`);
+        return;
+      }
       setAuth(normalized, data.token);
       router.push('/feed');
     },

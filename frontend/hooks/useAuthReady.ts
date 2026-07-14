@@ -22,9 +22,19 @@ export function useAuthReady() {
   }, []);
 
   const hydrated = ready || hasHydrated;
-  const isAuthenticated = hydrated && Boolean(user?.username && (token || getTokenFallback()));
+  const hasSession = hydrated && Boolean(user?.username && (token || getTokenFallback()));
+  const canAccessPlatform = hasSession && Boolean(user?.emailVerified);
+  const needsEmailVerification = hasSession && !user?.emailVerified;
 
-  return { ready: hydrated, user, token, isAuthenticated };
+  return {
+    ready: hydrated,
+    user,
+    token,
+    isAuthenticated: canAccessPlatform,
+    hasSession,
+    canAccessPlatform,
+    needsEmailVerification,
+  };
 }
 
 function getTokenFallback(): string | null {

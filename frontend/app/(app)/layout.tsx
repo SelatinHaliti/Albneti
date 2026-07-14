@@ -59,7 +59,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { ready, isAuthenticated, user } = useAuthReady();
+  const { ready, canAccessPlatform, needsEmailVerification, user } = useAuthReady();
   const logout = useAuthStore((s) => s.logout);
   const theme = useUIStore((s) => s.theme);
   const toggleTheme = useUIStore((s) => s.toggleTheme);
@@ -113,11 +113,17 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    if (!isAuthenticated) router.replace('/kycu');
-  }, [ready, isAuthenticated, router]);
+    if (needsEmailVerification) {
+      const em = user?.email || '';
+      logout();
+      router.replace(`/prit-verifikimin?email=${encodeURIComponent(em)}`);
+      return;
+    }
+    if (!canAccessPlatform) router.replace('/kycu');
+  }, [ready, canAccessPlatform, needsEmailVerification, user, router, logout]);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    if (!ready || !user || !canAccessPlatform) return;
     if (pathname === '/njoftime') {
       clearNotificationBadge();
     } else {
@@ -127,9 +133,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
     import('@/lib/pushNotifications').then((m) => {
       if (m.getNotificationPermission() === 'granted') void m.syncPushSubscriptionIfGranted();
     });
-  }, [user, pathname, ready, refreshNotifications, refreshUnreadMessages, clearNotificationBadge]);
+  }, [user, pathname, ready, canAccessPlatform, refreshNotifications, refreshUnreadMessages, clearNotificationBadge]);
 
-  if (!ready || !isAuthenticated || !user) {
+  if (!ready || !canAccessPlatform) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
         <div className="animate-pulse flex flex-col items-center gap-3">

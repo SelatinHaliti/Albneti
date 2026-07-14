@@ -11,6 +11,7 @@ export interface User {
   website?: string;
   location?: string;
   isVerified?: boolean;
+  emailVerified?: boolean;
   verifiedPlan?: string;
   role?: string;
   isPrivate?: boolean;
@@ -51,6 +52,7 @@ export function normalizeAuthUser(raw: unknown): User | null {
     website: typeof u.website === 'string' ? u.website : undefined,
     location: typeof u.location === 'string' ? u.location : undefined,
     isVerified: Boolean(u.isVerified),
+    emailVerified: Boolean(u.emailVerified),
     verifiedPlan: typeof u.verifiedPlan === 'string' ? u.verifiedPlan : undefined,
     role: typeof u.role === 'string' ? u.role : undefined,
     isPrivate: Boolean(u.isPrivate),

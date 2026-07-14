@@ -8,7 +8,7 @@ import { AppLogo } from '@/components/AppLogo';
 import { SocialLoginButtons } from '@/components/SocialLoginButtons';
 import { useAuthStore, normalizeAuthUser } from '@/store/useAuthStore';
 import { useAuthReady } from '@/hooks/useAuthReady';
-import { api } from '@/utils/api';
+import { api, ApiError } from '@/utils/api';
 
 const container = {
   hidden: { opacity: 0 },
@@ -29,14 +29,21 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
   const logout = useAuthStore((s) => s.logout);
-  const { ready, isAuthenticated } = useAuthReady();
+  const { ready, isAuthenticated, needsEmailVerification, user } = useAuthReady();
 
   useEffect(() => {
-    if (ready && isAuthenticated) {
+    if (!ready) return;
+    if (needsEmailVerification) {
+      const em = user?.email || '';
+      logout();
+      router.replace(`/prit-verifikimin?email=${encodeURIComponent(em)}`);
+      return;
+    }
+    if (isAuthenticated) {
       const redirect = searchParams.get('redirect');
       router.replace(redirect && redirect.startsWith('/') ? redirect : '/feed');
     }
-  }, [ready, isAuthenticated, router, searchParams]);
+  }, [ready, isAuthenticated, needsEmailVerification, user, router, searchParams, logout]);
 
   useEffect(() => {
     const reason = searchParams.get('reason');
@@ -61,6 +68,10 @@ export default function LoginPage() {
       setAuth(normalized, data.token);
       router.push('/feed');
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
+        router.push(`/prit-verifikimin?email=${encodeURIComponent(err.email || email)}`);
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Gabim gjatë kyçjes.');
     } finally {
       setLoading(false);

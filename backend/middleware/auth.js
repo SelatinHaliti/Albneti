@@ -23,6 +23,13 @@ export const protect = async (req, res, next) => {
     if (user.isBlocked) {
       return res.status(403).json({ message: 'Llogaria juaj është bllokuar.' });
     }
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        message: 'Verifikoni email-in përpara se të përdorni platformën.',
+        code: 'EMAIL_NOT_VERIFIED',
+        email: user.email,
+      });
+    }
     req.user = user;
     req.user.id = user._id.toString();
     User.findByIdAndUpdate(user._id, { lastActiveAt: new Date() }).catch(() => {});
@@ -48,7 +55,7 @@ export const optionalAuth = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
-    if (user && !user.isBlocked) {
+    if (user && !user.isBlocked && user.emailVerified) {
       req.user = user;
       req.user.id = user._id.toString();
     }

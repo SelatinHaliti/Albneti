@@ -9,6 +9,7 @@ import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 
 import connectDB from './config/db.js';
+import User from './models/User.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import postRoutes from './routes/posts.js';
@@ -37,6 +38,17 @@ import { isSmtpConfigured, isEmailConfigured, getBlastDeliveryInfo, refreshResen
 import { isStripeConfigured } from './services/stripeService.js';
 
 connectDB().then(() => {
+  const emailVerifyEnforcedAt = new Date('2026-07-15T00:00:00.000Z');
+  void User.updateMany(
+    { emailVerified: false, createdAt: { $lt: emailVerifyEnforcedAt } },
+    { $set: { emailVerified: true } },
+  )
+    .then((r) => {
+      if (r.modifiedCount > 0) {
+        console.log(`Email verify: ${r.modifiedCount} llogari të vjetra u verifikuan automatikisht.`);
+      }
+    })
+    .catch(() => {});
   void initMonitoring();
   void refreshResendDomainStatus().then((r) => {
     if (r.verified) console.log('Resend: domain i verifikuar –', r.from);

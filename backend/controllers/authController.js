@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { isSmtpConfigured, sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
+import { isEmailConfigured, sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
 import {
   verifyGoogleToken,
   verifyAppleToken,
@@ -17,6 +17,14 @@ const createToken = (id) => {
 };
 
 const sendTokenResponse = (user, res, statusCode = 200) => {
+  if (!user.emailVerified) {
+    res.cookie('token', '', { maxAge: 0, httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+    return res.status(403).json({
+      message: 'Verifikoni email-in përpara se të kyçeni. Kontrolloni inbox-in (edhe spam).',
+      code: 'EMAIL_NOT_VERIFIED',
+      email: user.email,
+    });
+  }
   const token = createToken(user._id);
   const options = {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -38,6 +46,7 @@ const sendTokenResponse = (user, res, statusCode = 200) => {
       website: user.website,
       location: user.location,
       isVerified: user.isVerified,
+      emailVerified: !!user.emailVerified,
       role: user.role,
       isPrivate: user.isPrivate,
       followers: user.followers?.length || 0,
@@ -84,20 +93,29 @@ export const register = async (req, res) => {
       verificationTokenExpires,
     });
 
-    // Mos e blloko përgjigjen e regjistrimit nga dërgimi i email-it.
-    // Nëse email-i dështon (SMTP/API), përdoruesi prapë duhet të kyçet.
+    let emailSent = false;
     try {
-      Promise.resolve(sendVerificationEmail(user.email, verificationToken, user.username)).catch((e) => {
+      const result = await sendVerificationEmail(user.email, verificationToken, user.username);
+      emailSent = !!result?.ok;
+      if (!emailSent) {
         // eslint-disable-next-line no-console
-        console.error('sendVerificationEmail failed:', e?.message || e);
-      });
+        console.error('sendVerificationEmail failed:', result?.error || 'unknown');
+      }
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error('sendVerificationEmail threw:', e?.message || e);
     }
 
-    // Jep token menjëherë (pa verifikim email-i).
-    sendTokenResponse(user, res, 201);
+    res.cookie('token', '', { maxAge: 0, httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+    res.status(201).json({
+      success: true,
+      needsVerification: true,
+      email: user.email,
+      emailSent,
+      message: emailSent
+        ? 'Llogaria u krijua. Kontrolloni email-in për të verifikuar llogarinë.'
+        : 'Llogaria u krijua por email-i nuk u dërgua. Përdorni "Dërgo përsëri" më poshtë.',
+    });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim gjatë regjistrimit.' });
   }
@@ -130,6 +148,14 @@ export const login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Email ose fjalëkalim i gabuar.' });
+    }
+
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        message: 'Verifikoni email-in përpara se të kyçeni. Kontrolloni inbox-in (edhe spam).',
+        code: 'EMAIL_NOT_VERIFIED',
+        email: user.email,
+      });
     }
 
     sendTokenResponse(user, res);
@@ -172,12 +198,68 @@ export const verifyEmail = async (req, res) => {
 /**
  * Dërgo sërish email verifikimi (nëse llogaria s'është verifikuar ende)
  */
-export const resendVerification = async (_req, res) => {
-  return res.status(410).json({ message: 'Verifikimi me email është çaktivizuar.' });
+export const resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email?.trim()) {
+      return res.status(400).json({ message: 'Vendosni email-in e llogarisë.' });
+    }
+    if (!isEmailConfigured()) {
+      return res.status(503).json({ message: 'Dërgimi i email-it nuk është konfiguruar ende.' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.json({
+        success: true,
+        message: 'Nëse llogaria ekziston, do të merrni një email verifikimi.',
+      });
+    }
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'Email-i është verifikuar tashmë. Mund të kyçeni.' });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await user.save();
+
+    const result = await sendVerificationEmail(user.email, verificationToken, user.username);
+    if (!result?.ok) {
+      return res.status(503).json({
+        message: 'Email-i nuk u dërgua. Provoni përsëri pas pak.',
+        error: result?.error,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Email verifikimi u dërgua. Kontrolloni inbox-in (edhe dosjen Spam).',
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim gjatë dërgimit.' });
+  }
 };
 
-export const emailStatus = async (_req, res) => {
-  return res.status(410).json({ message: 'Verifikimi me email është çaktivizuar.' });
+export const emailStatus = async (req, res) => {
+  try {
+    const email = String(req.query.email || req.body?.email || '').trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: 'Vendosni email-in.' });
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ success: true, exists: false, emailVerified: false, emailConfigured: isEmailConfigured() });
+    }
+    res.json({
+      success: true,
+      exists: true,
+      emailVerified: !!user.emailVerified,
+      emailConfigured: isEmailConfigured(),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
 };
 
 /**
@@ -218,6 +300,9 @@ export const resetPassword = async (req, res) => {
     user.password = newPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
+    user.emailVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
     await user.save();
     sendTokenResponse(user, res);
   } catch (err) {

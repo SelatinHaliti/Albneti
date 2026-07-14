@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { AppLogo } from '@/components/AppLogo';
 import { SocialLoginButtons } from '@/components/SocialLoginButtons';
-import { useAuthStore, normalizeAuthUser } from '@/store/useAuthStore';
 import { api } from '@/utils/api';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const container = {
   hidden: { opacity: 0 },
@@ -27,7 +27,7 @@ export default function RegisterPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const logout = useAuthStore((s) => s.logout);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,14 +38,20 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      const data = await api<{ user: unknown; token: string }>('/api/auth/regjistrohu', {
+      const data = await api<{
+        needsVerification?: boolean;
+        email?: string;
+        emailSent?: boolean;
+        message?: string;
+      }>('/api/auth/regjistrohu', {
         method: 'POST',
         body: { username, email, fullName, password, acceptedTerms: true },
       });
-      const normalized = normalizeAuthUser(data.user);
-      if (!normalized) throw new Error('Përgjigja e serverit është e paplotë.');
-      setAuth(normalized, data.token);
-      router.push('/feed');
+      const targetEmail = data.email || email;
+      logout();
+      router.push(
+        `/prit-verifikimin?email=${encodeURIComponent(targetEmail)}${data.emailSent === false ? '&warn=1' : ''}`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gabim gjatë regjistrimit.');
     } finally {

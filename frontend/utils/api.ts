@@ -1,5 +1,5 @@
 // Në prodhim (Vercel), kërkesat shkojnë direkt te /api/* falë vercel.json rewrites.
-import { getAuthToken, clearAuthSession } from '@/store/useAuthStore';
+import { getAuthToken, clearAuthSession, useAuthStore } from '@/store/useAuthStore';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window === 'undefined' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5000');
 const API_URL = typeof window !== 'undefined' ? '' : BACKEND_URL;
@@ -15,6 +15,25 @@ function sanitizeServerMessage(msg: string): string {
     return 'Gabim në server. Provo përsëri ose rifresko faqen.';
   }
   return t;
+}
+
+/** Gabim API me kod opsional (p.sh. EMAIL_NOT_VERIFIED) */
+export class ApiError extends Error {
+  code?: string;
+  email?: string;
+  constructor(message: string, opts?: { code?: string; email?: string }) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = opts?.code;
+    this.email = opts?.email;
+  }
+}
+
+function redirectToEmailVerification(email?: string) {
+  if (typeof window === 'undefined') return;
+  useAuthStore.getState().logout();
+  const q = email ? `?email=${encodeURIComponent(email)}` : '';
+  window.location.replace(`/prit-verifikimin${q}`);
 }
 
 function getErrorMessage(data: unknown, status: number, path?: string): string {
@@ -49,6 +68,8 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/harruar-fjalekalimin',
   '/api/auth/rifresko-fjalekalimin',
   '/api/auth/verifiko-email',
+  '/api/auth/ridergo-verifikimin',
+  '/api/auth/email-status',
 ];
 function isPublicAuthPath(path: string): boolean {
   return PUBLIC_AUTH_PATHS.some((p) => path.startsWith(p));
@@ -109,14 +130,19 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         const msg = getErrorMessage(data, res.status, path);
+        const d = data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
+        const code = typeof d?.code === 'string' ? d.code : undefined;
+        const email = typeof d?.email === 'string' ? d.email : undefined;
         if (typeof window !== 'undefined' && !isPublicAuthPath(path)) {
           if (res.status === 401) {
             clearAuthSession('session');
+          } else if (res.status === 403 && code === 'EMAIL_NOT_VERIFIED') {
+            redirectToEmailVerification(email);
           } else if (res.status === 403 && /bllokuar/i.test(msg)) {
             clearAuthSession('forbidden');
           }
         }
-        throw new Error(msg);
+        throw new ApiError(msg, { code, email });
       }
       return data as T;
     } catch (err) {
@@ -174,14 +200,19 @@ export async function apiUpload<T>(
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = getErrorMessage(data, res.status, path);
+    const d = data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
+    const code = typeof d?.code === 'string' ? d.code : undefined;
+    const email = typeof d?.email === 'string' ? d.email : undefined;
     if (typeof window !== 'undefined' && !isPublicAuthPath(path)) {
       if (res.status === 401) {
         clearAuthSession('session');
+      } else if (res.status === 403 && code === 'EMAIL_NOT_VERIFIED') {
+        redirectToEmailVerification(email);
       } else if (res.status === 403 && /bllokuar/i.test(msg)) {
         clearAuthSession('forbidden');
       }
     }
-    throw new Error(msg);
+    throw new ApiError(msg, { code, email });
   }
   return data as T;
 }

@@ -52,6 +52,7 @@ export function useSocket() {
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const hasHydrated = useAuthStore((s) => s._hasHydrated);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -84,14 +85,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!token && !getAuthToken()) return;
+    if (!user?.emailVerified) return;
     void refreshNotifications();
     void refreshUnreadMessages();
-  }, [token, hasHydrated, refreshNotifications, refreshUnreadMessages]);
+  }, [token, hasHydrated, user?.emailVerified, refreshNotifications, refreshUnreadMessages]);
 
   useEffect(() => {
     const authToken = token || getAuthToken();
     if (!hasHydrated && !useAuthStore.persist.hasHydrated()) return;
-    if (!authToken) {
+    if (!authToken || !user?.emailVerified) {
       setSocket(null);
       setIsConnected(false);
       return;
@@ -126,7 +128,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setSocket(null);
       setIsConnected(false);
     };
-  }, [token, hasHydrated, refreshNotifications, refreshUnreadMessages]);
+  }, [token, hasHydrated, user?.emailVerified, refreshNotifications, refreshUnreadMessages]);
 
   return (
     <SocketContext.Provider

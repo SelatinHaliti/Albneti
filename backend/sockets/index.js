@@ -45,6 +45,7 @@ export function setupSocketIO(io) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id);
       if (!user || user.isBlocked) return next(new Error('Përdorues i pavlefshëm'));
+      if (!user.emailVerified) return next(new Error('Verifikoni email-in përpara se të përdorni platformën.'));
       socket.userId = user._id.toString();
       next();
     } catch (err) {
