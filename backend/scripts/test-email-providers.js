@@ -24,7 +24,7 @@ console.log('resendFrom:', resend.from);
 console.log('resendVerified:', resend.verified);
 
 if (!blast.blastReady) {
-  console.error('\n❌ Email blast NUK është gati. Vendos BREVO_API_KEY ose verifiko Resend domain.');
+  console.error('\n❌ Email blast NUK është gati. Vendos SMTP_PASS në Render ose verifiko Resend domain.');
   process.exit(1);
 }
 

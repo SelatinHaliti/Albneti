@@ -4,32 +4,35 @@ import nodemailer from 'nodemailer';
  * Transport për dërgim emailesh (konfigurohet me .env)
  * Nëse SMTP_HOST është shembull (example.com) ose mungon, nuk krijohet transport.
  */
-const createTransporter = () => {
+const createTransporter = ({ portOverride } = {}) => {
   const host = (process.env.SMTP_HOST || '').trim().toLowerCase();
   if (!host || host.includes('example')) return null;
   const user = (process.env.SMTP_USER || '').trim();
-  // Gmail App Password shpesh kopjohet me hapësira (p.sh. "abcd efgh ijkl mnop")
   const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
   if (!user || !pass) return null;
 
   const isGmail = host === 'smtp.gmail.com' || user.endsWith('@gmail.com');
   if (isGmail) {
     const envPort = parseInt(process.env.SMTP_PORT || '587', 10);
-    const use587 = process.env.SMTP_USE_ALT_PORT === 'true' || envPort === 587 || process.env.SMTP_SECURE === 'false';
-    const port = use587 ? 587 : 465;
+    const use587 =
+      portOverride === 587 ||
+      (portOverride !== 465 &&
+        (process.env.SMTP_USE_ALT_PORT === 'true' || envPort === 587 || process.env.SMTP_SECURE === 'false'));
+    const port = portOverride || (use587 ? 587 : 465);
+    const usePool = process.env.SMTP_POOL !== 'false' && process.env.RENDER !== 'true';
     return nodemailer.createTransport({
-      pool: true,
-      maxConnections: 1,
-      maxMessages: 50,
+      ...(usePool
+        ? { pool: true, maxConnections: 1, maxMessages: 50 }
+        : {}),
       host: 'smtp.gmail.com',
       port,
       secure: port === 465,
       requireTLS: port === 587,
       family: 4,
       auth: { user, pass },
-      connectionTimeout: 90000,
-      greetingTimeout: 45000,
-      socketTimeout: 90000,
+      connectionTimeout: 120000,
+      greetingTimeout: 60000,
+      socketTimeout: 120000,
       tls: { minVersion: 'TLSv1.2' },
     });
   }
@@ -164,7 +167,8 @@ export const isEmailConfigured = () => getBlastDeliveryInfo().blastReady;
 let cachedTransporter = null;
 let verifyPromise = null;
 
-function getTransporter() {
+function getTransporter(opts) {
+  if (opts) return createTransporter(opts);
   if (cachedTransporter) return cachedTransporter;
   cachedTransporter = createTransporter();
   return cachedTransporter;
@@ -338,15 +342,17 @@ function normalizeMailerError(err) {
   return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
 }
 
-async function sendViaSmtp({ from, to, subject, html }, { maxAttempts = 3, timeoutMs = 90000 } = {}) {
+async function sendViaSmtp({ from, to, subject, html }, { maxAttempts = 4, timeoutMs = 120000 } = {}) {
   if (isRenderSmtpBlocked()) {
     return { ok: false, error: 'Render FREE bllokon Gmail SMTP. Upgrade Render Starter ose përdor Resend me domain.' };
   }
   const mailOptions = { from, to, subject, html };
+  const ports = process.env.SMTP_USE_ALT_PORT === 'true' ? [587, 465] : [465, 587];
   let lastError = 'SMTP dështoi.';
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const transporter = getTransporter();
+    const port = ports[(attempt - 1) % ports.length];
+    const transporter = getTransporter({ portOverride: port });
     if (!transporter) {
       return { ok: false, error: 'SMTP nuk është konfiguruar.' };
     }
@@ -356,14 +362,20 @@ async function sendViaSmtp({ from, to, subject, html }, { maxAttempts = 3, timeo
         setTimeout(() => reject(new Error('send timeout')), timeoutMs);
       });
       await Promise.race([sendTask, timeoutTask]);
+      if (!transporter.pool) {
+        try { transporter.close(); } catch { /* ignore */ }
+      }
       return { ok: true, provider: 'smtp' };
     } catch (err) {
       lastError = normalizeMailerError(err);
+      if (!transporter.pool) {
+        try { transporter.close(); } catch { /* ignore */ }
+      }
       if (!isRetryableSmtpError(err) || attempt >= maxAttempts) {
         return { ok: false, error: lastError };
       }
       resetSmtpTransporter();
-      await sleep(2000 * attempt);
+      await sleep(3000 * attempt);
     }
   }
   return { ok: false, error: lastError };

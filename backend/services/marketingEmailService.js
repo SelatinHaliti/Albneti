@@ -7,8 +7,8 @@ import MarketingRun from '../models/MarketingRun.js';
 import { sendAlbnetAdsEmail, isEmailConfigured, resetSmtpTransporter, resetResendSession, getEmailProvider, getBlastDeliveryInfo, refreshResendDomainStatus } from '../utils/email.js';
 import { generateMarketingTheme, getAiMarketingStatus } from './aiMarketingService.js';
 
-const BATCH_SIZE = 5;
-const BATCH_DELAY_MS = 3000;
+const BATCH_SIZE = 1;
+const BATCH_DELAY_MS = 8000;
 const ACTIVE_DAYS = 60;
 const MIN_DAYS_BETWEEN_EMAILS = 6;
 const SYSTEM_USERNAME = 'albnet_official';
