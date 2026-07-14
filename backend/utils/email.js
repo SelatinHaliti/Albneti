@@ -64,13 +64,18 @@ export function isResendFromVerifiedDomain() {
 }
 
 function shouldSkipBrevo() {
-  return process.env.EMAIL_SKIP_BREVO === 'true' || process.env.EMAIL_PRIMARY === 'smtp';
+  return process.env.EMAIL_SKIP_BREVO === 'true';
+}
+
+function isSendGridConfigured() {
+  return Boolean(process.env.SENDGRID_API_KEY?.trim().startsWith('SG.'));
 }
 
 function getEmailPrimary() {
   const primary = (process.env.EMAIL_PRIMARY || '').trim().toLowerCase();
-  if (primary === 'smtp' || primary === 'brevo' || primary === 'resend') return primary;
-  if (shouldSkipBrevo() && isSmtpConfigured() && !isRenderSmtpBlocked()) return 'smtp';
+  if (process.env.EMAIL_PROXY_URL?.trim()) return 'proxy';
+  if (['smtp', 'brevo', 'resend', 'sendgrid', 'proxy'].includes(primary)) return primary;
+  if (isSendGridConfigured()) return 'sendgrid';
   if (process.env.BREVO_API_KEY?.trim() && !shouldSkipBrevo()) return 'brevo';
   if (shouldTryResend()) return 'resend';
   if (isSmtpConfigured() && !isRenderSmtpBlocked()) return 'smtp';
@@ -89,25 +94,29 @@ function shouldTryResend() {
 }
 
 export function getEmailDeliveryInfo() {
+  const hasProxy = Boolean(process.env.EMAIL_PROXY_URL?.trim() && process.env.EMAIL_PROXY_SECRET?.trim());
   const hasResendKey = Boolean(process.env.RESEND_API_KEY?.trim().startsWith('re_'));
   const hasBrevoKey = Boolean(process.env.BREVO_API_KEY?.trim()) && !shouldSkipBrevo();
+  const hasSendGrid = isSendGridConfigured();
   const smtpBlocked = isRenderSmtpBlocked();
   const hasSmtp = isSmtpConfigured() && !smtpBlocked;
   const resendNeedsDomain = hasResendKey && !isResendFromVerifiedDomain();
   const primary = getEmailPrimary();
   let provider = primary;
-  if (primary === 'smtp' && !hasSmtp) provider = hasBrevoKey ? 'brevo' : hasResendKey ? 'resend' : null;
-  if (primary === 'brevo' && !hasBrevoKey) provider = hasSmtp ? 'smtp' : hasResendKey ? 'resend' : null;
-  if (primary === 'resend' && !shouldTryResend()) provider = hasSmtp ? 'smtp' : hasBrevoKey ? 'brevo' : null;
+  if (primary === 'proxy' && !hasProxy) provider = hasSendGrid ? 'sendgrid' : hasBrevoKey ? 'brevo' : hasSmtp ? 'smtp' : null;
+  if (primary === 'smtp' && !hasSmtp) provider = hasProxy ? 'proxy' : hasBrevoKey ? 'brevo' : hasResendKey ? 'resend' : null;
+  if (primary === 'brevo' && !hasBrevoKey) provider = hasProxy ? 'proxy' : hasSmtp ? 'smtp' : hasResendKey ? 'resend' : null;
+  if (primary === 'sendgrid' && !hasSendGrid) provider = hasProxy ? 'proxy' : hasBrevoKey ? 'brevo' : hasSmtp ? 'smtp' : null;
+  if (primary === 'resend' && !shouldTryResend()) provider = hasProxy ? 'proxy' : hasSmtp ? 'smtp' : hasBrevoKey ? 'brevo' : null;
 
   let deliveryNote = null;
-  if (smtpBlocked && !isResendFromVerifiedDomain() && !hasBrevoKey) {
+  if (hasProxy) {
+    deliveryNote = 'Dërgimi përmes Vercel proxy (Brevo HTTP) – funksionon në Render pa SMTP.';
+  } else if (smtpBlocked && !isResendFromVerifiedDomain() && !hasBrevoKey && !hasSendGrid) {
     deliveryNote =
-      'Render FREE bllokon Gmail SMTP (portet 465/587). Verifiko domain në resend.com/domains OSE upgrade Render Starter ($7/muaj).';
-  } else if (resendNeedsDomain && !hasBrevoKey && !hasSmtp) {
-    deliveryNote = 'Verifiko domain në Resend për blast, ose përdor Gmail SMTP në Render Starter.';
-  } else if (shouldSkipBrevo() && hasSmtp) {
-    deliveryNote = 'Dërgimi kryesor: Gmail SMTP (Brevo është çaktivizuar).';
+      'Render FREE bllokon Gmail SMTP. Vendos EMAIL_PROXY_URL (Vercel) ose SENDGRID_API_KEY.';
+  } else if (resendNeedsDomain && !hasBrevoKey && !hasSmtp && !hasSendGrid) {
+    deliveryNote = 'Verifiko domain në Resend për blast, ose përdor Vercel email proxy.';
   }
 
   return {
@@ -116,6 +125,8 @@ export function getEmailDeliveryInfo() {
     resendNeedsDomain,
     resendConfigured: hasResendKey,
     brevoConfigured: hasBrevoKey,
+    sendgridConfigured: hasSendGrid,
+    proxyConfigured: hasProxy,
     smtpConfigured: hasSmtp,
     smtpBlockedOnHost: smtpBlocked,
     deliveryNote,
@@ -128,10 +139,18 @@ export function getBlastDeliveryInfo() {
   const canResend = isResendFromVerifiedDomain();
   const canBrevo = delivery.brevoConfigured;
   const canSmtp = delivery.smtpConfigured;
-  const blastReady = canResend || canBrevo || canSmtp;
+  const canSendGrid = delivery.sendgridConfigured;
+  const canProxy = delivery.proxyConfigured;
+  const blastReady = canProxy || canResend || canBrevo || canSmtp || canSendGrid;
   let blastProvider = 'none';
   let blastVia = 'Asnjë';
-  if (delivery.emailPrimary === 'smtp' && canSmtp) {
+  if (canProxy) {
+    blastProvider = 'proxy';
+    blastVia = 'Vercel → Brevo';
+  } else if (delivery.emailPrimary === 'sendgrid' && canSendGrid) {
+    blastProvider = 'sendgrid';
+    blastVia = 'SendGrid';
+  } else if (delivery.emailPrimary === 'smtp' && canSmtp) {
     blastProvider = 'smtp';
     blastVia = 'Gmail SMTP';
   } else if (delivery.emailPrimary === 'resend' && canResend) {
@@ -140,6 +159,9 @@ export function getBlastDeliveryInfo() {
   } else if (delivery.emailPrimary === 'brevo' && canBrevo) {
     blastProvider = 'brevo';
     blastVia = 'Brevo';
+  } else if (canSendGrid) {
+    blastProvider = 'sendgrid';
+    blastVia = 'SendGrid';
   } else if (canSmtp) {
     blastProvider = 'smtp';
     blastVia = 'Gmail SMTP';
@@ -342,6 +364,54 @@ function normalizeMailerError(err) {
   return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
 }
 
+async function sendViaSendGrid({ to, subject, html }) {
+  const key = process.env.SENDGRID_API_KEY?.trim();
+  if (!key?.startsWith('SG.')) return null;
+  const fromEmail = (process.env.SENDGRID_FROM_EMAIL || process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || '').trim();
+  const fromName = process.env.SENDGRID_FROM_NAME?.trim() || 'AlbNet';
+  if (!fromEmail) return { ok: false, error: 'SENDGRID_FROM_EMAIL mungon.' };
+  try {
+    const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: to }] }],
+        from: { email: fromEmail, name: fromName },
+        subject,
+        content: [{ type: 'text/html', value: html }],
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, error: `SendGrid ${res.status}: ${body.slice(0, 220)}` };
+    }
+    return { ok: true, provider: 'sendgrid' };
+  } catch (err) {
+    return { ok: false, error: String(err?.message || err) };
+  }
+}
+
+async function sendViaProxy({ to, subject, html }) {
+  const url = process.env.EMAIL_PROXY_URL?.trim();
+  const secret = process.env.EMAIL_PROXY_SECRET?.trim();
+  if (!url || !secret) return null;
+  const brevoKey = process.env.BREVO_API_KEY?.trim();
+  const senderEmail = (process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || '').trim();
+  const senderName = process.env.BREVO_SENDER_NAME?.trim() || 'AlbNet';
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-email-proxy-secret': secret },
+      body: JSON.stringify({ to, subject, html, brevoKey, senderEmail, senderName }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data?.ok) return data;
+    return { ok: false, error: data?.error || `Proxy ${res.status}` };
+  } catch (err) {
+    return { ok: false, error: String(err?.message || err) };
+  }
+}
+
 async function sendViaSmtp({ from, to, subject, html }, { maxAttempts = 4, timeoutMs = 120000 } = {}) {
   if (isRenderSmtpBlocked()) {
     return { ok: false, error: 'Render FREE bllokon Gmail SMTP. Upgrade Render Starter ose përdor Resend me domain.' };
@@ -388,23 +458,45 @@ async function sendMail({ to, subject, html }) {
     (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
 
   const primary = getEmailPrimary();
+  const tryProxy = Boolean(process.env.EMAIL_PROXY_URL?.trim() && process.env.EMAIL_PROXY_SECRET?.trim());
+  const trySendGrid = isSendGridConfigured();
   const tryBrevo = !shouldSkipBrevo() && Boolean(process.env.BREVO_API_KEY?.trim());
   const tryResend = shouldTryResend();
   const trySmtp = isSmtpConfigured() && !isRenderSmtpBlocked();
 
   const order =
-    primary === 'smtp'
-      ? ['smtp', 'resend', 'brevo']
-      : primary === 'resend'
-        ? ['resend', 'smtp', 'brevo']
-        : ['brevo', 'smtp', 'resend'];
+    primary === 'proxy'
+      ? ['proxy', 'sendgrid', 'brevo', 'smtp', 'resend']
+      : primary === 'sendgrid'
+        ? ['sendgrid', 'proxy', 'brevo', 'smtp', 'resend']
+        : primary === 'smtp'
+          ? ['smtp', 'proxy', 'sendgrid', 'resend', 'brevo']
+          : primary === 'resend'
+            ? ['resend', 'proxy', 'sendgrid', 'smtp', 'brevo']
+            : ['proxy', 'brevo', 'sendgrid', 'smtp', 'resend'];
 
   let lastError = 'Asnjë provider email nuk është konfiguruar.';
 
   for (const step of order) {
+    if (step === 'proxy' && !tryProxy) continue;
+    if (step === 'sendgrid' && !trySendGrid) continue;
     if (step === 'brevo' && !tryBrevo) continue;
     if (step === 'resend' && !tryResend) continue;
     if (step === 'smtp' && !trySmtp) continue;
+
+    if (step === 'proxy') {
+      const proxyResult = await sendViaProxy({ to, subject, html });
+      if (proxyResult?.ok) return proxyResult;
+      lastError = proxyResult?.error || lastError;
+      continue;
+    }
+
+    if (step === 'sendgrid') {
+      const sgResult = await sendViaSendGrid({ to, subject, html });
+      if (sgResult?.ok) return sgResult;
+      lastError = sgResult?.error || lastError;
+      continue;
+    }
 
     if (step === 'brevo') {
       const brevoResult = await sendViaBrevo({ to, subject, html });
