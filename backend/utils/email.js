@@ -111,7 +111,7 @@ export function getBlastDeliveryInfo() {
   let blastVia = 'Asnjë';
   if (canBrevo) {
     blastProvider = 'brevo';
-    blastVia = 'Brevo';
+    blastVia = 'Brevo (+ SMTP fallback)';
   } else if (canResend) {
     blastProvider = 'resend';
     blastVia = 'Resend';
@@ -320,10 +320,11 @@ async function sendMail({ to, subject, html }) {
   if (process.env.BREVO_API_KEY?.trim()) {
     const brevoResult = await sendViaBrevo({ to, subject, html });
     if (brevoResult?.ok) return brevoResult;
-    if (process.env.RENDER === 'true' || process.env.EMAIL_PREFER_BREVO === 'true') {
+    const brevoIpBlocked = /authorized_ips|IP e serverit nuk/i.test(brevoResult?.error || '');
+    if ((process.env.RENDER === 'true' || process.env.EMAIL_PREFER_BREVO === 'true') && !brevoIpBlocked) {
       return brevoResult;
     }
-    if (!isSmtpConfigured() || isRenderSmtpBlocked()) return brevoResult;
+    if (!brevoIpBlocked && (!isSmtpConfigured() || isRenderSmtpBlocked())) return brevoResult;
   }
 
   // 2) Resend HTTP API – kërkon domain të verifikuar për blast
