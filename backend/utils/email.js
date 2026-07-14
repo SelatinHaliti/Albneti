@@ -486,9 +486,12 @@ async function sendMail({ to, subject, html }) {
 
     if (step === 'proxy') {
       const proxyResult = await sendViaProxy({ to, subject, html });
-      if (proxyResult?.ok) return proxyResult;
-      lastError = proxyResult?.error || lastError;
-      continue;
+    if (proxyResult?.ok) return proxyResult;
+    lastError = proxyResult?.error || lastError;
+    if (/authorized_ips|IP e serverit|IP e Vercel/i.test(proxyResult?.error || '')) {
+      return { ok: false, error: lastError };
+    }
+    continue;
     }
 
     if (step === 'sendgrid') {

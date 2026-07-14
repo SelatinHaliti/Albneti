@@ -22,7 +22,7 @@ function isResendDomainRestrictionHint(error) {
 function isFatalEmailError(error) {
   const msg = String(error || '');
   if (/vonoi|timeout|ETIMEDOUT|ECONNECTION|ECONNRESET|ENOTFOUND|socket/i.test(msg)) return false;
-  return /EAUTH|BadCredentials|Gmail refuzoi|Render FREE bllokon|Brevo \d|Resend 403|verify a domain|SMTP nuk është/i.test(msg);
+  return /EAUTH|BadCredentials|Gmail refuzoi|Render FREE bllokon|Brevo \d|authorized_ips|IP e serverit|IP e Vercel|Resend 403|verify a domain|SMTP nuk është/i.test(msg);
 }
 
 const WEEKLY_THEMES = [
