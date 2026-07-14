@@ -14,7 +14,7 @@ if (!to || !to.includes('@')) {
 const blast = getBlastDeliveryInfo();
 console.log('blastReady:', blast.blastReady);
 console.log('blastVia:', blast.blastVia);
-console.log('brevoConfigured:', blast.brevoConfigured);
+console.log('gasConfigured:', blast.gasConfigured);
 console.log('resendConfigured:', blast.resendConfigured);
 console.log('smtpBlockedOnHost:', blast.smtpBlockedOnHost);
 if (blast.deliveryNote) console.log('note:', blast.deliveryNote);
@@ -24,7 +24,7 @@ console.log('resendFrom:', resend.from);
 console.log('resendVerified:', resend.verified);
 
 if (!blast.blastReady) {
-  console.error('\n❌ Email blast NUK është gati. Vendos SMTP_PASS në Render ose verifiko Resend domain.');
+  console.error('\n❌ Email blast NUK është gati. Vendos GOOGLE_APPS_SCRIPT_URL ose BREVO/SMTP.');
   process.exit(1);
 }
 

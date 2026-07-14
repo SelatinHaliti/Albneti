@@ -68,7 +68,11 @@ services:
       - key: EMAIL_SMTP_ALLOWED
         value: true
       - key: EMAIL_PRIMARY
-        value: proxy
+        value: gas
+      - key: GOOGLE_APPS_SCRIPT_URL
+        sync: false
+      - key: GOOGLE_APPS_SCRIPT_SECRET
+        sync: false
       - key: EMAIL_PROXY_URL
         value: https://albneti.vercel.app/api/internal/send-email
       - key: EMAIL_PROXY_SECRET

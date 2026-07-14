@@ -71,10 +71,19 @@ function isSendGridConfigured() {
   return Boolean(process.env.SENDGRID_API_KEY?.trim().startsWith('SG.'));
 }
 
+function isGoogleAppsScriptConfigured() {
+  const url = process.env.GOOGLE_APPS_SCRIPT_URL?.trim();
+  const secret = process.env.GOOGLE_APPS_SCRIPT_SECRET?.trim();
+  return Boolean(url?.includes('script.google.com') && secret);
+}
+
 function getEmailPrimary() {
   const primary = (process.env.EMAIL_PRIMARY || '').trim().toLowerCase();
-  if (process.env.EMAIL_PROXY_URL?.trim()) return 'proxy';
-  if (['smtp', 'brevo', 'resend', 'sendgrid', 'proxy'].includes(primary)) return primary;
+  if (isGoogleAppsScriptConfigured()) {
+    if (!primary || primary === 'gas' || primary === 'google_script' || primary === 'apps_script') return 'gas';
+  }
+  if (process.env.EMAIL_PROXY_URL?.trim() && primary !== 'gas') return 'proxy';
+  if (['smtp', 'brevo', 'resend', 'sendgrid', 'proxy', 'gas'].includes(primary)) return primary;
   if (isSendGridConfigured()) return 'sendgrid';
   if (process.env.BREVO_API_KEY?.trim() && !shouldSkipBrevo()) return 'brevo';
   if (shouldTryResend()) return 'resend';
@@ -94,6 +103,7 @@ function shouldTryResend() {
 }
 
 export function getEmailDeliveryInfo() {
+  const hasGas = isGoogleAppsScriptConfigured();
   const hasProxy = Boolean(process.env.EMAIL_PROXY_URL?.trim() && process.env.EMAIL_PROXY_SECRET?.trim());
   const hasResendKey = Boolean(process.env.RESEND_API_KEY?.trim().startsWith('re_'));
   const hasBrevoKey = Boolean(process.env.BREVO_API_KEY?.trim()) && !shouldSkipBrevo();
@@ -103,20 +113,23 @@ export function getEmailDeliveryInfo() {
   const resendNeedsDomain = hasResendKey && !isResendFromVerifiedDomain();
   const primary = getEmailPrimary();
   let provider = primary;
-  if (primary === 'proxy' && !hasProxy) provider = hasSendGrid ? 'sendgrid' : hasBrevoKey ? 'brevo' : hasSmtp ? 'smtp' : null;
-  if (primary === 'smtp' && !hasSmtp) provider = hasProxy ? 'proxy' : hasBrevoKey ? 'brevo' : hasResendKey ? 'resend' : null;
-  if (primary === 'brevo' && !hasBrevoKey) provider = hasProxy ? 'proxy' : hasSmtp ? 'smtp' : hasResendKey ? 'resend' : null;
-  if (primary === 'sendgrid' && !hasSendGrid) provider = hasProxy ? 'proxy' : hasBrevoKey ? 'brevo' : hasSmtp ? 'smtp' : null;
-  if (primary === 'resend' && !shouldTryResend()) provider = hasProxy ? 'proxy' : hasSmtp ? 'smtp' : hasBrevoKey ? 'brevo' : null;
+  if (primary === 'gas' && !hasGas) provider = hasProxy ? 'proxy' : hasBrevoKey ? 'brevo' : hasSmtp ? 'smtp' : null;
+  if (primary === 'proxy' && !hasProxy) provider = hasGas ? 'gas' : hasSendGrid ? 'sendgrid' : hasBrevoKey ? 'brevo' : hasSmtp ? 'smtp' : null;
+  if (primary === 'smtp' && !hasSmtp) provider = hasGas ? 'gas' : hasProxy ? 'proxy' : hasBrevoKey ? 'brevo' : hasResendKey ? 'resend' : null;
+  if (primary === 'brevo' && !hasBrevoKey) provider = hasGas ? 'gas' : hasProxy ? 'proxy' : hasSmtp ? 'smtp' : hasResendKey ? 'resend' : null;
+  if (primary === 'sendgrid' && !hasSendGrid) provider = hasGas ? 'gas' : hasProxy ? 'proxy' : hasBrevoKey ? 'brevo' : hasSmtp ? 'smtp' : null;
+  if (primary === 'resend' && !shouldTryResend()) provider = hasGas ? 'gas' : hasProxy ? 'proxy' : hasSmtp ? 'smtp' : hasBrevoKey ? 'brevo' : null;
 
   let deliveryNote = null;
-  if (hasProxy) {
+  if (hasGas) {
+    deliveryNote = 'Dërgimi përmes Google Apps Script (Gmail) – funksionon në Render pa SMTP.';
+  } else if (hasProxy) {
     deliveryNote = 'Dërgimi përmes Vercel proxy (Brevo HTTP) – funksionon në Render pa SMTP.';
   } else if (smtpBlocked && !isResendFromVerifiedDomain() && !hasBrevoKey && !hasSendGrid) {
     deliveryNote =
-      'Render FREE bllokon Gmail SMTP. Vendos EMAIL_PROXY_URL (Vercel) ose SENDGRID_API_KEY.';
-  } else if (resendNeedsDomain && !hasBrevoKey && !hasSmtp && !hasSendGrid) {
-    deliveryNote = 'Verifiko domain në Resend për blast, ose përdor Vercel email proxy.';
+      'Render FREE bllokon Gmail SMTP. Vendos GOOGLE_APPS_SCRIPT_URL ose EMAIL_PROXY_URL.';
+  } else if (resendNeedsDomain && !hasBrevoKey && !hasSmtp && !hasSendGrid && !hasGas) {
+    deliveryNote = 'Verifiko domain në Resend për blast, ose përdor Google Apps Script.';
   }
 
   return {
@@ -126,6 +139,7 @@ export function getEmailDeliveryInfo() {
     resendConfigured: hasResendKey,
     brevoConfigured: hasBrevoKey,
     sendgridConfigured: hasSendGrid,
+    gasConfigured: hasGas,
     proxyConfigured: hasProxy,
     smtpConfigured: hasSmtp,
     smtpBlockedOnHost: smtpBlocked,
@@ -141,10 +155,14 @@ export function getBlastDeliveryInfo() {
   const canSmtp = delivery.smtpConfigured;
   const canSendGrid = delivery.sendgridConfigured;
   const canProxy = delivery.proxyConfigured;
-  const blastReady = canProxy || canResend || canBrevo || canSmtp || canSendGrid;
+  const canGas = delivery.gasConfigured;
+  const blastReady = canGas || canProxy || canResend || canBrevo || canSmtp || canSendGrid;
   let blastProvider = 'none';
   let blastVia = 'Asnjë';
-  if (canProxy) {
+  if (canGas) {
+    blastProvider = 'gas';
+    blastVia = 'Google Apps Script (Gmail)';
+  } else if (canProxy) {
     blastProvider = 'proxy';
     blastVia = 'Vercel → Brevo';
   } else if (delivery.emailPrimary === 'sendgrid' && canSendGrid) {
@@ -364,6 +382,35 @@ function normalizeMailerError(err) {
   return parts.length ? parts.join(' | ') : 'Gabim i panjohur.';
 }
 
+function parseGoogleAppsScriptResponse(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = String(text).match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    return { ok: false, error: 'Apps Script përgjigje e pavlefshme.' };
+  }
+}
+
+async function sendViaGoogleAppsScript({ to, subject, html }) {
+  const url = process.env.GOOGLE_APPS_SCRIPT_URL?.trim();
+  const secret = process.env.GOOGLE_APPS_SCRIPT_SECRET?.trim();
+  if (!url?.includes('script.google.com') || !secret) return null;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret, to, subject, html }),
+      redirect: 'follow',
+    });
+    const data = parseGoogleAppsScriptResponse(await res.text());
+    if (data?.ok) return { ...data, provider: 'gas' };
+    return { ok: false, error: data?.error || `Apps Script ${res.status}` };
+  } catch (err) {
+    return { ok: false, error: String(err?.message || err) };
+  }
+}
+
 async function sendViaSendGrid({ to, subject, html }) {
   const key = process.env.SENDGRID_API_KEY?.trim();
   if (!key?.startsWith('SG.')) return null;
@@ -458,6 +505,7 @@ async function sendMail({ to, subject, html }) {
     (smtpUser ? `AlbNet <${smtpUser}>` : 'AlbNet <noreply@albnet.com>');
 
   const primary = getEmailPrimary();
+  const tryGas = isGoogleAppsScriptConfigured();
   const tryProxy = Boolean(process.env.EMAIL_PROXY_URL?.trim() && process.env.EMAIL_PROXY_SECRET?.trim());
   const trySendGrid = isSendGridConfigured();
   const tryBrevo = !shouldSkipBrevo() && Boolean(process.env.BREVO_API_KEY?.trim());
@@ -465,24 +513,34 @@ async function sendMail({ to, subject, html }) {
   const trySmtp = isSmtpConfigured() && !isRenderSmtpBlocked();
 
   const order =
-    primary === 'proxy'
-      ? ['proxy', 'sendgrid', 'brevo', 'smtp', 'resend']
-      : primary === 'sendgrid'
-        ? ['sendgrid', 'proxy', 'brevo', 'smtp', 'resend']
-        : primary === 'smtp'
-          ? ['smtp', 'proxy', 'sendgrid', 'resend', 'brevo']
-          : primary === 'resend'
-            ? ['resend', 'proxy', 'sendgrid', 'smtp', 'brevo']
-            : ['proxy', 'brevo', 'sendgrid', 'smtp', 'resend'];
+    primary === 'gas'
+      ? ['gas', 'proxy', 'sendgrid', 'brevo', 'smtp', 'resend']
+      : primary === 'proxy'
+        ? ['proxy', 'gas', 'sendgrid', 'brevo', 'smtp', 'resend']
+        : primary === 'sendgrid'
+          ? ['sendgrid', 'gas', 'proxy', 'brevo', 'smtp', 'resend']
+          : primary === 'smtp'
+            ? ['smtp', 'gas', 'proxy', 'sendgrid', 'resend', 'brevo']
+            : primary === 'resend'
+              ? ['resend', 'gas', 'proxy', 'sendgrid', 'smtp', 'brevo']
+              : ['gas', 'proxy', 'brevo', 'sendgrid', 'smtp', 'resend'];
 
   let lastError = 'Asnjë provider email nuk është konfiguruar.';
 
   for (const step of order) {
+    if (step === 'gas' && !tryGas) continue;
     if (step === 'proxy' && !tryProxy) continue;
     if (step === 'sendgrid' && !trySendGrid) continue;
     if (step === 'brevo' && !tryBrevo) continue;
     if (step === 'resend' && !tryResend) continue;
     if (step === 'smtp' && !trySmtp) continue;
+
+    if (step === 'gas') {
+      const gasResult = await sendViaGoogleAppsScript({ to, subject, html });
+      if (gasResult?.ok) return gasResult;
+      lastError = gasResult?.error || lastError;
+      continue;
+    }
 
     if (step === 'proxy') {
       const proxyResult = await sendViaProxy({ to, subject, html });
