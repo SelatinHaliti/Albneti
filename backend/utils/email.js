@@ -678,7 +678,14 @@ function ctaButton(href, label) {
  * Dërgon email verifikimi – dizajn i plotë
  */
 export const sendVerificationEmail = async (email, token, username) => {
-  const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verifiko?token=${token}`;
+  const apiBase = (
+    process.env.API_PUBLIC_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
+    'https://albneti-api.onrender.com'
+  ).replace(/\/$/, '');
+  const frontendBase = (process.env.FRONTEND_URL || 'https://albneti.vercel.app').replace(/\/$/, '');
+  const verifyUrl = `${apiBase}/api/auth/verifiko-link?token=${encodeURIComponent(token)}`;
+  const fallbackUrl = `${frontendBase}/verifiko?token=${encodeURIComponent(token)}`;
 
   const content = `
     <p style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: ${BRAND.text};">
@@ -690,13 +697,16 @@ export const sendVerificationEmail = async (email, token, username) => {
     <p style="margin: 0 0 8px; color: ${BRAND.text};">
       Ju keni krijuar një llogari. Klikoni butonin më poshtë për të <strong>verifikuar adresën tuaj të emailit</strong> dhe për të aktivizuar llogarinë.
     </p>
-    ${ctaButton(url, 'Verifiko llogarinë')}
+    ${ctaButton(verifyUrl, 'Verifiko llogarinë')}
     <p style="margin: 20px 0 0; font-size: 13px; color: ${BRAND.textMuted};">
       ⏱ Linku është i vlefshëm <strong>24 orë</strong>. Pas kësaj kohe do të duhet të kërkonit një email të ri verifikimi.
     </p>
     <p style="margin: 16px 0 0; font-size: 13px; color: ${BRAND.textMuted};">
       Nëse butoni nuk funksionon, kopjoni dhe ngjiteni këtë link në shfletues:<br>
-      <a href="${url}" style="color: ${BRAND.primary}; word-break: break-all;">${url}</a>
+      <a href="${verifyUrl}" style="color: ${BRAND.primary}; word-break: break-all;">${verifyUrl}</a>
+    </p>
+    <p style="margin: 8px 0 0; font-size: 12px; color: ${BRAND.textMuted};">
+      Link alternativ: <a href="${fallbackUrl}" style="color: ${BRAND.primary}; word-break: break-all;">${fallbackUrl}</a>
     </p>
   `;
 

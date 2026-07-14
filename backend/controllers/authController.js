@@ -16,6 +16,33 @@ const createToken = (id) => {
   });
 };
 
+function getFrontendUrl() {
+  return (process.env.FRONTEND_URL || 'https://albneti.vercel.app').replace(/\/$/, '');
+}
+
+function getApiPublicUrl() {
+  return (
+    process.env.API_PUBLIC_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
+    'https://albneti-api.onrender.com'
+  ).replace(/\/$/, '');
+}
+
+async function verifyUserFromToken(rawToken) {
+  const token = String(rawToken || '').trim();
+  if (!token) return { ok: false, error: 'missing' };
+  const user = await User.findOne({
+    verificationToken: token,
+    verificationTokenExpires: { $gt: Date.now() },
+  });
+  if (!user) return { ok: false, error: 'invalid' };
+  user.emailVerified = true;
+  user.verificationToken = undefined;
+  user.verificationTokenExpires = undefined;
+  await user.save();
+  return { ok: true, user };
+}
+
 const sendTokenResponse = (user, res, statusCode = 200) => {
   if (!user.emailVerified) {
     res.cookie('token', '', { maxAge: 0, httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
@@ -178,20 +205,39 @@ export const logout = async (req, res) => {
 export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.body;
-    const user = await User.findOne({
-      verificationToken: token,
-      verificationTokenExpires: { $gt: Date.now() },
-    });
-    if (!user) {
+    const result = await verifyUserFromToken(token);
+    if (!result.ok) {
       return res.status(400).json({ message: 'Linku i verifikimit është i pavlefshëm ose ka skaduar.' });
     }
-    user.emailVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
-    await user.save();
-    sendTokenResponse(user, res);
+    sendTokenResponse(result.user, res);
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim gjatë verifikimit.' });
+  }
+};
+
+/**
+ * Verifikim me 1 klik nga email (GET) – funksionon edhe kur SPA/API dështojnë
+ */
+export const verifyEmailLink = async (req, res) => {
+  const frontend = getFrontendUrl();
+  try {
+    const result = await verifyUserFromToken(req.query.token);
+    if (!result.ok) {
+      const code = result.error === 'missing' ? 'missing' : 'invalid';
+      return res.redirect(`${frontend}/verifiko?error=${code}`);
+    }
+    const user = result.user;
+    const accessToken = createToken(user._id);
+    const params = new URLSearchParams({
+      verified: '1',
+      accessToken,
+      uid: String(user._id),
+      username: user.username,
+      email: user.email,
+    });
+    return res.redirect(`${frontend}/verifiko?${params.toString()}`);
+  } catch (err) {
+    return res.redirect(`${frontend}/verifiko?error=server`);
   }
 };
 

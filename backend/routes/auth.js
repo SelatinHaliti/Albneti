@@ -4,6 +4,7 @@ import {
   login,
   logout,
   verifyEmail,
+  verifyEmailLink,
   resendVerification,
   emailStatus,
   forgotPassword,
@@ -24,6 +25,7 @@ router.post('/apple', appleLogin);
 router.get('/oauth-status', oauthStatus);
 router.post('/dil', logout);
 router.post('/verifiko-email', verifyEmail);
+router.get('/verifiko-link', verifyEmailLink);
 router.post('/ridergo-verifikimin', resendVerification);
 router.get('/email-status', emailStatus);
 router.post('/harruar-fjalekalimin', forgotPassword);
