@@ -67,6 +67,12 @@ services:
         value: AlbNet
       - key: EMAIL_SMTP_ALLOWED
         value: true
+      - key: EMAIL_PRIMARY
+        value: smtp
+      - key: EMAIL_SKIP_BREVO
+        value: true
+      - key: SMTP_USE_ALT_PORT
+        value: true
       - key: CRON_SECRET
         sync: false
       - key: GEMINI_API_KEY

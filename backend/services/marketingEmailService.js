@@ -21,6 +21,7 @@ function isResendDomainRestrictionHint(error) {
 
 function isFatalEmailError(error) {
   const msg = String(error || '');
+  if (/vonoi|timeout|ETIMEDOUT|ECONNECTION|ECONNRESET|ENOTFOUND|socket/i.test(msg)) return false;
   return /EAUTH|BadCredentials|Gmail refuzoi|Render FREE bllokon|Brevo \d|Resend 403|verify a domain|SMTP nuk është/i.test(msg);
 }
 
@@ -209,7 +210,7 @@ async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey
         consecutiveFails++;
         if (!lastError) lastError = result.error;
         if (isFatalEmailError(result.error)) break;
-        if (consecutiveFails >= 2 && sent === 0) break;
+        if (consecutiveFails >= 5 && sent === 0) break;
       }
 
       await MarketingRun.findOneAndUpdate(
@@ -217,7 +218,7 @@ async function sendToUsers({ users, theme, highlights, base, triggeredBy, runKey
         { $set: { sentCount: sent, failedCount: failed, skippedCount: skipped } }
       );
     }
-    if (consecutiveFails >= 2 && sent === 0) break;
+    if (consecutiveFails >= 5 && sent === 0) break;
 
     if (i + BATCH_SIZE < users.length) await sleep(BATCH_DELAY_MS);
   }
