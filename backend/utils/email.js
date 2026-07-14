@@ -76,8 +76,8 @@ export function getEmailDeliveryInfo() {
   const hasSmtp = isSmtpConfigured() && !smtpBlocked;
   const resendNeedsDomain = hasResendKey && !isResendFromVerifiedDomain();
   let provider = null;
-  if (shouldTryResend()) provider = 'resend';
-  else if (hasBrevoKey) provider = 'brevo';
+  if (hasBrevoKey) provider = 'brevo';
+  else if (shouldTryResend()) provider = 'resend';
   else if (hasSmtp) provider = 'smtp';
   else if (hasResendKey) provider = 'resend';
 
@@ -109,12 +109,12 @@ export function getBlastDeliveryInfo() {
   const blastReady = canResend || canBrevo || canSmtp;
   let blastProvider = 'none';
   let blastVia = 'Asnjë';
-  if (canResend) {
-    blastProvider = 'resend';
-    blastVia = 'Resend';
-  } else if (canBrevo) {
+  if (canBrevo) {
     blastProvider = 'brevo';
     blastVia = 'Brevo';
+  } else if (canResend) {
+    blastProvider = 'resend';
+    blastVia = 'Resend';
   } else if (canSmtp) {
     blastProvider = 'smtp';
     blastVia = 'Gmail SMTP';
@@ -214,6 +214,13 @@ async function sendViaBrevo({ to, subject, html }) {
     });
     if (!res.ok) {
       const body = await res.text();
+      if (res.status === 401 && /unrecognised IP|authorized_ips/i.test(body)) {
+        return {
+          ok: false,
+          error:
+            'Brevo: IP e serverit nuk është e autorizuar. Hap brevo.com → Security → Authorized IPs → çaktivizo ose shto IP të Render.',
+        };
+      }
       return { ok: false, error: `Brevo ${res.status}: ${body.slice(0, 220)}` };
     }
     return { ok: true, provider: 'brevo' };
@@ -313,6 +320,9 @@ async function sendMail({ to, subject, html }) {
   if (process.env.BREVO_API_KEY?.trim()) {
     const brevoResult = await sendViaBrevo({ to, subject, html });
     if (brevoResult?.ok) return brevoResult;
+    if (process.env.RENDER === 'true' || process.env.EMAIL_PREFER_BREVO === 'true') {
+      return brevoResult;
+    }
     if (!isSmtpConfigured() || isRenderSmtpBlocked()) return brevoResult;
   }
 

@@ -18,6 +18,33 @@ function verifyCronSecret(req) {
   return header === secret;
 }
 
+/** Cron – status blast */
+export const blastStatusCron = async (req, res) => {
+  if (!verifyCronSecret(req)) {
+    return res.status(401).json({ message: 'I paautorizuar.' });
+  }
+  try {
+    const result = await getBlastStatus(req.query.runKey);
+    if (!result.ok) return res.status(404).json(result);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
+/** Cron – dërgon te përdoruesit aktivë (60 ditë) */
+export const activeMarketingCron = async (req, res) => {
+  if (!verifyCronSecret(req)) {
+    return res.status(401).json({ message: 'I paautorizuar.' });
+  }
+  try {
+    const result = await startActiveMarketingSend({ triggeredBy: 'cron' });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Gabim.' });
+  }
+};
+
 /** Cron i jashtëm ose scheduler – dërgon AlbNet Ads javore */
 export const weeklyMarketingCron = async (req, res) => {
   if (!verifyCronSecret(req)) {

@@ -10,12 +10,16 @@ import {
   adminBlastStatus,
   adminSendActiveMarketing,
   adminCancelStuckMarketing,
+  activeMarketingCron,
+  blastStatusCron,
 } from '../controllers/marketingController.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.post('/cron/weekly', weeklyMarketingCron);
+router.post('/cron/send-active', activeMarketingCron);
+router.get('/cron/blast-status', blastStatusCron);
 router.get('/unsubscribe', marketingUnsubscribe);
 router.post('/unsubscribe', marketingUnsubscribe);
 
