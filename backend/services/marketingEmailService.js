@@ -440,7 +440,7 @@ async function runActiveMarketingWorker({ runKey, triggeredBy }) {
 
   if (!users.length) {
     await MarketingRun.findOneAndUpdate(
-      { weekKey: runKey, runType: 'weekly' },
+      { weekKey: runKey, runType: 'active' },
       { $set: { status: 'failed', errorMessage: 'Nuk ka përdorues aktivë me email.', completedAt: new Date() } }
     );
     return { ok: false, error: 'Nuk ka përdorues aktivë me email.' };
@@ -453,7 +453,7 @@ async function runActiveMarketingWorker({ runKey, triggeredBy }) {
     base,
     triggeredBy,
     runKey,
-    runType: 'weekly',
+    runType: 'active',
     force: true,
   });
 
@@ -479,34 +479,40 @@ export async function startActiveMarketingSend({ triggeredBy = 'admin' } = {}) {
     };
   }
 
-  const weekKey = getWeekKey();
+  const weekKey = `${getWeekKey()}-active`;
   const users = await queryEligibleUsers({ allUsers: false });
   if (!users.length) {
     return { ok: false, error: 'Nuk ka përdorues aktivë me email për dërgim.' };
   }
 
-  await MarketingRun.findOneAndUpdate(
-    { weekKey, runType: 'weekly' },
-    {
-      $set: {
-        weekKey,
-        runType: 'weekly',
-        status: 'running',
-        triggeredBy,
-        sentCount: 0,
-        failedCount: 0,
-        skippedCount: 0,
-        errorMessage: null,
-        completedAt: null,
-      },
-    },
-    { upsert: true }
-  );
+  const existing = await MarketingRun.findOne({ weekKey, runType: 'active' }).lean();
+  if (existing?.status === 'running') {
+    return {
+      ok: true,
+      alreadyRunning: true,
+      runKey: existing.weekKey,
+      runType: existing.runType,
+      message: 'Një dërgim aktiv është ende në proces.',
+    };
+  }
+  if (existing) {
+    await MarketingRun.deleteOne({ _id: existing._id });
+  }
+
+  await MarketingRun.create({
+    weekKey,
+    runType: 'active',
+    status: 'running',
+    triggeredBy,
+    sentCount: 0,
+    failedCount: 0,
+    skippedCount: 0,
+  });
 
   setImmediate(() => {
     runActiveMarketingWorker({ runKey: weekKey, triggeredBy }).catch(async (err) => {
       await MarketingRun.findOneAndUpdate(
-        { weekKey, runType: 'weekly' },
+        { weekKey, runType: 'active' },
         { $set: { status: 'failed', errorMessage: err.message, completedAt: new Date() } }
       );
     });
@@ -516,7 +522,7 @@ export async function startActiveMarketingSend({ triggeredBy = 'admin' } = {}) {
     ok: true,
     started: true,
     runKey: weekKey,
-    runType: 'weekly',
+    runType: 'active',
     total: users.length,
     message: `Duke dërguar te ${users.length} përdorues aktivë...`,
   };
