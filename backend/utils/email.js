@@ -392,7 +392,7 @@ function parseGoogleAppsScriptResponse(text) {
   }
 }
 
-async function sendViaGoogleAppsScript({ to, subject, html }) {
+async function sendViaGoogleAppsScript({ to, subject, html, text }) {
   const url = process.env.GOOGLE_APPS_SCRIPT_URL?.trim();
   const secret = process.env.GOOGLE_APPS_SCRIPT_SECRET?.trim();
   if (!url?.includes('script.google.com') || !secret) return null;
@@ -400,7 +400,7 @@ async function sendViaGoogleAppsScript({ to, subject, html }) {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret, to, subject, html }),
+      body: JSON.stringify({ secret, to, subject, html, text }),
       redirect: 'follow',
     });
     const data = parseGoogleAppsScriptResponse(await res.text());
@@ -498,7 +498,7 @@ async function sendViaSmtp({ from, to, subject, html }, { maxAttempts = 4, timeo
   return { ok: false, error: lastError };
 }
 
-async function sendMail({ to, subject, html }) {
+async function sendMail({ to, subject, html, text }) {
   const smtpUser = (process.env.SMTP_USER || '').trim();
   const from =
     process.env.SMTP_FROM ||
@@ -536,7 +536,7 @@ async function sendMail({ to, subject, html }) {
     if (step === 'smtp' && !trySmtp) continue;
 
     if (step === 'gas') {
-      const gasResult = await sendViaGoogleAppsScript({ to, subject, html });
+      const gasResult = await sendViaGoogleAppsScript({ to, subject, html, text });
       if (gasResult?.ok) return gasResult;
       lastError = gasResult?.error || lastError;
       continue;
@@ -678,42 +678,51 @@ function ctaButton(href, label) {
  * Dërgon email verifikimi – dizajn i plotë
  */
 export const sendVerificationEmail = async (email, token, username) => {
-  const apiBase = (
-    process.env.API_PUBLIC_URL ||
-    process.env.RENDER_EXTERNAL_URL ||
-    'https://albneti-api.onrender.com'
-  ).replace(/\/$/, '');
   const frontendBase = (process.env.FRONTEND_URL || 'https://albneti.vercel.app').replace(/\/$/, '');
-  const verifyUrl = `${apiBase}/api/auth/verifiko-link?token=${encodeURIComponent(token)}`;
-  const fallbackUrl = `${frontendBase}/verifiko?token=${encodeURIComponent(token)}`;
+  const verifyUrl = `${frontendBase}/api/auth/verifiko-link?token=${encodeURIComponent(token)}`;
+
+  const plainText = [
+    `Përshëndetje ${username},`,
+    '',
+    'Faleminderit që u regjistruat në AlbNet.',
+    'Për të aktivizuar llogarinë, hapni këtë link në shfletues:',
+    '',
+    verifyUrl,
+    '',
+    'Linku skadon pas 24 orësh.',
+    'Nëse nuk e kërkuat ju, injorojeni këtë email.',
+    '',
+    'AlbNet',
+  ].join('\n');
 
   const content = `
-    <p style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: ${BRAND.text};">
-      Mirë se vini në AlbNet! 🎉
+    <p style="margin:0 0 16px; color:${BRAND.text}; font-size:16px;">
+      Përshëndetje <strong>${username}</strong>,
     </p>
-    <p style="margin: 0 0 16px; color: ${BRAND.textMuted}; font-size: 14px;">
-      Përshëndetje <strong style="color: ${BRAND.text};">${username}</strong>,
+    <p style="margin:0 0 16px; color:${BRAND.text}; font-size:15px; line-height:1.6;">
+      Faleminderit që u regjistruat në <strong>AlbNet</strong>. Për të aktivizuar llogarinë, klikoni butonin më poshtë:
     </p>
-    <p style="margin: 0 0 8px; color: ${BRAND.text};">
-      Ju keni krijuar një llogari. Klikoni butonin më poshtë për të <strong>verifikuar adresën tuaj të emailit</strong> dhe për të aktivizuar llogarinë.
+    <p style="margin:24px 0; text-align:center;">
+      <a href="${verifyUrl}" target="_blank" style="background-color:${BRAND.primary}; color:#ffffff; font-size:16px; font-weight:600; text-decoration:none; padding:16px 32px; border-radius:8px; display:inline-block;">
+        Konfirmo llogarinë
+      </a>
     </p>
-    ${ctaButton(verifyUrl, 'Verifiko llogarinë')}
-    <p style="margin: 20px 0 0; font-size: 13px; color: ${BRAND.textMuted};">
-      ⏱ Linku është i vlefshëm <strong>24 orë</strong>. Pas kësaj kohe do të duhet të kërkonit një email të ri verifikimi.
+    <p style="margin:0 0 12px; color:${BRAND.textMuted}; font-size:13px; line-height:1.6;">
+      Ose kopjoni këtë link në shfletuesin tuaj:
     </p>
-    <p style="margin: 16px 0 0; font-size: 13px; color: ${BRAND.textMuted};">
-      Nëse butoni nuk funksionon, kopjoni dhe ngjiteni këtë link në shfletues:<br>
-      <a href="${verifyUrl}" style="color: ${BRAND.primary}; word-break: break-all;">${verifyUrl}</a>
+    <p style="margin:0 0 20px; word-break:break-all; font-size:13px;">
+      <a href="${verifyUrl}" style="color:${BRAND.primary};">${verifyUrl}</a>
     </p>
-    <p style="margin: 8px 0 0; font-size: 12px; color: ${BRAND.textMuted};">
-      Link alternativ: <a href="${fallbackUrl}" style="color: ${BRAND.primary}; word-break: break-all;">${fallbackUrl}</a>
+    <p style="margin:0; color:${BRAND.textMuted}; font-size:12px;">
+      Linku skadon pas 24 orësh. Nëse nuk e kërkuat ju, injorojeni këtë email.
     </p>
   `;
 
   const result = await sendMail({
     to: email,
-    subject: 'Verifiko llogarinë tënde – AlbNet',
+    subject: 'Konfirmo llogarinë tënde në AlbNet',
     html: baseEmailTemplate(content),
+    text: plainText,
   });
   if (!result.ok) {
     // eslint-disable-next-line no-console

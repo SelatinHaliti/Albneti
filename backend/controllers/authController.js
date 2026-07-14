@@ -216,28 +216,98 @@ export const verifyEmail = async (req, res) => {
 };
 
 /**
- * Verifikim me 1 klik nga email (GET) – funksionon edhe kur SPA/API dështojnë
+ * Verifikim me 1 klik nga email (GET) – kthen faqe HTML (funksionon në Gmail/Outlook)
  */
+function buildVerifyHtmlPage({ title, message, buttonLabel, buttonHref, autoRedirectMs = 0, script = '' }) {
+  const refresh = autoRedirectMs > 0
+    ? `<meta http-equiv="refresh" content="${Math.ceil(autoRedirectMs / 1000)};url=${buttonHref}">`
+    : '';
+  return `<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title}</title>
+  ${refresh}
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f5f5f5; margin:0; padding:24px; }
+    .card { max-width:420px; margin:40px auto; background:#fff; border-radius:12px; padding:32px; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+    h1 { font-size:22px; color:#262626; margin:0 0 12px; }
+    p { color:#555; font-size:15px; line-height:1.5; margin:0 0 20px; }
+    a.btn { display:inline-block; background:#0095f6; color:#fff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-weight:600; font-size:15px; }
+    .muted { font-size:13px; color:#888; margin-top:16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>${title}</h1>
+    <p>${message}</p>
+    <a class="btn" href="${buttonHref}">${buttonLabel}</a>
+    <p class="muted">AlbNet</p>
+  </div>
+  ${script}
+</body>
+</html>`;
+}
+
+function buildAuthStorageScript(user, accessToken) {
+  const payload = {
+    state: {
+      user: {
+        id: String(user._id),
+        username: user.username,
+        email: user.email,
+        emailVerified: true,
+      },
+      token: accessToken,
+    },
+    version: 0,
+  };
+  const feed = `${getFrontendUrl()}/feed`;
+  return `<script>
+(function(){
+  try {
+    localStorage.setItem('token', ${JSON.stringify(accessToken)});
+    localStorage.setItem('albnet-auth', ${JSON.stringify(JSON.stringify(payload))});
+  } catch (e) {}
+  setTimeout(function(){ window.location.replace(${JSON.stringify(feed)}); }, 1200);
+})();
+</script>`;
+}
+
 export const verifyEmailLink = async (req, res) => {
   const frontend = getFrontendUrl();
   try {
     const result = await verifyUserFromToken(req.query.token);
     if (!result.ok) {
-      const code = result.error === 'missing' ? 'missing' : 'invalid';
-      return res.redirect(`${frontend}/verifiko?error=${code}`);
+      const errPage = buildVerifyHtmlPage({
+        title: 'Linku skadoi',
+        message: 'Linku i verifikimit është i pavlefshëm ose ka skaduar. Kërkoni një email të ri verifikimi.',
+        buttonLabel: 'Kërko email të ri',
+        buttonHref: `${frontend}/prit-verifikimin`,
+      });
+      return res.status(400).type('html').send(errPage);
     }
     const user = result.user;
     const accessToken = createToken(user._id);
-    const params = new URLSearchParams({
-      verified: '1',
-      accessToken,
-      uid: String(user._id),
-      username: user.username,
-      email: user.email,
+    const feedUrl = `${frontend}/feed`;
+    const successPage = buildVerifyHtmlPage({
+      title: 'Llogaria u verifikua',
+      message: `Përshëndetje ${user.username}, email-i u konfirmua. Po ju ridrejtojmë në AlbNet...`,
+      buttonLabel: 'Hap AlbNet',
+      buttonHref: feedUrl,
+      autoRedirectMs: 2000,
+      script: buildAuthStorageScript(user, accessToken),
     });
-    return res.redirect(`${frontend}/verifiko?${params.toString()}`);
+    return res.status(200).type('html').send(successPage);
   } catch (err) {
-    return res.redirect(`${frontend}/verifiko?error=server`);
+    const errPage = buildVerifyHtmlPage({
+      title: 'Gabim',
+      message: 'Ndodhi një gabim gjatë verifikimit. Provoni përsëri ose kërkoni email të ri.',
+      buttonLabel: 'Kthehu te kyçja',
+      buttonHref: `${frontend}/kycu`,
+    });
+    return res.status(500).type('html').send(errPage);
   }
 };
 

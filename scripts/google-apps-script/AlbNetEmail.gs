@@ -45,13 +45,22 @@ function stripHtml_(html) {
   return String(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function sendEmail_(to, subject, html) {
+function sendEmail_(to, subject, html, plainText) {
   var fromName =
     PropertiesService.getScriptProperties().getProperty(PROP_FROM_NAME) || DEFAULT_FROM_NAME;
-  GmailApp.sendEmail(to, subject, stripHtml_(html).slice(0, 500), {
+  var body = plainText && String(plainText).trim()
+    ? String(plainText).trim()
+    : stripHtml_(html).slice(0, 1500);
+  var replyTo = '';
+  try {
+    replyTo = Session.getActiveUser().getEmail() || '';
+  } catch (e) {}
+  var options = {
     htmlBody: html,
     name: fromName,
-  });
+  };
+  if (replyTo) options.replyTo = replyTo;
+  GmailApp.sendEmail(to, subject, body, options);
 }
 
 function doGet(e) {
@@ -76,13 +85,17 @@ function doPost(e) {
     if (!authorized_(body.secret)) {
       return jsonResponse({ ok: false, error: 'Unauthorized' });
     }
+    if (body.action === 'ping') {
+      return jsonResponse({ ok: true, provider: 'gas', message: 'AlbNet Email API aktiv' });
+    }
     var to = String(body.to || '').trim();
     var subject = String(body.subject || '').trim();
     var html = String(body.html || '').trim();
+    var text = String(body.text || '').trim();
     if (!to || to.indexOf('@') === -1 || !subject || !html) {
       return jsonResponse({ ok: false, error: 'to, subject, html required' });
     }
-    sendEmail_(to, subject, html);
+    sendEmail_(to, subject, html, text);
     return jsonResponse({ ok: true, provider: 'gas' });
   } catch (err) {
     return jsonResponse({ ok: false, error: String(err.message || err) });

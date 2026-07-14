@@ -64,9 +64,10 @@ function PendingContent() {
       )}
 
       <div className="space-y-3 text-sm text-[var(--text-muted)] mb-6">
-        <p>1. Hap inbox-in (edhe dosjen <strong>Spam</strong>)</p>
-        <p>2. Kliko butonin <strong>Verifiko llogarinë</strong> në email</p>
-        <p>3. Pas verifikimit, kyçu dhe përdor platformën</p>
+        <p>1. Kontrollo <strong>Inbox</strong> dhe <strong>Spam</strong></p>
+        <p>2. Kliko <strong>Konfirmo llogarinë</strong> në email</p>
+        <p>3. Nëse butoni nuk punon, kopjo linkun e plotë nga email-i dhe ngjite në Chrome</p>
+        <p>4. Pas verifikimit, kyçu në AlbNet</p>
       </div>
 
       {resendError && (
