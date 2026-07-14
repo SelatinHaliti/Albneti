@@ -23,7 +23,17 @@ function jsonResponse(obj) {
 }
 
 function getSecret_() {
-  return (PropertiesService.getScriptProperties().getProperty(PROP_SECRET) || '').trim();
+  var fromProps = PropertiesService.getScriptProperties().getProperty(PROP_SECRET);
+  if (fromProps && String(fromProps).trim()) return String(fromProps).trim();
+  return 'albnet_gas_email_2026_k8m2';
+}
+
+/** Ekzekuto 1 herë nga editori për të vendosur Script properties */
+function setupAlbNetProperties() {
+  PropertiesService.getScriptProperties().setProperties({
+    ALBNET_SECRET: 'albnet_gas_email_2026_k8m2',
+    FROM_NAME: 'AlbNet',
+  });
 }
 
 function authorized_(secret) {
