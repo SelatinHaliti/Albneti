@@ -673,7 +673,7 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   opacity: 0.65;
 }
 
-/* Desktop sidebar – pa scroll, të gjitha linket të dukshme */
+/* Desktop sidebar – footer i fiksuar, nav scroll nëse nuk hyjnë të gjitha */
 .desktop-sidebar {
   height: 100dvh;
   max-height: 100dvh;
@@ -681,27 +681,74 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .desktop-sidebar-nav {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 
-@media (min-height: 700px) and (min-width: 1024px) {
+.desktop-sidebar-nav > * {
+  flex-shrink: 0;
+}
+
+.desktop-sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+  height: 0;
+}
+.desktop-sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.desktop-sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+
+.desktop-sidebar-link {
+  min-height: 40px;
+}
+
+.desktop-sidebar-footer .desktop-sidebar-link {
+  min-height: 38px;
+}
+
+@media (min-width: 1024px) {
   .desktop-sidebar-nav {
-    justify-content: flex-start;
-    gap: 2px;
+    gap: 1px;
   }
 }
 
-@media (max-height: 720px) and (min-width: 1024px) {
+@media (max-height: 860px) {
   .desktop-sidebar-brand {
-    padding-top: 0.75rem;
-    padding-bottom: 0.25rem;
+    padding-top: 0.65rem;
+    padding-bottom: 0.2rem;
   }
   .desktop-sidebar-link {
     min-height: 36px !important;
   }
-  .desktop-sidebar-nav .hidden.lg\:inline {
+  .desktop-sidebar-footer {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+  .desktop-sidebar-footer .desktop-sidebar-link {
+    min-height: 34px !important;
+  }
+}
+
+@media (max-height: 720px) {
+  .desktop-sidebar-brand {
+    padding-top: 0.45rem;
+    padding-bottom: 0.1rem;
+  }
+  .desktop-sidebar-link,
+  .desktop-sidebar-footer .desktop-sidebar-link {
+    min-height: 30px !important;
+  }
+  .desktop-sidebar-nav .hidden.lg\:inline,
+  .desktop-sidebar-footer .hidden.lg\:inline {
     font-size: 13px;
   }
 }

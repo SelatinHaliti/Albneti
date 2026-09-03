@@ -40,12 +40,12 @@ const navItems = [
   { href: '/reels', label: 'Reels', Icon: IconReels },
   { href: '/studio', label: 'Studio', Icon: IconStudio },
   { href: '/live', label: 'Live', Icon: IconLive },
-  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity },
-  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified },
   { href: '/krijo/post', label: 'Krijo', Icon: IconAdd, isCreate: true },
   { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badge: 'messages' as const },
   { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badge: 'social' as const },
+  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity },
   { href: '/chat-global', label: 'Chat Global', Icon: IconChatGlobal },
+  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -242,7 +242,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         {/* ── Desktop sidebar ── */}
-        <aside className={`desktop-sidebar hidden md:flex md:w-[72px] lg:w-[245px] flex-col fixed left-0 top-0 h-dvh border-r border-[var(--border)] z-30 overflow-hidden ${isReelsPage ? 'bg-black/80 backdrop-blur-xl' : 'ig-nav-bar'}`}>
+        <aside className={`desktop-sidebar hidden md:flex md:w-[72px] lg:w-[244px] flex-col fixed left-0 top-0 h-dvh border-r border-[var(--border)] z-30 ${isReelsPage ? 'bg-black/80 backdrop-blur-xl' : 'ig-nav-bar'}`}>
           <div className="desktop-sidebar-brand px-3 lg:px-5 pt-4 pb-2 flex items-center relative flex-shrink-0" ref={feedDropdownRefDesktop}>
             {pathname === '/feed' ? (
               <>
@@ -273,13 +273,17 @@ function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          <nav className="desktop-sidebar-nav flex-1 min-h-0 px-2 lg:px-3 py-1 flex flex-col gap-0.5 overflow-hidden">
+          <nav className="desktop-sidebar-nav flex-1 min-h-0 px-2 lg:px-3 py-1 flex flex-col" aria-label="Menyja kryesore">
             {navItems.map((navItem) => {
               const isActive = navItem.href === '/feed'
                 ? pathname === '/feed'
                 : navItem.href === '/live'
                   ? isLiveSection
-                  : pathname === navItem.href || (navItem.href === '/explore' && pathname.startsWith('/explore'));
+                  : navItem.href === '/studio'
+                    ? pathname.startsWith('/studio')
+                    : navItem.href === '/krijo/post'
+                      ? pathname.startsWith('/krijo')
+                      : pathname === navItem.href || (navItem.href === '/explore' && pathname.startsWith('/explore'));
               const Icon = navItem.Icon;
               const badgeCount = navItem.badge === 'messages' ? unreadMessages : navItem.badge === 'social' ? socialUnread : 0;
 
@@ -319,7 +323,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 </>
               );
 
-              const linkClass = `desktop-sidebar-link group flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 rounded-lg transition-opacity duration-150 md:justify-center lg:justify-start min-h-[48px] lg:min-h-[48px] ${
+              const linkClass = `desktop-sidebar-link group flex items-center gap-3 lg:gap-3.5 px-2.5 lg:px-3 rounded-lg transition-opacity duration-150 md:justify-center lg:justify-start ${
                 isActive
                   ? 'desktop-sidebar-link--active text-[var(--text)]'
                   : 'text-[var(--text)]'
@@ -332,6 +336,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
                     type="button"
                     onClick={() => setCreateMenuOpen(true)}
                     className={`${linkClass} w-full`}
+                    title={navItem.label}
+                    aria-label={navItem.label}
                   >
                     {inner}
                   </button>
@@ -342,6 +348,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   key={navItem.href}
                   href={navItem.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : navItem.href}
                   aria-current={isActive ? 'page' : undefined}
+                  aria-label={navItem.label}
+                  title={navItem.label}
                   className={linkClass}
                 >
                   {inner}
@@ -350,24 +358,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="desktop-sidebar-footer flex-shrink-0 p-2 lg:p-3 border-t border-[var(--border)] space-y-0.5">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="desktop-sidebar-link w-full flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[48px] rounded-lg text-[var(--text)] transition-opacity md:justify-center lg:justify-start"
-            >
-              <span className="flex-shrink-0">{theme === 'dark' ? <IconSun /> : <IconMoon />}</span>
-              <span className="hidden lg:inline text-[14px]">{theme === 'dark' ? 'Ndriço' : 'Errëso'}</span>
-            </button>
-            {(user.role === 'admin' || user.role === 'moderator') && (
-              <Link href="/admin" className="desktop-sidebar-link flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[48px] rounded-lg text-[var(--text)] transition-opacity md:justify-center lg:justify-start">
-                <span className="flex-shrink-0"><IconSettings /></span>
-                <span className="hidden lg:inline text-[14px]">Admin</span>
-              </Link>
-            )}
+          <div className="desktop-sidebar-footer flex-shrink-0 p-2 lg:p-2.5 border-t border-[var(--border)]">
             <Link
               href={`/profili/${user.username}`}
-              className={`desktop-sidebar-link flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[48px] rounded-lg transition-opacity md:justify-center lg:justify-start ${
+              title={user.username}
+              className={`desktop-sidebar-link flex items-center gap-3 lg:gap-3.5 px-2.5 lg:px-3 rounded-lg transition-opacity md:justify-center lg:justify-start ${
                 pathname.startsWith('/profili')
                   ? 'desktop-sidebar-link--active text-[var(--text)]'
                   : 'text-[var(--text)]'
@@ -381,20 +376,40 @@ function AppShell({ children }: { children: React.ReactNode }) {
               />
               <span className="hidden lg:inline text-[14px] font-medium truncate">{user.username}</span>
             </Link>
-            <button
-              type="button"
-              onClick={() => { logout(); router.push('/'); }}
-              className="desktop-sidebar-link w-full flex items-center gap-3 lg:gap-4 px-2.5 lg:px-3 min-h-[48px] rounded-lg text-[var(--text-muted)] hover:text-[var(--danger)] transition-opacity md:justify-center lg:justify-start"
-              aria-label="Dil nga llogaria"
-              title="Dil"
-            >
-              <span className="flex-shrink-0"><IconLogout /></span>
-              <span className="hidden lg:inline text-[14px]">Dil</span>
-            </button>
+            <div className="mt-0.5 flex items-center justify-center lg:justify-start gap-0.5 px-1">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="desktop-sidebar-link flex items-center justify-center w-10 h-9 rounded-lg text-[var(--text)]"
+                title={theme === 'dark' ? 'Ndriço' : 'Errëso'}
+                aria-label={theme === 'dark' ? 'Ndriço ekranin' : 'Errëso ekranin'}
+              >
+                {theme === 'dark' ? <IconSun /> : <IconMoon />}
+              </button>
+              {(user.role === 'admin' || user.role === 'moderator') && (
+                <Link
+                  href="/admin"
+                  title="Admin"
+                  aria-label="Admin"
+                  className="desktop-sidebar-link flex items-center justify-center w-10 h-9 rounded-lg text-[var(--text)]"
+                >
+                  <IconSettings />
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => { logout(); router.push('/'); }}
+                className="desktop-sidebar-link flex items-center justify-center w-10 h-9 rounded-lg text-[var(--text-muted)] hover:text-[var(--danger)]"
+                aria-label="Dil nga llogaria"
+                title="Dil"
+              >
+                <IconLogout />
+              </button>
+            </div>
           </div>
         </aside>
 
-        <main className={`app-shell-main md:ml-[72px] lg:ml-[245px] md:pt-0 md:pb-0 ${
+        <main className={`app-shell-main md:ml-[72px] lg:ml-[244px] md:pt-0 md:pb-0 ${
           isImmersivePage
             ? 'app-shell-main--immersive'
             : hasOwnMobileHeader
