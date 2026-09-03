@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -8,6 +8,7 @@ import { apiUpload } from '@/utils/api';
 import { MusicPicker } from '@/components/MusicPicker';
 import { MusicSticker } from '@/components/MusicSticker';
 import { PostMediaFrame } from '@/components/PostMediaFrame';
+import { CreatorSuggest } from '@/components/CreatorSuggest';
 
 type LibraryTrack = { url: string; title: string; artist: string } | null;
 
@@ -29,6 +30,17 @@ export default function CreatePostPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const musicInputRef = useRef<HTMLInputElement>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('albnet_studio_draft');
+      if (!raw) return;
+      const draft = JSON.parse(raw) as { caption?: string; hashtags?: string };
+      if (draft.caption) setCaption(draft.caption);
+      if (draft.hashtags) setHashtags(draft.hashtags);
+      sessionStorage.removeItem('albnet_studio_draft');
+    } catch { /* ignore */ }
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
@@ -237,6 +249,13 @@ export default function CreatePostPage() {
             </div>
           )}
         </div>
+
+        <CreatorSuggest
+          caption={caption}
+          type={type === 'video' ? 'video' : 'image'}
+          onApplyCaption={setCaption}
+          onApplyHashtags={setHashtags}
+        />
 
         <div>
           <label className="block text-[14px] font-medium text-[var(--text)] mb-2">Caption</label>

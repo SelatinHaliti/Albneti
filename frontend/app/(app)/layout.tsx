@@ -24,6 +24,7 @@ import {
   IconCommunity,
   IconVerified,
   IconChatGlobal,
+  IconStudio,
 } from '@/components/Icons';
 import { AppLogo } from '@/components/AppLogo';
 import { Toaster } from '@/components/Toaster';
@@ -37,6 +38,7 @@ const navItems = [
   { href: '/feed', label: 'Kryefaja', Icon: IconHome },
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
+  { href: '/studio', label: 'Studio', Icon: IconStudio },
   { href: '/live', label: 'Live', Icon: IconLive },
   { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity },
   { href: '/verifikim', label: 'Verifikim', Icon: IconVerified },
@@ -88,6 +90,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     pathname === '/njoftime' ||
     pathname === '/chat-global' ||
     pathname.startsWith('/krijo/') ||
+    pathname === '/studio' ||
     pathname === '/explore' ||
     pathname === '/verifikim';
   const showGlobalMobileHeader = !isImmersivePage && !hasOwnMobileHeader;
@@ -284,6 +287,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 if (Icon === IconHome) return <IconHome active={isActive} />;
                 if (Icon === IconSearch) return <IconSearch active={isActive} />;
                 if (Icon === IconReels) return <IconReels active={isActive} />;
+                if (Icon === IconStudio) return <IconStudio active={isActive} />;
                 if (Icon === IconLive) return <IconLive active={isActive || (navItem.href === '/live' && isLiveSection)} />;
                 if (Icon === IconCommunity) return <IconCommunity active={isActive} />;
                 if (Icon === IconVerified) return <IconVerified active={isActive} />;

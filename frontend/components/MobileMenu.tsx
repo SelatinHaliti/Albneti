@@ -19,6 +19,7 @@ import {
   IconLogout,
   IconSun,
   IconMoon,
+  IconStudio,
 } from '@/components/Icons';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 
@@ -33,6 +34,7 @@ const links = [
   { href: '/feed', label: 'Kryefaja', Icon: IconHome },
   { href: '/explore', label: 'Eksploro', Icon: IconSearch },
   { href: '/reels', label: 'Reels', Icon: IconReels },
+  { href: '/studio', label: 'Studio krijuesi', Icon: IconStudio },
   { href: '/live', label: 'Live', Icon: IconLive, highlight: true },
   { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity },
   { href: '/verifikim', label: 'Verifikim', Icon: IconVerified },
@@ -131,6 +133,7 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
                   {Icon === IconHome && <IconHome active={isActive} />}
                   {Icon === IconSearch && <IconSearch active={isActive} />}
                   {Icon === IconReels && <IconReels active={isActive} />}
+                  {Icon === IconStudio && <IconStudio active={isActive} />}
                   {Icon === IconLive && <IconLive active={isActive} />}
                   {Icon === IconMessage && <IconMessage />}
                   {Icon === IconHeart && <IconHeart />}

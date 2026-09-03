@@ -5,13 +5,14 @@
 
 const ALLOWED_PATHS = new Set([
   '/feed', '/live/nis', '/live', '/reels', '/komuniteti', '/mesazhe',
-  '/verifikim', '/explore', '/chat-global', '/krijo/story', '/shkarko',
+  '/verifikim', '/explore', '/chat-global', '/krijo/story', '/krijo/reel', '/studio', '/shkarko',
   '/njoftime', '/profili/miq-te-ngushte',
 ]);
 
 const FEATURE_POOL = [
   { emoji: '🔴', title: 'Nis Live', desc: 'Transmeto live, merr komente në kohë reale dhe lidhu me audiencën shqiptare.', cta: 'Nis transmetim', path: '/live/nis' },
   { emoji: '🎬', title: 'Reels & Duet', desc: 'Krijo video vertikale me muzikë, duet dhe hashtag trending.', cta: 'Shiko Reels', path: '/reels' },
+  { emoji: '✦', title: 'Studio krijuesi', desc: 'Ide për video, hook, caption dhe hashtag – për krijuesit shqiptarë.', cta: 'Hap Studio', path: '/studio' },
   { emoji: '🇦🇱', title: 'Komuniteti', desc: 'Evente diaspora, festa dhe takime – gjithçka për shqiptarët kudo.', cta: 'Eksploro', path: '/komuniteti' },
   { emoji: '💬', title: 'Mesazhe & Thirrje', desc: 'DM, grupe, voice notes dhe thirrje audio/video falas.', cta: 'Hap mesazhet', path: '/mesazhe' },
   { emoji: '✓', title: 'Verifikohu', desc: 'Badge blu, besueshmëri dhe prioritet në feed për krijuesit.', cta: 'Verifikohu', path: '/verifikim' },
@@ -307,7 +308,7 @@ Kthe JSON me këto fusha:
 
 Rregulla:
 - Shkruaj në shqip natyral, jo formal
-- path duhet të jetë një nga: /feed, /live/nis, /reels, /komuniteti, /mesazhe, /verifikim, /explore, /chat-global, /krijo/story, /shkarko
+- path duhet të jetë një nga: /feed, /live/nis, /reels, /komuniteti, /mesazhe, /verifikim, /explore, /chat-global, /krijo/story, /krijo/reel, /studio, /shkarko
 - Përmend të dhënat reale nga konteksti kur ka kuptim
 - Subjekti duhet të bëjë dikë të klikojë`;
 }

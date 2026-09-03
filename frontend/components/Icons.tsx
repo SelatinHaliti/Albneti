@@ -397,3 +397,20 @@ export function IconCallSpinner({ size: s = 22 }: { size?: number }) {
     />
   );
 }
+
+/** Studio krijuesi – ide për video */
+export function IconStudio({ active }: { active?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke={active ? 'none' : stroke} strokeWidth={active ? 0 : strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {active ? (
+        <path d="M12 2l1.8 5.4L19 9.2l-5.2 1.8L12 16.4l-1.8-5.4L5 9.2l5.2-1.8L12 2zm7 13l.9 2.6L23 18.5l-3.1 1.1L19 22l-.9-2.4L15 18.5l3.1-1.1L19 15zM4 14l.8 2.2L7 17.1 4.8 18 4 20l-.8-2-2.2-.9 2.2-.8L4 14z" />
+      ) : (
+        <>
+          <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+          <path d="M19 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" />
+          <path d="M5 15l.5 1.4 1.4.5-1.4.5L5 18.8l-.5-1.4-1.4-.5 1.4-.5L5 15z" />
+        </>
+      )}
+    </svg>
+  );
+}

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { apiUpload } from '@/utils/api';
 import { MusicPicker } from '@/components/MusicPicker';
 import { MusicSticker } from '@/components/MusicSticker';
+import { CreatorSuggest } from '@/components/CreatorSuggest';
 
 type LibraryTrack = { url: string; title: string; artist: string } | null;
 
@@ -25,6 +26,17 @@ export default function CreateReelPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('albnet_studio_draft');
+      if (!raw) return;
+      const draft = JSON.parse(raw) as { caption?: string; hashtags?: string };
+      if (draft.caption) setCaption(draft.caption);
+      if (draft.hashtags) setHashtags(draft.hashtags);
+      sessionStorage.removeItem('albnet_studio_draft');
+    } catch { /* ignore */ }
+  }, []);
 
   const hasMusic = selectedLibraryTrack || musicFile;
   const musicMeta = selectedLibraryTrack || (musicFile ? { title: musicFile.name.replace(/\.[^.]+$/, ''), artist: '', url: '' } : null);
@@ -167,6 +179,13 @@ export default function CreateReelPage() {
             </button>
           )}
         </div>
+
+        <CreatorSuggest
+          caption={caption}
+          type="reel"
+          onApplyCaption={setCaption}
+          onApplyHashtags={setHashtags}
+        />
 
         <textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={2} maxLength={2200} className="auth-input resize-none" placeholder="Caption për reel..." />
         <input type="text" value={hashtags} onChange={(e) => setHashtags(e.target.value)} className="auth-input" placeholder="Hashtag: shqiperi, diaspora..." />

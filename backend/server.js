@@ -27,6 +27,7 @@ import callRoutes from './routes/calls.js';
 import pushRoutes from './routes/push.js';
 import liveRoutes from './routes/live.js';
 import marketingRoutes from './routes/marketing.js';
+import creatorStudioRoutes from './routes/creatorStudio.js';
 import { stripeWebhook } from './controllers/verificationController.js';
 import { setupSocketIO } from './sockets/index.js';
 import { setIO } from './sockets/io.js';
@@ -150,6 +151,7 @@ app.use('/api/calls', callRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/live', liveRoutes);
 app.use('/api/marketing', marketingRoutes);
+app.use('/api/creator', creatorStudioRoutes);
 
 // Health check – përfshirë gjendjen e DB (për load balancer / monitoring)
 app.get('/api/health', async (req, res) => {

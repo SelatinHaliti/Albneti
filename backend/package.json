@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node scripts/check-env.js && node server.js",
     "dev": "node scripts/check-env.js && nodemon server.js",
-    "check:env": "node scripts/check-env.js"
+    "check:env": "node scripts/check-env.js",
+    "test:studio": "node scripts/test-creator-studio.js"
   },
   "dependencies": {
     "apple-signin-auth": "^1.7.9",

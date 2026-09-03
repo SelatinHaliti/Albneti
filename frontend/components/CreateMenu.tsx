@@ -19,6 +19,7 @@ export function CreateMenu({ open, onClose }: { open: boolean; onClose: () => vo
   if (!open) return null;
 
   const items = [
+    { href: '/studio', label: 'Studio krijuesi', desc: 'Ide për video, caption dhe hashtag', icon: '✦' },
     { href: '/krijo/post', label: 'Postim', desc: 'Ndaj foto ose video', icon: '📷' },
     { href: '/krijo/story', label: 'Story', desc: '24 orë në profil', icon: '⭕' },
     { href: '/krijo/reel', label: 'Reel', desc: 'Video vertikale me muzikë', icon: '🎬' },
