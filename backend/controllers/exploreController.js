@@ -1,6 +1,7 @@
 import Post from '../models/Post.js';
 import User from '../models/User.js';
 import { scoreExplorePost } from '../services/feedAlgorithm.js';
+import { getPersonalizedSuggestions } from '../services/suggestAlgorithm.js';
 
 /**
  * Explore - postime të reja / trending (algoritëm i thjeshtë)
@@ -35,13 +36,29 @@ export const getExplorePosts = async (req, res) => {
       },
     ]);
 
+    const viewerTags = [];
+    try {
+      if (excludeUser) {
+        const recent = await Post.find({ user: excludeUser, isArchived: false })
+          .sort({ createdAt: -1 })
+          .limit(25)
+          .select('hashtags')
+          .lean();
+        for (const p of recent) {
+          for (const t of p.hashtags || []) viewerTags.push(String(t).toLowerCase());
+        }
+      }
+    } catch {
+      /* optional affinity */
+    }
+
     const ranked = posts
-      .map((p) => ({ ...p, _rank: scoreExplorePost(p) }))
+      .map((p) => ({ ...p, _rank: scoreExplorePost(p, { viewerTags }) }))
       .sort((a, b) => b._rank - a._rank)
       .slice(skip, skip + limit)
       .map(({ _rank, ...p }) => p);
 
-    res.json({ posts: ranked, hasMore: ranked.length === limit, algorithm: 'albnet_explore' });
+    res.json({ posts: ranked, hasMore: ranked.length === limit, algorithm: 'albnet_explore_v2' });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }
@@ -116,23 +133,24 @@ export const searchHashtags = async (req, res) => {
 };
 
 /**
- * Sugjerime për përmbajtje / përdorues për të ndjekur
+ * Sugjerime të personalizuara – AlbNet Suggest Engine v2
+ * (graf social + interesa + cilësi + diversitet)
  */
 export const getSuggestions = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    const followingSet = new Set([
-      ...user.following.map((id) => id.toString()),
-      user._id.toString(),
-    ]);
-    const suggestions = await User.find({
-      _id: { $nin: Array.from(followingSet) },
-      isBlocked: false,
-    })
-      .select('username avatar fullName')
-      .limit(15)
-      .lean();
-    res.json({ suggestions });
+    const limit = Math.min(parseInt(req.query.limit, 10) || 15, 30);
+    const result = await getPersonalizedSuggestions({
+      User,
+      Post,
+      viewerId: req.user.id,
+      limit,
+    });
+    res.json({
+      suggestions: result.suggestions,
+      users: result.users,
+      algorithm: result.algorithm,
+      viewerNiche: result.viewerNiche,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

@@ -11,6 +11,9 @@ type SuggestedUser = {
   username: string;
   avatar?: string;
   fullName?: string;
+  reason?: string;
+  reasons?: string[];
+  isVerified?: boolean;
 };
 
 export function RightSidebar() {
@@ -91,8 +94,11 @@ export function RightSidebar() {
                 <div className="flex-1 min-w-0">
                   <Link href={`/profili/${s.username}`} className="text-[14px] font-semibold text-[var(--text)] truncate block hover:opacity-80">
                     {s.username}
+                    {s.isVerified ? <span className="ml-1 text-[var(--ig-blue)]" aria-label="Verifikuar">✓</span> : null}
                   </Link>
-                  <p className="text-[12px] text-[var(--text-muted)] truncate">{s.fullName || 'Përdorues i ri'}</p>
+                  <p className="text-[12px] text-[var(--text-muted)] truncate">
+                    {s.reason || s.fullName || 'Sugjeruar për ty'}
+                  </p>
                 </div>
                 <Link href={`/profili/${s.username}`} className="text-[12px] font-semibold ig-link">
                   Ndiq

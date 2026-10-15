@@ -14,6 +14,8 @@ type UserResult = {
   username: string;
   avatar?: string;
   fullName?: string;
+  reason?: string;
+  isVerified?: boolean;
 };
 
 type HashtagResult = {
@@ -94,8 +96,8 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (q.trim().length >= 2) return;
-    api<{ users: UserResult[] }>('/api/explore/sugjerime')
-      .then((r) => setSuggestions(r.users || []))
+    api<{ users?: UserResult[]; suggestions?: UserResult[] }>('/api/explore/sugjerime?limit=12')
+      .then((r) => setSuggestions(r.suggestions || r.users || []))
       .catch(() => setSuggestions([]));
   }, [q]);
 
@@ -261,8 +263,13 @@ export default function SearchPage() {
                       }}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-[var(--text)] truncate">{u.username}</p>
-                      {u.fullName && <p className="text-sm text-[var(--text-muted)] truncate">{u.fullName}</p>}
+                      <p className="font-semibold text-[var(--text)] truncate">
+                        {u.username}
+                        {u.isVerified ? <span className="ml-1 text-[var(--ig-blue)]">✓</span> : null}
+                      </p>
+                      <p className="text-sm text-[var(--text-muted)] truncate">
+                        {u.reason || u.fullName || 'Sugjeruar për ty'}
+                      </p>
                     </div>
                   </Link>
                 ))}
