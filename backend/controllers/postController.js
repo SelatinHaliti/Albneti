@@ -122,7 +122,17 @@ export const getFeed = async (req, res) => {
       const authors = await User.find({ _id: { $in: authorIds } }).select('following isVerified verifiedSubscription').lean();
       const authorsMap = Object.fromEntries(authors.map((a) => [String(a._id), a]));
 
-      const ranked = rankPosts(filtered, user, authorsMap);
+      const viewerTags = filtered
+        .filter((p) => String(p.user?._id) === String(user._id))
+        .flatMap((p) => p.hashtags || [])
+        .map((t) => String(t).toLowerCase());
+      // Preferenca nga postimet e ruajtura / të mia nëse ka – përndryshe nga hashtag e ndjekësve
+      const preferredTags = [
+        ...viewerTags,
+        ...filtered.flatMap((p) => (p.hashtags || []).slice(0, 3)).map((t) => String(t).toLowerCase()),
+      ].slice(0, 40);
+
+      const ranked = rankPosts(filtered, user, authorsMap, { viewerTags: preferredTags, diversify: true });
       const posts = ranked.slice(skip, skip + limit);
 
       const savedSet = new Set((user.savedPosts || []).map((id) => id.toString()));
@@ -132,7 +142,7 @@ export const getFeed = async (req, res) => {
 
       const hasMore = ranked.length > skip + limit;
       const nextCursor = hasMore ? String(page + 1) : null;
-      return res.json({ posts, hasMore, nextCursor, algorithm: 'albnet_ranked' });
+      return res.json({ posts, hasMore, nextCursor, algorithm: 'albnet_ranked_v2' });
     }
 
     if (blockedIds.length && !onlyFollowing) {
