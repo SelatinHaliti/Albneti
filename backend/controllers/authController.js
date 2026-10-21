@@ -111,14 +111,26 @@ export const register = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const user = await User.create({
-      username: username.trim(),
-      email: email.toLowerCase(),
-      password,
-      fullName: fullName?.trim() || '',
-      verificationToken,
-      verificationTokenExpires,
-    });
+    let user;
+    try {
+      user = await User.create({
+        username: username.trim(),
+        email: email.toLowerCase(),
+        password,
+        fullName: fullName?.trim() || '',
+        verificationToken,
+        verificationTokenExpires,
+      });
+    } catch (createErr) {
+      // Race: dy kërkesa paralele – njëra krijon user, tjetra godet unique index
+      if (createErr?.code === 11000) {
+        return res.status(400).json({
+          message: 'Ky email ose emër përdoruesi tashmë ekziston.',
+          code: 'USER_EXISTS',
+        });
+      }
+      throw createErr;
+    }
 
     let emailSent = false;
     try {
@@ -144,6 +156,12 @@ export const register = async (req, res) => {
         : 'Llogaria u krijua por email-i nuk u dërgua. Përdorni "Dërgo përsëri" më poshtë.',
     });
   } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(400).json({
+        message: 'Ky email ose emër përdoruesi tashmë ekziston.',
+        code: 'USER_EXISTS',
+      });
+    }
     res.status(500).json({ message: err.message || 'Gabim gjatë regjistrimit.' });
   }
 };

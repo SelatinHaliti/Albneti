@@ -44,7 +44,7 @@ async function sendViaBrevo(
   return { ok: true, provider: 'brevo' };
 }
 
-async function sendViaSendGrid({ to, subject, html }: Required<SendBody>) {
+async function sendViaSendGrid({ to, subject, html }: Required<Pick<SendBody, 'to' | 'subject' | 'html'>>) {
   const key = process.env.SENDGRID_API_KEY?.trim();
   if (!key?.startsWith('SG.')) return null;
   const fromEmail = (process.env.SENDGRID_FROM_EMAIL || process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || '').trim();

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useToastStore } from '@/store/useToastStore';
 import { AlbanianPulse } from '@/components/AlbanianPulse';
 
 type SuggestedUser = {
@@ -11,17 +12,48 @@ type SuggestedUser = {
   username: string;
   avatar?: string;
   fullName?: string;
+  reason?: string;
+  reasons?: string[];
+  isVerified?: boolean;
+  isFollowing?: boolean;
 };
 
 export function RightSidebar() {
   const user = useAuthStore((s) => s.user);
+  const toastSuccess = useToastStore((s) => s.success);
+  const toastError = useToastStore((s) => s.error);
   const [suggestions, setSuggestions] = useState<SuggestedUser[]>([]);
+  const [algorithm, setAlgorithm] = useState<string | null>(null);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    api<{ suggestions: SuggestedUser[] }>('/api/explore/sugjerime?limit=5')
-      .then((r) => setSuggestions(r.suggestions || []))
+    api<{ suggestions: SuggestedUser[]; algorithm?: string }>('/api/explore/sugjerime?limit=5')
+      .then((r) => {
+        setSuggestions(r.suggestions || []);
+        setAlgorithm(r.algorithm || null);
+      })
       .catch(() => setSuggestions([]));
   }, []);
+
+  const followUser = useCallback(
+    async (target: SuggestedUser) => {
+      if (followingIds.has(target._id)) return;
+      setFollowingIds((prev) => new Set(prev).add(target._id));
+      try {
+        await api(`/api/users/${target._id}/ndiq`, { method: 'POST' });
+        toastSuccess(`Po ndiqni @${target.username}`);
+        setSuggestions((prev) => prev.filter((s) => s._id !== target._id));
+      } catch (err) {
+        setFollowingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(target._id);
+          return next;
+        });
+        toastError(err instanceof Error ? err.message : 'Nuk u ndoq.');
+      }
+    },
+    [followingIds, toastSuccess, toastError]
+  );
 
   if (!user) return null;
 
@@ -70,7 +102,7 @@ export function RightSidebar() {
         <span className="text-[var(--text-muted)]">→</span>
       </Link>
 
-      {/* Suggestions */}
+      {/* Suggestions – Suggest Engine v2 */}
       {suggestions.length > 0 && (
         <div className="mb-5">
           <div className="flex items-center justify-between mb-3">
@@ -78,28 +110,42 @@ export function RightSidebar() {
             <Link href="/kerko" className="text-[12px] font-semibold text-[var(--text)] hover:opacity-70">Shiko të gjitha</Link>
           </div>
           <div className="space-y-3">
-            {suggestions.map((s) => (
-              <div key={s._id} className="flex items-center gap-3">
-                <Link href={`/profili/${s.username}`}>
-                  <img
-                    src={s.avatar || ''}
-                    alt=""
-                    className="w-8 h-8 rounded-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + s.username; }}
-                  />
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <Link href={`/profili/${s.username}`} className="text-[14px] font-semibold text-[var(--text)] truncate block hover:opacity-80">
-                    {s.username}
+            {suggestions.map((s) => {
+              const busy = followingIds.has(s._id);
+              return (
+                <div key={s._id} className="flex items-center gap-3">
+                  <Link href={`/profili/${s.username}`}>
+                    <img
+                      src={s.avatar || ''}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + s.username; }}
+                    />
                   </Link>
-                  <p className="text-[12px] text-[var(--text-muted)] truncate">{s.fullName || 'Përdorues i ri'}</p>
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/profili/${s.username}`} className="text-[14px] font-semibold text-[var(--text)] truncate block hover:opacity-80">
+                      {s.username}
+                      {s.isVerified ? <span className="ml-1 text-[var(--ig-blue)]" aria-label="Verifikuar">✓</span> : null}
+                    </Link>
+                    <p className="text-[12px] text-[var(--text-muted)] truncate">
+                      {s.reason || s.fullName || 'Sugjeruar për ty'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => followUser(s)}
+                    className="text-[12px] font-semibold ig-link disabled:opacity-50"
+                  >
+                    {busy ? '...' : 'Ndiq'}
+                  </button>
                 </div>
-                <Link href={`/profili/${s.username}`} className="text-[12px] font-semibold ig-link">
-                  Ndiq
-                </Link>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          {algorithm ? (
+            <p className="mt-2 text-[10px] text-[var(--text-secondary)]">AlbNet Suggest · personalizuar</p>
+          ) : null}
         </div>
       )}
 
@@ -116,7 +162,7 @@ export function RightSidebar() {
             </Link>
           ))}
         </div>
-        <p className="pt-3">© 2026 ALBNET · Platforma Sociale Shqiptare</p>
+        <p className="mt-2">© {new Date().getFullYear()} AlbNet</p>
       </div>
     </aside>
   );

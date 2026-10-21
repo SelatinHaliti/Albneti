@@ -31,6 +31,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!acceptedTerms) {
       setError('Duhet të pranoni Kushtet dhe Privatësinë.');
       return;
@@ -38,6 +39,7 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
+      // Timeout më i gjatë: Render cold-start + dërgim email mund të zgjasë
       const data = await api<{
         needsVerification?: boolean;
         email?: string;
@@ -46,6 +48,7 @@ export default function RegisterPage() {
       }>('/api/auth/regjistrohu', {
         method: 'POST',
         body: { username, email, fullName, password, acceptedTerms: true },
+        timeout: 90000,
       });
       const targetEmail = data.email || email;
       logout();
@@ -53,7 +56,14 @@ export default function RegisterPage() {
         `/prit-verifikimin?email=${encodeURIComponent(targetEmail)}${data.emailSent === false ? '&warn=1' : ''}`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gabim gjatë regjistrimit.');
+      const msg = err instanceof Error ? err.message : 'Gabim gjatë regjistrimit.';
+      // Nëse serveri krijoi llogarinë por klientit i duket “anuluar”, ridrejto te verifikimi
+      if (/anulua|zgjohet|timeout|kaloi koha/i.test(msg)) {
+        logout();
+        router.push(`/prit-verifikimin?email=${encodeURIComponent(email)}&warn=1`);
+        return;
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }

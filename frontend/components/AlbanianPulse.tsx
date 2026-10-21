@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/utils/api';
 import { useSocket } from '@/components/SocketProvider';
 
@@ -20,7 +21,8 @@ export function AlbanianPulse() {
   const { socket } = useSocket();
   const [onlineCount, setOnlineCount] = useState(0);
   const [hashtags, setHashtags] = useState<Hashtag[]>([]);
-  const proverb = PROVERBS[new Date().getDate() % PROVERBS.length];
+  const [proverbIndex, setProverbIndex] = useState(() => new Date().getDate() % PROVERBS.length);
+  const proverb = PROVERBS[proverbIndex];
 
   useEffect(() => {
     api<{ hashtags: Hashtag[] }>('/api/explore/hashtag-trending')
@@ -34,6 +36,13 @@ export function AlbanianPulse() {
     socket.on('global_chat_online_count', onCount);
     return () => { socket.off('global_chat_online_count', onCount); };
   }, [socket]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setProverbIndex((i) => (i + 1) % PROVERBS.length);
+    }, 12000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="space-y-4 mb-6">
@@ -65,7 +74,7 @@ export function AlbanianPulse() {
               {['Shqipëri', 'Kosovë', 'Diaspora', 'Shqip'].map((tag) => (
                 <Link
                   key={tag}
-                  href={`/explore/hashtag/${tag.toLowerCase()}`}
+                  href={`/explore/hashtag/${encodeURIComponent(tag.toLowerCase())}`}
                   className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[var(--albanian-soft)] text-[var(--albanian-red)] hover:opacity-80"
                 >
                   #{tag}
@@ -98,10 +107,21 @@ export function AlbanianPulse() {
         </div>
       )}
 
-      {/* Proverb of the day */}
-      <div className="rounded-2xl p-4 border border-[var(--border)] bg-[var(--bg-elevated)]">
+      {/* Proverb of the day – cycles with subtle motion */}
+      <div className="rounded-2xl p-4 border border-[var(--border)] bg-[var(--bg-elevated)] overflow-hidden min-h-[88px]">
         <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--albanian-red)] mb-1.5">Fjalë Shqipe</p>
-        <p className="text-[13px] text-[var(--text)] italic leading-relaxed">&ldquo;{proverb}&rdquo;</p>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={proverb}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35 }}
+            className="text-[13px] text-[var(--text)] italic leading-relaxed"
+          >
+            &ldquo;{proverb}&rdquo;
+          </motion.p>
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -8,7 +8,10 @@
     "start": "node scripts/check-env.js && node server.js",
     "dev": "node scripts/check-env.js && nodemon server.js",
     "check:env": "node scripts/check-env.js",
-    "test:studio": "node scripts/test-creator-studio.js"
+    "test:studio": "node scripts/test-creator-studio.js",
+    "test:suggest": "node scripts/test-suggest-algorithm.js",
+    "test:search": "node scripts/test-search-rank.js",
+    "test:algorithms": "node scripts/test-creator-studio.js && node scripts/test-suggest-algorithm.js && node scripts/test-search-rank.js"
   },
   "dependencies": {
     "apple-signin-auth": "^1.7.9",

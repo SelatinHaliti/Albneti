@@ -138,7 +138,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, [user, pathname, ready, canAccessPlatform, refreshNotifications, refreshUnreadMessages, clearNotificationBadge]);
 
-  if (!ready || !canAccessPlatform) {
+  if (!ready || !canAccessPlatform || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
         <div className="animate-pulse flex flex-col items-center gap-3">

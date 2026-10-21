@@ -440,20 +440,25 @@ export const searchUsers = async (req, res) => {
   try {
     const { q, limit = 20 } = req.query;
     if (!q || q.length < 2) {
-      return res.json({ users: [] });
+      return res.json({ users: [], algorithm: 'albnet_search_v2' });
     }
-    const users = await User.find({
-      isBlocked: false,
-      _id: { $ne: req.user.id },
-      $or: [
-        { username: new RegExp(q, 'i') },
-        { fullName: new RegExp(q, 'i') },
-      ],
-    })
-      .select('username avatar fullName')
-      .limit(parseInt(limit, 10))
+    const { rankSearchUsers, buildUserSearchQuery, SEARCH_ALGORITHM_ID } = await import(
+      '../services/searchRank.js'
+    );
+    const lim = Math.min(parseInt(limit, 10) || 20, 40);
+    const viewer = await User.findById(req.user.id).select('following').lean();
+    const candidates = await User.find(buildUserSearchQuery(q, req.user.id))
+      .select('username avatar fullName isVerified verifiedSubscription followers lastActiveAt')
+      .limit(Math.min(lim * 4, 80))
       .lean();
-    res.json({ users });
+    const ranked = rankSearchUsers(candidates, q, viewer).slice(0, lim).map((u) => ({
+      _id: u._id,
+      username: u.username,
+      avatar: u.avatar,
+      fullName: u.fullName,
+      isVerified: !!(u.isVerified || u.verifiedSubscription?.status === 'active'),
+    }));
+    res.json({ users: ranked, algorithm: SEARCH_ALGORITHM_ID });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Gabim.' });
   }

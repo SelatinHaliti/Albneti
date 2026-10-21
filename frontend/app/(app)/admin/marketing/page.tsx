@@ -49,6 +49,7 @@ type MarketingStats = {
 type AiPreview = {
   theme: AiTheme;
   recipientCount: number;
+  activeRecipientCount?: number;
   highlights: {
     activeUsers: number;
     activeLives: number;
@@ -252,6 +253,7 @@ export default function AdminMarketingPage() {
         total?: number;
         error?: string;
         message?: string;
+        alreadyRunning?: boolean;
       }>('/api/marketing/admin/send-active', { method: 'POST', body: {} });
       if (res.error) {
         setResult(`Gabim: ${res.error}`);

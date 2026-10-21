@@ -32,7 +32,7 @@ type Post = {
   saved?: boolean;
 };
 
-type FeedResponse = { posts: Post[]; hasMore: boolean; nextCursor: string | null };
+type FeedResponse = { posts: Post[]; hasMore: boolean; nextCursor: string | null; algorithm?: string };
 
 export default function FeedPage() {
   const user = useAuthStore((s) => s.user);
@@ -50,6 +50,7 @@ export default function FeedPage() {
   const [pullY, setPullY] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [storyOrder, setStoryOrder] = useState<'default' | 'latest'>('default');
+  const [feedAlgorithm, setFeedAlgorithm] = useState<string | null>(null);
   const touchStartY = useRef(0);
 
   useDocumentTitle(feedMode === 'following' ? 'Ndiqet' : 'Kryefaja');
@@ -85,6 +86,7 @@ export default function FeedPage() {
       setStories(storiesRes.stories || []);
       setHasMore(feedRes.hasMore ?? false);
       setNextCursor(feedRes.nextCursor ?? null);
+      if (feedRes.algorithm) setFeedAlgorithm(feedRes.algorithm);
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return;
       setError('Nuk u lidh. Provo përsëri.');
@@ -112,6 +114,7 @@ export default function FeedPage() {
         setStories(storiesRes.stories || []);
         setHasMore(feedRes.hasMore ?? false);
         setNextCursor(feedRes.nextCursor ?? null);
+        if (feedRes.algorithm) setFeedAlgorithm(feedRes.algorithm);
       } catch (e) {
         if ((e as Error)?.name === 'AbortError') return;
         setPosts([]);
@@ -205,6 +208,11 @@ export default function FeedPage() {
 
       {feedMode !== 'following' && <div className="hidden md:block"><TrendingShqip /></div>}
       <div className="hidden md:block"><MobileAlbanianBanner /></div>
+      {feedMode === 'for_you' && feedAlgorithm && !loading && posts.length > 0 && (
+        <p className="px-4 pt-2 text-[11px] text-[var(--text-secondary)] md:px-0">
+          Për ty · renditur me inteligjencë AlbNet
+        </p>
+      )}
 
       {loading ? (
         <div className="space-y-5 pb-6 pt-4 px-3">
