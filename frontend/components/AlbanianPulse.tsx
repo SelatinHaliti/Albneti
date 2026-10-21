@@ -49,11 +49,10 @@ export function AlbanianPulse() {
       {/* Chat Global Live */}
       <Link href="/chat-global" className="albanian-card block p-4 hover:opacity-90 transition-opacity">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[var(--albanian-soft)] flex items-center justify-center text-lg">🌍</div>
           <div className="flex-1 min-w-0">
             <p className="text-[14px] font-semibold text-[var(--text)]">Chat Global Shqiptar</p>
-            <p className="text-[12px] text-[var(--text-muted)] flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse-live" />
+            <p className="text-[12px] text-[var(--text-muted)] flex items-center gap-1.5 mt-1">
+              <span className="w-1.5 h-1.5 rounded-sm bg-[var(--success)] animate-pulse-live" />
               {onlineCount > 0 ? `${onlineCount} shqiptarë online` : 'Bashkohu tani'}
             </p>
           </div>
@@ -63,24 +62,21 @@ export function AlbanianPulse() {
 
       {/* Diaspora */}
       <div className="liquid-glass rounded-2xl p-4">
-        <div className="flex items-start gap-3">
-          <span className="text-2xl">🦅</span>
-          <div>
-            <p className="text-[13px] font-bold text-[var(--text)]">Diaspora & Atdhe</p>
-            <p className="text-[12px] text-[var(--text-muted)] mt-1 leading-relaxed">
-              Lidhu me shqiptarët në Shqipëri, Kosovë, Maqedoni dhe kudo në botë.
-            </p>
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
-              {['Shqipëri', 'Kosovë', 'Diaspora', 'Shqip'].map((tag) => (
-                <Link
-                  key={tag}
-                  href={`/explore/hashtag/${encodeURIComponent(tag.toLowerCase())}`}
-                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[var(--albanian-soft)] text-[var(--albanian-red)] hover:opacity-80"
-                >
-                  #{tag}
-                </Link>
-              ))}
-            </div>
+        <div>
+          <p className="text-[13px] font-bold text-[var(--text)] tracking-tight">Diaspora & Atdhe</p>
+          <p className="text-[12px] text-[var(--text-muted)] mt-1.5 leading-relaxed">
+            Lidhu me shqiptarët në Shqipëri, Kosovë, Maqedoni dhe kudo në botë.
+          </p>
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {['Shqipëri', 'Kosovë', 'Diaspora', 'Shqip'].map((tag) => (
+              <Link
+                key={tag}
+                href={`/explore/hashtag/${encodeURIComponent(tag.toLowerCase())}`}
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-md bg-[var(--albanian-soft)] text-[var(--albanian-red)] hover:opacity-80"
+              >
+                #{tag}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

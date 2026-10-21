@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AppLogo } from '@/components/AppLogo';
 import { SocialLoginButtons } from '@/components/SocialLoginButtons';
 import { useAuthStore, normalizeAuthUser } from '@/store/useAuthStore';
 import { useAuthReady } from '@/hooks/useAuthReady';
@@ -85,21 +84,11 @@ export default function LoginPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
     >
-      <div className="flex flex-col items-center text-center mb-8">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
-          className="mb-4"
-        >
-          <AppLogo size={64} />
-        </motion.div>
-        <motion.p
-          variants={item}
-          className="text-[var(--text-muted)] text-sm max-w-[260px]"
-        >
-          Kyçuni për të vazhduar në AlbNet
-        </motion.p>
+      <div className="flex flex-col items-center text-center mb-7">
+        <h1 className="text-[22px] font-bold tracking-tight text-[var(--text)]">Mirë se erdhe</h1>
+        <p className="text-[var(--text-muted)] text-sm max-w-[280px] mt-2 leading-relaxed">
+          Kyçu për të vazhduar te feed-i, story-t dhe reels.
+        </p>
       </div>
 
       <motion.form

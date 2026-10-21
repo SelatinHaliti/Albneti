@@ -6,100 +6,109 @@ import { AppLogo } from '@/components/AppLogo';
 import { LandingHeroVisual } from '@/components/LandingHeroVisual';
 
 const FEATURES = [
-  { icon: '📸', label: 'Postime' },
-  { icon: '⭕', label: 'Story' },
-  { icon: '🎬', label: 'Reels' },
-  { icon: '💬', label: 'Mesazhe' },
-  { icon: '🌍', label: 'Chat Global' },
-  { icon: '🦅', label: 'Diaspora' },
+  {
+    title: 'Momentet tuaja',
+    body: 'Postime, story dhe reels në një hapësirë të ndërtuar për shqiptarët.',
+  },
+  {
+    title: 'Lidhje pa kufi',
+    body: 'Mesazhe, live dhe chat global që mbajnë diasporën dhe atdheun afër.',
+  },
+  {
+    title: 'Komuniteti ynë',
+    body: 'Ngjarje, krijues dhe zbulime që nisin nga Tiranë, Prishtinë e deri në botë.',
+  },
 ];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[var(--bg)]">
-      {/* Left hero – desktop */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 hero-glow" />
-        <div
-          className="absolute top-1/3 left-1/3 w-72 h-72 rounded-full opacity-15 blur-3xl pointer-events-none"
-          style={{ background: 'var(--albanian-red)' }}
-        />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="relative flex flex-col items-center gap-6 p-10 max-w-[480px]"
-        >
-          <LandingHeroVisual />
-          <div className="text-center mt-2">
-            <span className="albanian-badge mb-3 inline-flex">🇦🇱 Platforma #1 Shqiptare</span>
-            <p className="text-[20px] font-semibold text-[var(--text)] leading-snug">
-              Ku shqiptarët ndajnë momentet, lidhen dhe rriten bashkë.
-            </p>
-            <p className="text-[14px] text-[var(--text-muted)] mt-2">
-              Shqipëri · Kosovë · Maqedoni · Diaspora
-            </p>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Mobile hero – compact */}
-      <div className="lg:hidden w-full flex justify-center pt-8 pb-2 px-4">
+    <div className="landing-root">
+      {/* ── Hero: one composition ── */}
+      <section className="landing-hero">
         <LandingHeroVisual />
-      </div>
 
-      {/* Right – login */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 relative">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
+        <div className="landing-hero__veil" />
+
+        <motion.header
+          className="landing-hero__brand"
+          initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative z-10 w-full max-w-[350px]"
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="border border-[var(--border)] rounded-xl p-10 mb-3 flex flex-col items-center bg-[var(--bg-card)]">
-            <AppLogo size={68} />
-            <h1 className="mt-5 text-[32px] font-semibold tracking-tight">
-              <span className="logo-gradient">ALB</span>
-              <span className="text-[var(--text)]">NET</span>
-            </h1>
-            <p className="mt-4 text-[15px] text-[var(--text-muted)] text-center leading-snug">
-              Kyçu për të parë fotot, story-t dhe reels nga komuniteti shqiptar.
-            </p>
-            <span className="albanian-badge mt-4">🇦🇱 Platforma #1 Shqiptare</span>
-          </div>
-
-          <div className="border border-[var(--border)] rounded-xl p-6 mb-3 space-y-2 bg-[var(--bg-card)]">
-            <Link href="/kycu" className="block w-full py-2.5 rounded-lg text-[14px] font-semibold text-white text-center transition-colors" style={{ background: 'var(--ig-blue)' }}>
+          <AppLogo size={56} variant="plain" />
+          <h1 className="landing-wordmark">
+            ALB<span>NET</span>
+          </h1>
+          <p className="landing-headline">
+            Rrjeti ku shqiptarët ndajnë jetën.
+          </p>
+          <p className="landing-sub">
+            Lidhu me miqtë, diasporën dhe krijuesit në një platformë të ndërtuar në shqip.
+          </p>
+          <div className="landing-cta">
+            <Link href="/kycu" className="landing-cta__primary">
               Kyçu
             </Link>
-            <Link href="/regjistrohu" className="block w-full py-2.5 rounded-lg text-[14px] font-semibold text-[var(--ig-blue)] text-center hover:bg-[var(--primary-soft)] transition-colors">
+            <Link href="/regjistrohu" className="landing-cta__secondary">
               Regjistrohu
             </Link>
           </div>
+        </motion.header>
+      </section>
 
-          <Link href="/chat-global" className="albanian-card block p-4 mb-3 hover:opacity-90 transition-opacity">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🌍</span>
-              <div>
-                <p className="text-[14px] font-semibold text-[var(--text)]">Chat Global Shqiptar</p>
-                <p className="text-[12px] text-[var(--text-muted)]">Bisedo live me shqiptarë kudo në botë</p>
-              </div>
-            </div>
-          </Link>
-
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-4">
+      {/* ── One job: what AlbNet is for ── */}
+      <section className="landing-section">
+        <motion.div
+          className="landing-section__inner"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.55 }}
+        >
+          <p className="landing-kicker">Pse AlbNet</p>
+          <h2 className="landing-section__title">Një hapësirë. Një komb. Kudo.</h2>
+          <p className="landing-section__lead">
+            Nga atdheu te diaspora — e njëjta gjuhë, e njëjta energji, e njëjta rrjetë.
+          </p>
+          <ul className="landing-feature-list">
             {FEATURES.map((f) => (
-              <span key={f.label} className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1">
-                <span>{f.icon}</span>{f.label}
-              </span>
+              <li key={f.title} className="landing-feature">
+                <h3>{f.title}</h3>
+                <p>{f.body}</p>
+              </li>
             ))}
-          </div>
+          </ul>
+        </motion.div>
+      </section>
 
-          <Link href="/shkarko" className="mt-6 block text-center text-[12px] font-semibold text-[var(--ig-blue)] hover:underline">
-            📲 Shkarko për iOS, Android, Mac & Windows
+      {/* ── Download ── */}
+      <section className="landing-section landing-section--muted">
+        <motion.div
+          className="landing-section__inner landing-download"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.5 }}
+        >
+          <h2 className="landing-section__title">Merr AlbNet me vete</h2>
+          <p className="landing-section__lead">
+            Web, iOS, Android, Mac dhe Windows — i njëjti profil kudo.
+          </p>
+          <Link href="/shkarko" className="landing-cta__primary landing-cta__inline">
+            Shkarko aplikacionin
           </Link>
         </motion.div>
-      </div>
+      </section>
+
+      <footer className="landing-footer">
+        <span className="landing-footer__mark">ALBNET</span>
+        <nav className="landing-footer__links">
+          <Link href="/privatesi">Privatësia</Link>
+          <Link href="/kushtet">Kushtet</Link>
+          <Link href="/cookies">Cookies</Link>
+          <Link href="/chat-global">Chat Global</Link>
+        </nav>
+      </footer>
     </div>
   );
 }

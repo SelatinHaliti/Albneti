@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AppLogo } from '@/components/AppLogo';
 import { SocialLoginButtons } from '@/components/SocialLoginButtons';
 import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -77,20 +76,10 @@ export default function RegisterPage() {
       transition={{ duration: 0.35 }}
     >
       <div className="flex flex-col items-center text-center mb-6">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
-          className="mb-3"
-        >
-          <AppLogo size={56} />
-        </motion.div>
-        <motion.p
-          variants={item}
-          className="text-[var(--text-muted)] text-sm max-w-[280px]"
-        >
-          Regjistrohuni për të parë fotot dhe videot e miqve tuaj.
-        </motion.p>
+        <h1 className="text-[22px] font-bold tracking-tight text-[var(--text)]">Krijo llogarinë</h1>
+        <p className="text-[var(--text-muted)] text-sm max-w-[280px] mt-2 leading-relaxed">
+          Bashkohu me komunitetin shqiptar — postime, story dhe chat global.
+        </p>
       </div>
 
       <motion.form

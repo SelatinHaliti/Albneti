@@ -151,10 +151,10 @@ export default function ShkarkoPage() {
       <header className="border-b border-[var(--border)] ig-nav-bar sticky top-0 z-50 safe-area-pt">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <AppLogo size={32} />
-            <span className="font-bold text-[16px]">ALBNET</span>
+            <AppLogo size={32} variant="plain" />
+            <span className="albnet-wordmark text-[17px]">ALB<span className="text-[var(--albanian-red)]">NET</span></span>
           </Link>
-          <Link href="/kycu" className="text-[13px] font-semibold text-[var(--ig-blue)]">
+          <Link href="/kycu" className="text-[13px] font-semibold text-[var(--albanian-red)]">
             Kyçu
           </Link>
         </div>
@@ -168,12 +168,12 @@ export default function ShkarkoPage() {
               <AppLogo size={80} />
             </div>
           </div>
-          <span className="albanian-badge mb-3 inline-flex">🇦🇱 Falas · Pa App Store</span>
-          <h1 className="text-[28px] font-bold text-[var(--text)] leading-tight">
+          <span className="albanian-badge mb-3 inline-flex">Falas · Pa App Store</span>
+          <h1 className="text-[30px] font-bold text-[var(--text)] leading-tight tracking-tight">
             Instalo AlbNet
           </h1>
-          <p className="text-[14px] text-[var(--text-muted)] mt-2 leading-relaxed">
-            Rrjeti social shqiptar në telefon, tablet dhe kompjuter – si një app i vërtetë.
+          <p className="text-[15px] text-[var(--text-muted)] mt-2 leading-relaxed max-w-[34ch] mx-auto">
+            Rrjeti social shqiptar në telefon, tablet dhe kompjuter — si një app i vërtetë.
           </p>
 
           <div className="flex flex-wrap justify-center gap-2 mt-5">

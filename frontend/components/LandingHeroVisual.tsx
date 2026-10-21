@@ -1,134 +1,73 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { AppLogo } from '@/components/AppLogo';
 
-const STORIES = [
-  { name: 'Ti', isYours: true },
-  { name: 'Arben', color: '#e41e26' },
-  { name: 'Drita', color: '#1a1a1a' },
-  { name: 'Luan', color: '#c9a227' },
-  { name: 'Elira', color: '#ed4956' },
-];
-
-const POSTS = [
-  {
-    user: 'drita_shqip',
-    place: 'Tiranë, Shqipëri',
-    caption: 'Perëndimi mbi Tiranë 🇦🇱',
-    likes: '1.2K',
-    gradient: 'linear-gradient(160deg, #e41e26 0%, #ff6b6b 40%, #1a1a1a 100%)',
-  },
-  {
-    user: 'diaspora_ch',
-    place: 'Zürich, Diaspora',
-    caption: 'Mall për atdheun çdo ditë 🦅',
-    likes: '856',
-    gradient: 'linear-gradient(160deg, #1a1a1a 0%, #4a4a4a 50%, #e41e26 100%)',
-  },
-];
-
-const FLOATS = [
-  { icon: '🌍', label: 'Chat Global', sub: 'Live tani', top: '8%', right: '-8%', delay: 0.2 },
-  { icon: '🔥', label: '#Shqipëri', sub: 'Trending', top: '42%', left: '-12%', delay: 0.4 },
-  { icon: '🎬', label: 'Reels', sub: 'Shiko', bottom: '18%', right: '-10%', delay: 0.6 },
-];
-
+/**
+ * Full-bleed atmospheric plane for the landing hero.
+ * Visual anchor: heraldic eagle + mountain light — no floating badges/cards.
+ */
 export function LandingHeroVisual() {
   return (
-    <div className="landing-hero-wrap">
-      {/* Floating badges */}
-      {FLOATS.map((f) => (
-        <motion.div
-          key={f.label}
-          className="landing-float-card hidden md:flex"
-          style={{ top: f.top, bottom: f.bottom, left: f.left, right: f.right }}
-          initial={{ opacity: 0, y: 12 }}
+    <div className="landing-atmosphere" aria-hidden>
+      <div className="landing-atmosphere__mesh" />
+      <div className="landing-atmosphere__grain" />
+
+      <motion.svg
+        className="landing-atmosphere__eagle"
+        viewBox="0 0 480 480"
+        fill="none"
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {/* Shield outline */}
+        <motion.path
+          d="M240 36L78 152v108c0 108 74 168 162 188 88-20 162-80 162-188V152L240 36z"
+          stroke="rgba(255,255,255,0.22)"
+          strokeWidth="2"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 1.5, ease: 'easeInOut' }}
+        />
+        {/* Shield fill */}
+        <motion.path
+          d="M240 52L96 158v96c0 92 64 144 144 162 80-18 144-70 144-162v-96L240 52z"
+          fill="rgba(14,17,22,0.55)"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25, duration: 0.6 }}
+        />
+        {/* Double-headed eagle – matches AppLogo proportions */}
+        <motion.g
+          fill="#c8102e"
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: f.delay, duration: 0.5 }}
+          transition={{ delay: 0.45, duration: 0.7 }}
         >
-          <span className="text-lg">{f.icon}</span>
-          <div>
-            <p className="text-[11px] font-bold text-[var(--text)]">{f.label}</p>
-            <p className="text-[9px] text-[var(--text-muted)]">{f.sub}</p>
-          </div>
-        </motion.div>
-      ))}
+          <ellipse cx="148" cy="168" rx="28" ry="30" />
+          <ellipse cx="332" cy="168" rx="28" ry="30" />
+          <path d="M124 160L98 138" stroke="#c8102e" strokeWidth="5" strokeLinecap="round" />
+          <path d="M356 160L382 138" stroke="#c8102e" strokeWidth="5" strokeLinecap="round" />
+          <path d="M210 196v118h60V196h-60z" />
+          <path d="M240 196l-44 54h18l26-28 26 28h18l-44-54z" />
+          <path d="M178 210L98 226l52 38 22-24V210z" />
+          <path d="M302 210l80 16-52 38-22-24V210z" />
+          <path d="M164 228l-36 10 22 18 14-14v-14z" />
+          <path d="M316 228l36 10-22 18-14-14v-14z" />
+          <path d="M230 310l10 36 10-36h-20z" />
+        </motion.g>
+      </motion.svg>
 
-      {/* Phone mockup */}
       <motion.div
-        className="landing-phone"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="landing-phone-notch" />
-        <div className="landing-phone-header">
-          <span className="font-bold text-[13px] tracking-tight">ALBNET</span>
-          <div className="flex gap-3 text-[var(--text-muted)]">
-            <span>♡</span>
-            <span>✈</span>
-          </div>
-        </div>
-
-        {/* Stories */}
-        <div className="landing-stories-row">
-          {STORIES.map((s) => (
-            <div key={s.name} className="landing-story-item">
-              <div className={`landing-story-ring ${s.isYours ? 'yours' : ''}`}>
-                <div className="landing-story-avatar" style={!s.isYours ? { background: s.color } : undefined}>
-                  {s.isYours ? <AppLogo size={28} /> : s.name[0]}
-                </div>
-              </div>
-              <span className="text-[8px] text-[var(--text-muted)] truncate w-10 text-center">
-                {s.name}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Posts */}
-        <div className="landing-feed">
-          {POSTS.map((post) => (
-            <div key={post.user} className="landing-post">
-              <div className="landing-post-head">
-                <div className="landing-post-avatar">{post.user[0].toUpperCase()}</div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold text-[var(--text)] truncate">{post.user}</p>
-                  <p className="text-[8px] text-[var(--text-muted)] truncate">{post.place}</p>
-                </div>
-              </div>
-              <div className="landing-post-media" style={{ background: post.gradient }} />
-              <div className="landing-post-actions">
-                <span>♡</span><span>💬</span><span>↗</span>
-                <span className="ml-auto text-[8px] text-[var(--text-muted)]">{post.likes}</span>
-              </div>
-              <p className="text-[9px] text-[var(--text)] px-2 pb-2 leading-snug">
-                <span className="font-semibold">{post.user}</span> {post.caption}
-              </p>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Stats */}
+        className="landing-atmosphere__orb landing-atmosphere__orb--a"
+        animate={{ y: [0, -18, 0], x: [0, 10, 0] }}
+        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+      />
       <motion.div
-        className="landing-stats"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        {[
-          { n: '50K+', l: 'Shqiptarë' },
-          { n: 'Live', l: 'Chat Global' },
-          { n: '50+', l: 'Vende' },
-        ].map((s) => (
-          <div key={s.l} className="landing-stat">
-            <span className="text-[15px] font-bold text-[var(--albanian-red)]">{s.n}</span>
-            <span className="text-[10px] text-[var(--text-muted)]">{s.l}</span>
-          </div>
-        ))}
-      </motion.div>
+        className="landing-atmosphere__orb landing-atmosphere__orb--b"
+        animate={{ y: [0, 22, 0], x: [0, -14, 0] }}
+        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+      />
     </div>
   );
 }
