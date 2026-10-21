@@ -1173,7 +1173,7 @@ body.is-desktop-app .install-banner { display: none; }
   position: relative;
   min-height: 100dvh;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: flex-start;
   overflow: hidden;
   isolation: isolate;
@@ -1253,8 +1253,15 @@ body.is-desktop-app .install-banner { display: none; }
   width: 100%;
   max-width: 720px;
   padding: clamp(2rem, 6vw, 4.5rem);
-  padding-bottom: clamp(3rem, 8vh, 5.5rem);
   color: #f5f5f5;
+}
+@media (max-width: 767px) {
+  .landing-hero {
+    align-items: flex-end;
+  }
+  .landing-hero__brand {
+    padding-bottom: clamp(3rem, 10vh, 5rem);
+  }
 }
 
 .landing-wordmark {
