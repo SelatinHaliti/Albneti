@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { Fragment, useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -35,17 +35,17 @@ import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { MobileMenu } from '@/components/MobileMenu';
 
 const navItems = [
-  { href: '/feed', label: 'Kryefaja', Icon: IconHome },
-  { href: '/explore', label: 'Eksploro', Icon: IconSearch },
-  { href: '/reels', label: 'Reels', Icon: IconReels },
-  { href: '/studio', label: 'Studio', Icon: IconStudio },
-  { href: '/live', label: 'Live', Icon: IconLive },
-  { href: '/krijo/post', label: 'Krijo', Icon: IconAdd, isCreate: true },
-  { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badge: 'messages' as const },
-  { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badge: 'social' as const },
-  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity },
-  { href: '/chat-global', label: 'Chat Global', Icon: IconChatGlobal },
-  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified },
+  { href: '/feed', label: 'Kryefaja', Icon: IconHome, section: 'main' as const },
+  { href: '/explore', label: 'Eksploro', Icon: IconSearch, section: 'main' as const },
+  { href: '/reels', label: 'Reels', Icon: IconReels, section: 'main' as const },
+  { href: '/mesazhe', label: 'Mesazhe', Icon: IconMessage, badge: 'messages' as const, section: 'main' as const },
+  { href: '/njoftime', label: 'Njoftime', Icon: IconHeart, badge: 'social' as const, section: 'main' as const },
+  { href: '/krijo/post', label: 'Krijo', Icon: IconAdd, isCreate: true, section: 'main' as const },
+  { href: '/live', label: 'Live', Icon: IconLive, section: 'more' as const },
+  { href: '/studio', label: 'Studio', Icon: IconStudio, section: 'more' as const },
+  { href: '/komuniteti', label: 'Komuniteti', Icon: IconCommunity, section: 'more' as const },
+  { href: '/chat-global', label: 'Chat Global', Icon: IconChatGlobal, section: 'more' as const },
+  { href: '/verifikim', label: 'Verifikim', Icon: IconVerified, section: 'more' as const },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -274,7 +274,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="desktop-sidebar-nav flex-1 min-h-0 px-2 lg:px-3 py-1 flex flex-col" aria-label="Menyja kryesore">
-            {navItems.map((navItem) => {
+            {navItems.map((navItem, index) => {
               const isActive = navItem.href === '/feed'
                 ? pathname === '/feed'
                 : navItem.href === '/live'
@@ -329,31 +329,39 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   : 'text-[var(--text)]'
               }`;
 
+              const divider = navItem.section === 'more' && navItems[index - 1]?.section !== 'more'
+                ? <div className="desktop-sidebar-divider" />
+                : null;
+
               if ('isCreate' in navItem && navItem.isCreate) {
                 return (
-                  <button
-                    key={navItem.href}
-                    type="button"
-                    onClick={() => setCreateMenuOpen(true)}
-                    className={`${linkClass} w-full`}
-                    title={navItem.label}
-                    aria-label={navItem.label}
-                  >
-                    {inner}
-                  </button>
+                  <Fragment key={navItem.href}>
+                    {divider}
+                    <button
+                      type="button"
+                      onClick={() => setCreateMenuOpen(true)}
+                      className={`${linkClass} w-full`}
+                      title={navItem.label}
+                      aria-label={navItem.label}
+                    >
+                      {inner}
+                    </button>
+                  </Fragment>
                 );
               }
               return (
-                <Link
-                  key={navItem.href}
-                  href={navItem.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : navItem.href}
-                  aria-current={isActive ? 'page' : undefined}
-                  aria-label={navItem.label}
-                  title={navItem.label}
-                  className={linkClass}
-                >
-                  {inner}
-                </Link>
+                <Fragment key={navItem.href}>
+                  {divider}
+                  <Link
+                    href={navItem.href === '/feed' ? (feedMode === 'following' ? '/feed?feed=following' : '/feed') : navItem.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    aria-label={navItem.label}
+                    title={navItem.label}
+                    className={linkClass}
+                  >
+                    {inner}
+                  </Link>
+                </Fragment>
               );
             })}
           </nav>

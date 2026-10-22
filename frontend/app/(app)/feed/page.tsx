@@ -172,14 +172,29 @@ export default function FeedPage() {
         </div>
       )}
 
-      {/* Story ring - only on "Kryefaja" */}
-      {feedMode !== 'following' && (
-        loading ? <SkeletonStoryRing /> : stories.length > 0 ? (
-          <div className="ig-story-rail">
-            <StoryRing groups={stories} currentUserId={user?.id} />
-          </div>
-        ) : null
+      <div className="feed-switch">
+        <Link href="/feed" className={feedMode === 'for_you' ? 'is-on' : ''} aria-current={feedMode === 'for_you' ? 'page' : undefined}>
+          Për ty
+        </Link>
+        <Link href="/feed?feed=following" className={feedMode === 'following' ? 'is-on' : ''} aria-current={feedMode === 'following' ? 'page' : undefined}>
+          Ndiqet
+        </Link>
+      </div>
+
+      {loading ? <SkeletonStoryRing /> : (
+        <div className="ig-story-rail">
+          <StoryRing groups={stories} currentUserId={user?.id} />
+        </div>
       )}
+
+      <Link href="/krijo/post" className="feed-compose">
+        <img
+          src={user?.avatar || ''}
+          alt=""
+          onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (user?.username || 'albnet'); }}
+        />
+        <span>Ndaj diçka me shqiptarët…</span>
+      </Link>
 
       {loading ? (
         <div className="space-y-5 pb-6 pt-4 px-3">

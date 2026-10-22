@@ -90,7 +90,7 @@ export function RightSidebar() {
                     <img
                       src={s.avatar || ''}
                       alt=""
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-11 h-11 rounded-full object-cover"
                       onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + s.username; }}
                     />
                   </Link>
