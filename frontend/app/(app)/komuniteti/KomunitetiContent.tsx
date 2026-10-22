@@ -148,9 +148,7 @@ export default function KomunitetiContent() {
   return (
     <div className="app-page app-page--community">
       <header className="app-page-head">
-        <p className="app-kicker">Bashkë</p>
-        <h1>Komuniteti Shqiptar</h1>
-        <p>Ngjarje, diaspora, krijues dhe lidhje me shqiptarët kudo.</p>
+        <h1>Komuniteti</h1>
       </header>
 
       {/* Stats bar */}

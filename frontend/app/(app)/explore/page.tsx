@@ -126,9 +126,7 @@ export default function ExplorePage() {
   return (
     <div className="app-page app-page--wide min-h-screen">
       <header className="app-page-head">
-        <p className="app-kicker">Zbulo</p>
         <h1>Eksploro</h1>
-        <p>Postime dhe hashtag nga komuniteti shqiptar.</p>
       </header>
       {pullY > 0 && (
         <div className="flex justify-center py-2 bg-[var(--bg)] sticky top-0 z-10" style={{ paddingTop: Math.min(pullY, 60) }}>

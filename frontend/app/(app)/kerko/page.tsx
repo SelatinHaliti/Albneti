@@ -108,8 +108,7 @@ export default function SearchPage() {
   return (
     <div className="app-page min-h-screen pt-2">
       <header className="app-page-head">
-        <p className="app-kicker">Kërko</p>
-        <h1>Gjej njerëz</h1>
+        <h1>Kërko</h1>
       </header>
       <div className="relative mb-4">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">

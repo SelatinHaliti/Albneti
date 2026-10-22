@@ -23,15 +23,11 @@ export function RightSidebar() {
   const toastSuccess = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
   const [suggestions, setSuggestions] = useState<SuggestedUser[]>([]);
-  const [algorithm, setAlgorithm] = useState<string | null>(null);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    api<{ suggestions: SuggestedUser[]; algorithm?: string }>('/api/explore/sugjerime?limit=5')
-      .then((r) => {
-        setSuggestions(r.suggestions || []);
-        setAlgorithm(r.algorithm || null);
-      })
+    api<{ suggestions: SuggestedUser[] }>('/api/explore/sugjerime?limit=5')
+      .then((r) => setSuggestions(r.suggestions || []))
       .catch(() => setSuggestions([]));
   }, []);
 
@@ -59,50 +55,31 @@ export function RightSidebar() {
 
   return (
     <aside className="ig-side scrollbar-hide">
-      <div className="ig-side-card flex items-center gap-3">
+      <div className="flex items-center gap-3">
         <Link href={`/profili/${user.username}`}>
           <img
             src={user.avatar || ''}
             alt=""
-            className="w-[56px] h-[56px] rounded-full object-cover ring-1 ring-[var(--border)]"
+            className="w-11 h-11 rounded-full object-cover"
             onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username; }}
           />
         </Link>
         <div className="flex-1 min-w-0">
-          <Link href={`/profili/${user.username}`} className="text-[14px] font-semibold text-[var(--text)] truncate block hover:opacity-80">
+          <Link href={`/profili/${user.username}`} className="text-[14px] font-semibold text-[var(--text)] truncate block">
             {user.username}
           </Link>
           <p className="text-[14px] text-[var(--text-muted)] truncate">{user.fullName || user.username}</p>
         </div>
-        <Link href="/profili/redakto" className="text-[12px] font-semibold ig-link">
+        <Link href="/profili/redakto" className="text-[12px] font-semibold text-[var(--primary)]">
           Ndërro
         </Link>
       </div>
 
-      {/* Albanian unique features */}
-      <AlbanianPulse />
-
-      <Link href="/komuniteti" className="albanian-card block p-4 mb-5 hover:opacity-90 transition-opacity">
-        <div>
-          <p className="text-[14px] font-semibold text-[var(--text)]">Komuniteti Shqiptar</p>
-          <p className="text-[12px] text-[var(--text-muted)] mt-1">Ngjarje, krijues dhe diaspora</p>
-        </div>
-      </Link>
-
-      <Link href="/shkarko" className="install-cta-card mb-5">
-        <div className="flex-1">
-          <p className="text-[13px] font-semibold text-[var(--text)]">Shkarko AlbNet</p>
-          <p className="text-[11px] text-[var(--text-muted)]">iOS · Android · Mac · Windows</p>
-        </div>
-        <span className="text-[var(--text-muted)] text-sm">→</span>
-      </Link>
-
-      {/* Suggestions – Suggest Engine v2 */}
       {suggestions.length > 0 && (
-        <div className="ig-side-card">
+        <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[14px] font-semibold text-[var(--text-muted)]">Sugjerime për ty</span>
-            <Link href="/kerko" className="text-[12px] font-semibold text-[var(--text)] hover:opacity-70">Shiko të gjitha</Link>
+            <Link href="/kerko" className="text-[12px] font-semibold text-[var(--text)]">Shiko të gjitha</Link>
           </div>
           <div className="space-y-3">
             {suggestions.map((s) => {
@@ -130,7 +107,7 @@ export function RightSidebar() {
                     type="button"
                     disabled={busy}
                     onClick={() => followUser(s)}
-                    className="text-[12px] font-semibold ig-link disabled:opacity-50"
+                    className="text-[12px] font-semibold text-[var(--primary)] disabled:opacity-50"
                   >
                     {busy ? '...' : 'Ndiq'}
                   </button>
@@ -138,26 +115,25 @@ export function RightSidebar() {
               );
             })}
           </div>
-          {algorithm ? (
-            <p className="mt-2 text-[10px] text-[var(--text-secondary)]">AlbNet Suggest · personalizuar</p>
-          ) : null}
         </div>
       )}
 
-      <div className="text-[11px] text-[var(--text-secondary)] leading-5 pt-2">
-        <p className="font-semibold text-[var(--text-muted)] mb-1">ALBNET</p>
-        <div className="flex flex-wrap gap-x-2">
+      <AlbanianPulse />
+
+      <div className="text-[12px] text-[var(--text-secondary)] leading-5 mt-8">
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
           {[
+            { label: 'Komuniteti', href: '/komuniteti' },
+            { label: 'Shkarko', href: '/shkarko' },
             { label: 'Privatësia', href: '/privatesi' },
             { label: 'Kushtet', href: '/kushtet' },
-            { label: 'Cookies', href: '/cookies' },
           ].map((l) => (
             <Link key={l.href} href={l.href} className="hover:underline">
               {l.label}
             </Link>
           ))}
         </div>
-        <p className="mt-2">© {new Date().getFullYear()} AlbNet</p>
+        <p className="mt-3">© {new Date().getFullYear()} AlbNet</p>
       </div>
     </aside>
   );

@@ -225,10 +225,7 @@ export default function NotificationsPage() {
     <div className="app-page min-h-screen">
       <div className="ig-page-header app-page-head">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="app-kicker">Aktiviteti</p>
-            <h1>Njoftime</h1>
-          </div>
+          <h1>Njoftime</h1>
           {unreadCount > 0 && (
             <button
               type="button"

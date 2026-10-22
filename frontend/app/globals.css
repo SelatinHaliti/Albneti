@@ -225,16 +225,18 @@ h1, h2, h3, .landing-wordmark, .albnet-wordmark {
 /* ─── Post block ─── */
 .post-block {
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
   overflow: hidden;
-  margin: 10px 12px 0;
-  box-shadow: var(--shadow-sm);
+  margin: 0;
+  box-shadow: none;
 }
 @media (min-width: 768px) {
   .post-block {
-    margin: 0 0 14px;
-    border-radius: 18px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 0 0 12px;
   }
 }
 
@@ -697,10 +699,10 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .desktop-sidebar-link--active {
-  font-weight: 650;
-  background: var(--primary-soft);
+  font-weight: 700;
+  background: transparent;
   color: var(--text);
-  box-shadow: inset 3px 0 0 var(--albanian-red);
+  box-shadow: none;
 }
 
 .desktop-sidebar-link:not(.desktop-sidebar-link--active):hover {
@@ -816,14 +818,19 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .app-canvas {
-  background:
-    radial-gradient(ellipse 55% 28% at 0% 0%, rgba(200, 16, 46, 0.07), transparent 58%),
-    var(--bg);
+  --bg: #fafafa;
+  --bg-card: #ffffff;
+  --bg-elevated: #ffffff;
+  --border: #efefef;
+  background: #fafafa;
 }
 .dark .app-canvas {
-  background:
-    radial-gradient(ellipse 48% 26% at 0% 0%, rgba(200, 16, 46, 0.16), transparent 55%),
-    var(--bg);
+  --bg: #000000;
+  --bg-card: #000000;
+  --bg-elevated: #121212;
+  --border: #262626;
+  --border-light: #1a1a1a;
+  background: #000000;
 }
 
 .ig-feed-column {
@@ -841,16 +848,17 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .ig-story-rail {
-  margin: 0 12px 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
 }
 @media (min-width: 768px) {
   .ig-story-rail {
-    margin: 0 0 14px;
+    margin: 0 0 16px;
+    border-bottom: none;
   }
 }
 
@@ -907,11 +915,11 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   padding: 18px 4px 8px;
 }
 .app-page-head h1 {
-  font-family: var(--font-display);
-  font-size: 1.7rem;
-  font-weight: 750;
-  letter-spacing: -0.04em;
-  line-height: 1.05;
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 .app-page-head p:not(.app-kicker) {
   margin-top: 6px;
@@ -974,8 +982,8 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .mobile-menu-link--active {
-  background: var(--primary-soft);
-  font-weight: 650;
+  background: transparent;
+  font-weight: 700;
 }
 
 .reels-container { background: #000; height: 100dvh; overflow: hidden; position: relative; }
@@ -1054,16 +1062,16 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 
 .ig-create-btn {
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 9px;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid currentColor;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--albanian-red);
-  color: #fff;
-  box-shadow: 0 6px 16px rgba(200, 16, 46, 0.28);
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
 }
 
 /* ─── Trending hashtag pill ─── */

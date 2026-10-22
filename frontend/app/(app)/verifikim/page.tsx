@@ -136,8 +136,7 @@ function VerifikimContent() {
       <div className="app-page verify-page">
         <header className="app-page-head">
           <Link href={`/profili/${user?.username || ''}`} className="text-[13px] font-semibold text-[var(--text-muted)]">← Profili</Link>
-          <p className="app-kicker mt-3">Besimi</p>
-          <h1>AlbNet Verifikuar</h1>
+          <h1 className="mt-3">Verifikim</h1>
         </header>
 
         {!isActive && (

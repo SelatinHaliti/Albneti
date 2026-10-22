@@ -235,7 +235,7 @@ export function PostCard(props: {
             {post.user?.isVerified && <VerifiedBadge size={14} className="ml-1" />}
           </Link>
           {post.createdAt && (
-            <span className="text-[12px] text-[var(--text-secondary)]">{timeAgo(post.createdAt)}</span>
+            <span className="text-[12px] text-[var(--text-secondary)] hidden">{timeAgo(post.createdAt)}</span>
           )}
         </div>
         <div className="relative ml-auto" ref={optionsRef}>
@@ -438,7 +438,7 @@ export function PostCard(props: {
           </button>
         )}
         {post.createdAt && (
-          <p className="text-[10px] text-[var(--text-secondary)] uppercase mt-2 tracking-wide">{timeAgo(post.createdAt)}</p>
+          <p className="text-[12px] text-[var(--text-secondary)] mt-2">{timeAgo(post.createdAt)}</p>
         )}
         {post.hashtags && post.hashtags.length > 0 && (
           <p className="text-[13px] mt-1.5 flex flex-wrap gap-x-1">

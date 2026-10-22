@@ -84,10 +84,7 @@ export default function MessagesPage() {
   return (
     <div className="app-page min-h-screen">
       <header className="app-page-head app-page-head--row">
-        <div>
-          <p className="app-kicker">Inbox</p>
-          <h1>Mesazhe</h1>
-        </div>
+        <h1>Mesazhe</h1>
         <Link href="/mesazhe/te-rinj" className="ig-btn-action px-4 py-2 text-[14px]">
           E re
         </Link>

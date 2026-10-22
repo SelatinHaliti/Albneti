@@ -41,10 +41,7 @@ export default function LiveListPage() {
   return (
     <div className="app-page min-h-0 flex-1">
       <div className="app-page-head app-page-head--row ig-page-header sticky top-0 z-10">
-        <div>
-          <p className="app-kicker">Tani</p>
-          <h1>Live</h1>
-        </div>
+        <h1>Live</h1>
         <Link href="/live/nis" className="px-4 py-2.5 rounded-xl bg-[var(--danger)] text-white text-[14px] font-semibold shadow-sm">
           + Nis Live
         </Link>

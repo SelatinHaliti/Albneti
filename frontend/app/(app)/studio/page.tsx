@@ -179,9 +179,7 @@ export default function CreatorStudioPage() {
   return (
     <div className="app-page app-page--studio">
       <header className="app-page-head">
-        <p className="app-kicker">Krijo</p>
-        <h1>Studio krijuesi</h1>
-        <p>Ide për video, caption dhe koha e postimit.</p>
+        <h1>Studio</h1>
       </header>
 
       {loading && !data ? (

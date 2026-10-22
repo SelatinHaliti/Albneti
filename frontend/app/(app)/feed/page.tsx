@@ -7,8 +7,6 @@ import { api } from '@/utils/api';
 import { PostCard } from './PostCard';
 import { StoryRing } from '@/components/StoryRing';
 import { RightSidebar } from '@/components/RightSidebar';
-import { TrendingShqip } from '@/components/TrendingShqip';
-import { MobileAlbanianBanner } from '@/components/MobileAlbanianBanner';
 import { SkeletonPostBlock, SkeletonStoryRing } from '@/components/Skeleton';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSearchParams } from 'next/navigation';
@@ -49,20 +47,9 @@ export default function FeedPage() {
   const abortRef = useRef<AbortController | null>(null);
   const [pullY, setPullY] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [storyOrder, setStoryOrder] = useState<'default' | 'latest'>('default');
-  const [feedAlgorithm, setFeedAlgorithm] = useState<string | null>(null);
   const touchStartY = useRef(0);
 
   useDocumentTitle(feedMode === 'following' ? 'Ndiqet' : 'Kryefaja');
-
-  const sortedStories = [...stories].sort((a, b) => {
-    if (storyOrder === 'latest') {
-      const aLast = a.stories[a.stories.length - 1]?.createdAt;
-      const bLast = b.stories[b.stories.length - 1]?.createdAt;
-      return new Date(bLast || 0).getTime() - new Date(aLast || 0).getTime();
-    }
-    return 0;
-  });
 
   const fetchFeed = useCallback(async (cursor: string | null, signal?: AbortSignal) => {
     const params = new URLSearchParams({ limit: '12', feed: feedMode === 'following' ? 'following' : 'for_you' });
@@ -86,7 +73,6 @@ export default function FeedPage() {
       setStories(storiesRes.stories || []);
       setHasMore(feedRes.hasMore ?? false);
       setNextCursor(feedRes.nextCursor ?? null);
-      if (feedRes.algorithm) setFeedAlgorithm(feedRes.algorithm);
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return;
       setError('Nuk u lidh. Provo përsëri.');
@@ -114,7 +100,6 @@ export default function FeedPage() {
         setStories(storiesRes.stories || []);
         setHasMore(feedRes.hasMore ?? false);
         setNextCursor(feedRes.nextCursor ?? null);
-        if (feedRes.algorithm) setFeedAlgorithm(feedRes.algorithm);
       } catch (e) {
         if ((e as Error)?.name === 'AbortError') return;
         setPosts([]);
@@ -188,30 +173,12 @@ export default function FeedPage() {
       )}
 
       {/* Story ring - only on "Kryefaja" */}
-      {feedMode !== 'following' && (loading || stories.length > 0) && (
-        <div className="ig-story-rail">
-          <div className="flex items-center justify-between px-4 pt-3 pb-1">
-            <span className="text-[13px] font-semibold text-[var(--text)]">Story</span>
-            {!loading && stories.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setStoryOrder((o) => (o === 'latest' ? 'default' : 'latest'))}
-                className="text-[13px] font-semibold text-[var(--primary)] hover:opacity-80 transition-opacity"
-              >
-                {storyOrder === 'latest' ? 'Kryesor' : 'Fundi'}
-              </button>
-            )}
+      {feedMode !== 'following' && (
+        loading ? <SkeletonStoryRing /> : stories.length > 0 ? (
+          <div className="ig-story-rail">
+            <StoryRing groups={stories} currentUserId={user?.id} />
           </div>
-          {loading ? <SkeletonStoryRing /> : stories.length > 0 ? <StoryRing groups={sortedStories} currentUserId={user?.id} /> : null}
-        </div>
-      )}
-
-      {feedMode !== 'following' && <div className="hidden md:block"><TrendingShqip /></div>}
-      <div className="hidden md:block"><MobileAlbanianBanner /></div>
-      {feedMode === 'for_you' && feedAlgorithm && !loading && posts.length > 0 && (
-        <p className="px-4 pt-2 text-[11px] text-[var(--text-secondary)] md:px-0">
-          Për ty · renditur me inteligjencë AlbNet
-        </p>
+        ) : null
       )}
 
       {loading ? (
