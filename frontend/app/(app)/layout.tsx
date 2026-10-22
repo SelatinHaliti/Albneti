@@ -164,7 +164,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         onClick={() => setFeedDropdownOpen(false)}
         className={`flex items-center gap-3 px-4 py-3 text-[14px] transition-colors ${feedMode === 'for_you' ? 'font-semibold text-[var(--text)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg)]'}`}
       >
-        <span className="w-6 h-6 rounded-full bg-[var(--ig-gradient)] flex items-center justify-center text-white text-[11px] font-bold">P</span>
+        <span className="w-6 h-6 rounded-full bg-[#c8102e] flex items-center justify-center text-white text-[11px] font-bold">P</span>
         Për ty
       </Link>
       <Link
@@ -195,7 +195,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
                     aria-haspopup="true"
                     aria-label="Zgjidh feed"
                   >
-                    <span className="albnet-wordmark text-[18px]">ALB<span>NET</span></span>
+                    <span className="flex items-center gap-1.5">
+                      <AppLogo size={26} />
+                      <span className="albnet-wordmark text-[18px]">ALB<span>NET</span></span>
+                    </span>
                     <svg className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform duration-200 ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                     </svg>
@@ -207,7 +210,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                 </>
               ) : (
-                <Link href="/feed" className="ig-touch flex items-center min-h-[52px] -m-2 px-2">
+                <Link href="/feed" className="ig-touch flex items-center gap-1.5 min-h-[52px] -m-2 px-2">
+                  <AppLogo size={26} />
                   <span className="albnet-wordmark text-[18px]">ALB<span>NET</span></span>
                 </Link>
               )}
@@ -253,7 +257,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   aria-expanded={feedDropdownOpen}
                   aria-label="Zgjidh feed"
                 >
-                  <AppLogo size={32} />
+                  <AppLogo size={36} />
                   <span className="hidden lg:inline albnet-wordmark text-[22px]">ALB<span>NET</span></span>
                   <svg className={`hidden lg:block w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
@@ -267,7 +271,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
               </>
             ) : (
               <Link href="/feed" className="flex items-center gap-3">
-                <AppLogo size={32} />
+                <AppLogo size={36} />
                 <span className="hidden lg:inline albnet-wordmark text-[22px]">ALB<span>NET</span></span>
               </Link>
             )}

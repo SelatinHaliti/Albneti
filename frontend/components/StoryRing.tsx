@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useAuthStore } from '@/store/useAuthStore';
 
 type StoryGroup = { user: { _id: string; username: string; avatar?: string; fullName?: string }; stories: { _id: string; mediaUrl: string; type: string }[]; hasCloseFriendsOnly?: boolean };
 
@@ -10,6 +11,7 @@ type StoryRingProps = {
 };
 
 export function StoryRing({ groups, currentUserId }: StoryRingProps) {
+  const me = useAuthStore((s) => s.user);
   const ownGroup = currentUserId ? groups.find((g) => g.user._id === currentUserId) : null;
   const others = currentUserId ? groups.filter((g) => g.user._id !== currentUserId) : groups;
 
@@ -34,11 +36,15 @@ export function StoryRing({ groups, currentUserId }: StoryRingProps) {
               </div>
             </Link>
           ) : (
-            <Link
-              href="/krijo/story"
-              className="flex flex-col items-center justify-center w-[66px] h-[66px] rounded-full border-2 border-dashed border-[var(--border)] bg-[var(--bg)] hover:border-[var(--text-muted)] transition-colors"
-            >
-              <span className="text-2xl text-[var(--text-muted)] leading-none">+</span>
+            <Link href="/krijo/story" className="story-add" aria-label="Shto story">
+              <img
+                src={me?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${me?.username || 'albnet'}`}
+                alt=""
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (me?.username || 'albnet');
+                }}
+              />
+              <span className="story-add__plus" aria-hidden>+</span>
             </Link>
           )}
           <span className="text-[12px] text-[var(--text)] truncate max-w-[74px] leading-tight text-center">

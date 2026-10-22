@@ -263,9 +263,41 @@ h1, h2, h3, .landing-wordmark, .albnet-wordmark {
 }
 .story-ring-inner img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Miq të ngushtë — unazë jeshile si Instagram */
+/* Miq të ngushtë — unazë jeshile */
 .story-ring--close-friends {
   background: linear-gradient(45deg, #1ed760, #00c853);
+}
+
+.story-add {
+  position: relative;
+  display: block;
+  width: 62px;
+  height: 62px;
+}
+.story-add img {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.story-add__plus {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #c8102e;
+  color: #fff;
+  border: 2px solid var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .logo-gradient {
