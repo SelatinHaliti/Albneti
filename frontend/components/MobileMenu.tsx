@@ -125,9 +125,9 @@ export function MobileMenu({ open, onClose, socialUnread = 0, messageUnread = 0 
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[15px] transition-opacity ${
-                  isActive ? 'font-semibold text-[var(--text)]' : 'font-medium text-[var(--text)] hover:opacity-70'
-                } ${'highlight' in item && item.highlight ? '' : ''}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] transition-colors ${
+                  isActive ? 'mobile-menu-link--active text-[var(--text)]' : 'font-medium text-[var(--text)] hover:bg-[var(--bg)]'
+                }`}
               >
                 <span className="relative flex-shrink-0 w-6 flex justify-center">
                   {Icon === IconHome && <IconHome active={isActive} />}

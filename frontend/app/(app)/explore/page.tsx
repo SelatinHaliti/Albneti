@@ -124,7 +124,12 @@ export default function ExplorePage() {
   }, [pullY, onRefresh]);
 
   return (
-    <div className="mobile-page max-w-[470px] md:max-w-4xl mx-auto py-4 bg-[var(--bg)] w-full min-h-screen overflow-x-hidden">
+    <div className="app-page app-page--wide min-h-screen">
+      <header className="app-page-head">
+        <p className="app-kicker">Zbulo</p>
+        <h1>Eksploro</h1>
+        <p>Postime dhe hashtag nga komuniteti shqiptar.</p>
+      </header>
       {pullY > 0 && (
         <div className="flex justify-center py-2 bg-[var(--bg)] sticky top-0 z-10" style={{ paddingTop: Math.min(pullY, 60) }}>
           <div className="w-7 h-7 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
@@ -132,10 +137,10 @@ export default function ExplorePage() {
       )}
 
       {/* Search bar */}
-      <div className="px-4 mb-4">
+      <div>
         <Link
           href="/kerko"
-          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-muted)] text-[14px] hover:border-[var(--text-secondary)] transition-colors"
+          className="app-search"
         >
           <span className="[&_svg]:w-5 [&_svg]:h-5 text-[var(--text-muted)] flex-shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -148,7 +153,7 @@ export default function ExplorePage() {
       </div>
 
       {/* Tab pills */}
-      <div className="flex gap-2 px-4 mb-5 overflow-x-auto scrollbar-hide pb-1">
+      <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-hide pb-1">
         {[
           { key: 'postime', label: 'Postime' },
           { key: 'hashtag', label: 'Hashtag' },
@@ -170,7 +175,7 @@ export default function ExplorePage() {
 
       {/* Hashtags grid */}
       {activeTab === 'hashtag' && (
-        <div className="flex flex-wrap gap-2 px-4 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           {hashtags.map((h) => (
             <Link
               key={h.tag}
@@ -206,7 +211,7 @@ export default function ExplorePage() {
         </div>
       ) : activeTab === 'postime' ? (
         <>
-          <div className="grid grid-cols-3 gap-[2px] px-0 md:px-0">
+          <div className="media-grid">
             {posts.map((post, i) => (
               <motion.div
                 key={post._id}

@@ -146,13 +146,12 @@ export default function KomunitetiContent() {
   const featured = events.filter((e) => e.featured && e.status !== 'past').slice(0, 3);
 
   return (
-    <div className="mobile-page max-w-[630px] mx-auto py-6 pb-4 overflow-x-hidden">
-      <div className="mb-6">
-        <h1 className="text-[22px] font-bold text-[var(--text)] mb-1">Komuniteti Shqiptar</h1>
-        <p className="text-[13px] text-[var(--text-muted)]">
-          Ngjarje, diaspora, krijues dhe lidhje me shqiptarët kudo.
-        </p>
-      </div>
+    <div className="app-page app-page--community">
+      <header className="app-page-head">
+        <p className="app-kicker">Bashkë</p>
+        <h1>Komuniteti Shqiptar</h1>
+        <p>Ngjarje, diaspora, krijues dhe lidhje me shqiptarët kudo.</p>
+      </header>
 
       {/* Stats bar */}
       <div className="grid grid-cols-3 gap-2 mb-6">

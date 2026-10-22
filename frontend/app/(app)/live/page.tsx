@@ -39,9 +39,12 @@ export default function LiveListPage() {
   }, [ready, isAuthenticated, router]);
 
   return (
-    <div className="mobile-page max-w-[470px] mx-auto min-h-0 flex-1 py-4 px-4 pb-6">
-      <div className="flex items-center justify-between mb-5 sticky top-0 ig-page-header z-10 py-3 -mx-1 px-1">
-        <h1 className="text-[20px] font-semibold">Live</h1>
+    <div className="app-page min-h-0 flex-1">
+      <div className="app-page-head app-page-head--row ig-page-header sticky top-0 z-10">
+        <div>
+          <p className="app-kicker">Tani</p>
+          <h1>Live</h1>
+        </div>
         <Link href="/live/nis" className="px-4 py-2.5 rounded-xl bg-[var(--danger)] text-white text-[14px] font-semibold shadow-sm">
           + Nis Live
         </Link>

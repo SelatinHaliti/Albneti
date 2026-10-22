@@ -31,9 +31,9 @@ function ScoreRing({ score }: { score: number }) {
       />
       <defs>
         <linearGradient id="studioGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#f09433" />
-          <stop offset="50%" stopColor="#dc2743" />
-          <stop offset="100%" stopColor="#bc1888" />
+          <stop offset="0%" stopColor="#c8102e" />
+          <stop offset="55%" stopColor="#7a0a1c" />
+          <stop offset="100%" stopColor="#b8973a" />
         </linearGradient>
       </defs>
       <text x="46" y="50" textAnchor="middle" fontSize="20" fontWeight="700" fill="var(--text)">
@@ -177,16 +177,12 @@ export default function CreatorStudioPage() {
   };
 
   return (
-    <div className="mobile-page max-w-[640px] mx-auto py-5 sm:py-6 overflow-x-hidden">
-      <div className="flex items-center gap-3 mb-5">
-        <Link href="/feed" className="ig-touch text-[var(--text)] -ml-2 rounded-full" aria-label="Mbrapsht">
-          <span className="text-2xl leading-none">←</span>
-        </Link>
-        <div>
-          <h1 className="text-[20px] font-semibold text-[var(--text)]">Studio krijuesi</h1>
-          <p className="text-[12px] text-[var(--text-muted)]">Ide për video, caption dhe koha e postimit</p>
-        </div>
-      </div>
+    <div className="app-page app-page--studio">
+      <header className="app-page-head">
+        <p className="app-kicker">Krijo</p>
+        <h1>Studio krijuesi</h1>
+        <p>Ide për video, caption dhe koha e postimit.</p>
+      </header>
 
       {loading && !data ? (
         <div className="space-y-3">

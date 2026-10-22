@@ -133,11 +133,12 @@ function VerifikimContent() {
         </div>
       )}
 
-      <div className="mobile-page verify-page max-w-[520px] mx-auto py-4 sm:py-8 overflow-x-hidden">
-        <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 px-1">
-          <Link href={`/profili/${user?.username}`} className="ig-touch text-[var(--text)] -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Mbrapsht">←</Link>
-          <h1 className="text-[18px] sm:text-[20px] font-semibold text-[var(--text)] truncate">AlbNet Verifikuar</h1>
-        </div>
+      <div className="app-page verify-page">
+        <header className="app-page-head">
+          <Link href={`/profili/${user?.username || ''}`} className="text-[13px] font-semibold text-[var(--text-muted)]">← Profili</Link>
+          <p className="app-kicker mt-3">Besimi</p>
+          <h1>AlbNet Verifikuar</h1>
+        </header>
 
         {!isActive && (
           <div className="flex items-center justify-between mb-5 px-1 gap-1">

@@ -215,7 +215,7 @@ export function PostCard(props: {
   };
 
   return (
-    <article ref={articleRef} className="post-block overflow-hidden relative border-b border-[var(--border)] md:border-b-0 md:mb-4">
+    <article ref={articleRef} className="post-block overflow-hidden relative">
       {/* Header */}
       <header className="flex items-center gap-3 px-3 py-2.5">
         <Link href={`/profili/${post.user?.username}`} className="flex-shrink-0">
@@ -235,7 +235,7 @@ export function PostCard(props: {
             {post.user?.isVerified && <VerifiedBadge size={14} className="ml-1" />}
           </Link>
           {post.createdAt && (
-            <span className="text-[12px] text-[var(--text-secondary)] hidden">{timeAgo(post.createdAt)}</span>
+            <span className="text-[12px] text-[var(--text-secondary)]">{timeAgo(post.createdAt)}</span>
           )}
         </div>
         <div className="relative ml-auto" ref={optionsRef}>

@@ -106,7 +106,11 @@ export default function SearchPage() {
   const showHashtags = activeTab === 'te-gjitha' || activeTab === 'hashtag';
 
   return (
-    <div className="max-w-[470px] mx-auto px-4 py-4 bg-[var(--bg)] min-h-screen">
+    <div className="app-page min-h-screen pt-2">
+      <header className="app-page-head">
+        <p className="app-kicker">Kërko</p>
+        <h1>Gjej njerëz</h1>
+      </header>
       <div className="relative mb-4">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
           <IconSearch />
@@ -116,7 +120,7 @@ export default function SearchPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Kërko përdorues ose hashtag..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] placeholder-[var(--text-muted)] focus:border-[var(--primary)]"
+          className="w-full pl-10 pr-4 py-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text)] placeholder-[var(--text-muted)] shadow-[var(--shadow-sm)] focus:border-[var(--primary)]"
           autoFocus
         />
       </div>

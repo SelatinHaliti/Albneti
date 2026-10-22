@@ -18,7 +18,7 @@ export function TrendingShqip() {
   if (hashtags.length === 0) return null;
 
   return (
-    <div className="border-b border-[var(--border)] py-3">
+    <div className="py-1 pb-3">
       <div className="flex items-center gap-2 px-4 mb-2.5">
         <span className="albanian-badge">🇦🇱 Trending</span>
         <span className="text-[13px] font-semibold text-[var(--text-muted)]">në Shqip</span>

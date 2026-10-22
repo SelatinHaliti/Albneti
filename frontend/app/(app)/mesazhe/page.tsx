@@ -82,16 +82,19 @@ export default function MessagesPage() {
     c.participants?.find((p) => String(p._id) !== String(user?.id));
 
   return (
-    <div className="mobile-page max-w-[470px] mx-auto min-h-screen bg-[var(--bg)] overflow-x-hidden">
-      <div className="ig-page-header px-4 py-3 flex items-center justify-between">
-        <h1 className="text-[16px] font-semibold text-[var(--text)]">Mesazhe</h1>
-        <Link href="/mesazhe/te-rinj" className="ig-link-btn text-[14px]">
+    <div className="app-page min-h-screen">
+      <header className="app-page-head app-page-head--row">
+        <div>
+          <p className="app-kicker">Inbox</p>
+          <h1>Mesazhe</h1>
+        </div>
+        <Link href="/mesazhe/te-rinj" className="ig-btn-action px-4 py-2 text-[14px]">
           E re
         </Link>
-      </div>
+      </header>
 
       {loading ? (
-        <div className="divide-y divide-[var(--border)]">
+        <div className="surface-list divide-y divide-[var(--border)]">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3">
               <div className="w-14 h-14 rounded-full bg-[var(--border)] animate-shimmer" />
@@ -120,7 +123,7 @@ export default function MessagesPage() {
           </Link>
         </motion.div>
       ) : (
-        <div className="divide-y divide-[var(--border)]">
+        <div className="surface-list divide-y divide-[var(--border)]">
           {conversations.map((c) => {
             const other = getOther(c);
             const title = convTitle(c, user?.id);

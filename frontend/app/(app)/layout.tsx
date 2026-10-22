@@ -180,7 +180,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className={`min-h-screen flex flex-col md:flex-row overflow-x-hidden max-w-[100vw] ${isReelsPage ? 'bg-black' : 'bg-[var(--bg)]'}`}>
+      <div className={`min-h-screen flex flex-col md:flex-row overflow-x-hidden max-w-[100vw] ${isReelsPage ? 'bg-black' : 'app-canvas'}`}>
         {/* ── Mobile top bar ── */}
         {!showGlobalMobileHeader ? null : (
           <header className="md:hidden fixed top-0 left-0 right-0 h-[var(--mobile-header-h)] px-4 grid grid-cols-[1fr_auto] items-center ig-nav-bar border-b z-50 safe-area-pt">
@@ -195,7 +195,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                     aria-haspopup="true"
                     aria-label="Zgjidh feed"
                   >
-                    <span className="albnet-wordmark text-[18px]">ALBNET</span>
+                    <span className="albnet-wordmark text-[18px]">ALB<span>NET</span></span>
                     <svg className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform duration-200 ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                     </svg>
@@ -208,7 +208,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                 </>
               ) : (
                 <Link href="/feed" className="ig-touch flex items-center min-h-[52px] -m-2 px-2">
-                  <span className="albnet-wordmark text-[18px]">ALBNET</span>
+                  <span className="albnet-wordmark text-[18px]">ALB<span>NET</span></span>
                 </Link>
               )}
             </div>
@@ -242,7 +242,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         {/* ── Desktop sidebar ── */}
-        <aside className={`desktop-sidebar hidden md:flex md:w-[72px] lg:w-[244px] flex-col fixed left-0 top-0 h-dvh border-r border-[var(--border)] z-30 ${isReelsPage ? 'bg-black/80 backdrop-blur-xl' : 'ig-nav-bar'}`}>
+        <aside className={`desktop-sidebar hidden md:flex md:w-[72px] lg:w-[244px] flex-col fixed left-0 top-0 h-dvh border-r border-[var(--border)] z-30 ${isReelsPage ? 'desktop-sidebar--reels' : 'ig-nav-bar'}`}>
           <div className="desktop-sidebar-brand px-3 lg:px-5 pt-4 pb-2 flex items-center relative flex-shrink-0" ref={feedDropdownRefDesktop}>
             {pathname === '/feed' ? (
               <>
@@ -254,7 +254,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
                   aria-label="Zgjidh feed"
                 >
                   <AppLogo size={32} />
-                  <span className="hidden lg:inline albnet-wordmark text-[22px]">ALBNET</span>
+                  <span className="hidden lg:inline albnet-wordmark text-[22px]">ALB<span>NET</span></span>
                   <svg className={`hidden lg:block w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 ${feedDropdownOpen ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                   </svg>
@@ -268,7 +268,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
             ) : (
               <Link href="/feed" className="flex items-center gap-3">
                 <AppLogo size={32} />
-                <span className="hidden lg:inline albnet-wordmark text-[22px]">ALBNET</span>
+                <span className="hidden lg:inline albnet-wordmark text-[22px]">ALB<span>NET</span></span>
               </Link>
             )}
           </div>

@@ -58,9 +58,8 @@ export function RightSidebar() {
   if (!user) return null;
 
   return (
-    <aside className="hidden xl:block w-[320px] flex-shrink-0 pt-7 pl-7 sticky top-0 h-fit max-h-screen overflow-y-auto scrollbar-hide">
-      {/* User card */}
-      <div className="flex items-center gap-3 mb-5">
+    <aside className="ig-side scrollbar-hide">
+      <div className="ig-side-card flex items-center gap-3">
         <Link href={`/profili/${user.username}`}>
           <img
             src={user.avatar || ''}
@@ -100,7 +99,7 @@ export function RightSidebar() {
 
       {/* Suggestions – Suggest Engine v2 */}
       {suggestions.length > 0 && (
-        <div className="mb-5">
+        <div className="ig-side-card">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[14px] font-semibold text-[var(--text-muted)]">Sugjerime për ty</span>
             <Link href="/kerko" className="text-[12px] font-semibold text-[var(--text)] hover:opacity-70">Shiko të gjitha</Link>

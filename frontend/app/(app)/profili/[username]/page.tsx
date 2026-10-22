@@ -277,7 +277,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="mobile-page max-w-[935px] mx-auto py-6 sm:py-8">
+    <div className="app-page app-page--profile">
       {isOwnProfile && followRequests.length > 0 && (
         <FollowRequestsPanel
           requests={followRequests}
@@ -291,7 +291,7 @@ export default function ProfilePage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col sm:flex-row gap-6 sm:gap-12 items-center sm:items-start mb-8 sm:mb-10 px-1"
+        className="profile-hero flex flex-col sm:flex-row gap-6 sm:gap-12 items-center sm:items-start"
       >
         {/* Avatar */}
         <div className="flex-shrink-0">
@@ -469,7 +469,7 @@ export default function ProfilePage() {
               {tab === t.key && (
                 <motion.span
                   layoutId="profile-tab"
-                  className="absolute top-0 left-0 right-0 h-[1px] bg-[var(--text)]"
+                  className="absolute bottom-0 left-3 right-3 h-[2px] bg-[var(--albanian-red)] rounded-full"
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
@@ -514,7 +514,7 @@ export default function ProfilePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-[2px] py-1">
+          <div className="media-grid">
             {displayPosts.map((post) => (
               <Link
                 key={post._id}

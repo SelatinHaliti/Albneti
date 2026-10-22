@@ -283,7 +283,8 @@ export default function ChatGlobalPage() {
       <header className="flex-shrink-0 px-4 py-3 border-b border-[var(--border)] bg-[var(--bg-card)]">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h1 className="text-lg font-bold text-[var(--text)]">Chat Global Shqiptar</h1>
+            <p className="app-kicker">Live</p>
+            <h1 className="text-[1.35rem] leading-none">Chat Global Shqiptar</h1>
             <p className="text-[13px] text-[var(--text-muted)] mt-0.5">
               Shqipëria · Kosova · Maqedonia · Mali i Zi · Diaspora — vetëm në shqip.
             </p>
