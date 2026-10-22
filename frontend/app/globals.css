@@ -833,17 +833,19 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 
 .ig-feed-layout {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: flex-start;
   gap: 0;
-  max-width: 100vw;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   min-height: 100vh;
   overflow-x: hidden;
 }
 @media (min-width: 1280px) {
   .ig-feed-layout {
-    gap: 28px;
-    padding: 0 20px 0 8px;
+    gap: 36px;
+    padding: 0 28px 0 0;
   }
 }
 
@@ -862,11 +864,16 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   --border-light: #1a1a1a;
   background: #000000;
 }
+.dark .desktop-sidebar.ig-nav-bar,
+.dark .ig-bottom-bar,
+.dark .ig-nav-bar {
+  background: #000000;
+}
 
 .ig-feed-column {
   width: 100%;
-  max-width: 470px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 0 0 28px;
   flex-shrink: 0;
   overflow-x: hidden;
@@ -875,7 +882,7 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 @media (min-width: 768px) {
   .ig-feed-column {
-    border-left: 1px solid var(--border);
+    max-width: 600px;
     border-right: 1px solid var(--border);
   }
 }
@@ -893,15 +900,20 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
     top: calc(var(--mobile-header-h) + env(safe-area-inset-top, 0px));
   }
 }
-.feed-switch a {
+.feed-switch a,
+.feed-switch button {
   flex: 1;
   text-align: center;
   padding: 14px 8px 12px;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
-.feed-switch a.is-on {
+.feed-switch a.is-on,
+.feed-switch button.is-on {
   color: var(--text);
   box-shadow: inset 0 -2px 0 var(--albanian-red);
 }
@@ -967,14 +979,14 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 
 .app-page {
   width: 100%;
-  max-width: 560px;
-  margin: 0 auto;
+  max-width: 640px;
+  margin: 0;
   min-height: 100%;
-  padding: 0 12px 28px;
+  padding: 0 16px 28px;
   overflow-x: hidden;
 }
-.app-page--wide { max-width: 960px; }
-.app-page--profile { max-width: 935px; padding: 16px 16px 40px; }
+.app-page--wide { max-width: 980px; }
+.app-page--profile { max-width: 935px; margin-left: auto; margin-right: auto; padding: 16px 16px 40px; }
 .app-page--studio,
 .app-page--community { max-width: 680px; padding: 4px 12px 32px; }
 .app-page > .ig-page-header {
@@ -1020,23 +1032,24 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   align-items: center;
   gap: 10px;
   margin: 4px 0 16px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 11px 14px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--bg-card);
+  background: var(--bg);
   color: var(--text-muted);
   font-size: 14px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 .app-search:hover { border-color: color-mix(in srgb, var(--albanian-red) 35%, var(--border)); }
 
 .surface-list {
-  margin: 8px 0 24px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  margin: 4px -16px 24px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .profile-hero {
@@ -1112,6 +1125,14 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   white-space: nowrap;
   padding-right: 24px;
   flex-shrink: 0;
+}
+.music-sticker-text + .music-sticker-text { display: none; }
+.music-sticker-playing .music-sticker-text + .music-sticker-text { display: inline; }
+.music-sticker--row {
+  max-width: 240px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+  border-color: var(--border);
 }
 .music-sticker-playing .music-sticker-text:first-child {
   animation: music-marquee 12s linear infinite;

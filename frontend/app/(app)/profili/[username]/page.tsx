@@ -12,6 +12,7 @@ import { IconGrid, IconReels } from '@/components/Icons';
 import { PostMediaThumb } from '@/components/PostMediaThumb';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { publicHandle } from '@/lib/publicName';
 import { FollowListModal } from '@/components/FollowListModal';
 import { FollowRequestsPanel, type FollowRequest } from '@/components/FollowRequestsPanel';
 import { ReportButton } from '@/components/ReportButton';
@@ -326,7 +327,7 @@ export default function ProfilePage() {
         <div className="flex-1 min-w-0 text-center sm:text-left">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-5">
             <h1 className="text-[22px] sm:text-[28px] font-semibold text-[var(--text)] leading-tight flex items-center gap-1.5 justify-center sm:justify-start">
-              {user.username}
+              {publicHandle(user.username)}
               {user.isVerified && <VerifiedBadge size={20} />}
             </h1>
             {isOwnProfile ? (

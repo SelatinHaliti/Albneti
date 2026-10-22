@@ -8,6 +8,7 @@ import { useToastStore } from '@/store/useToastStore';
 import { IconHeart, IconComment, IconShare, IconBookmark, IconMore } from '@/components/Icons';
 import { MusicSticker } from '@/components/MusicSticker';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { publicHandle } from '@/lib/publicName';
 import { PostMediaFrame } from '@/components/PostMediaFrame';
 import { ReportButton } from '@/components/ReportButton';
 import { CommentSheet } from '@/components/CommentSheet';
@@ -231,7 +232,7 @@ export function PostCard(props: {
             href={`/profili/${post.user?.username}`}
             className="font-semibold text-[14px] text-[var(--text)] truncate block hover:opacity-80 transition-opacity"
           >
-            {post.user?.username}
+            {publicHandle(post.user?.username)}
             {post.user?.isVerified && <VerifiedBadge size={14} className="ml-1" />}
           </Link>
           {post.createdAt && (
@@ -370,23 +371,22 @@ export function PostCard(props: {
             )}
           </>
         )}
-        {hasMusic && (
-          <>
-            <audio ref={audioRef} src={post.music!.url} loop preload="metadata" />
-            <div className="absolute bottom-3 left-3 right-3 z-[5] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-              <MusicSticker
-                title={post.music!.title || 'Muzikë'}
-                artist={post.music!.artist}
-                playing={musicPlaying}
-                onClick={toggleMusic}
-              />
-            </div>
-          </>
-        )}
       </div>
 
       {/* Actions & caption */}
       <div className="px-3 pt-2 pb-3">
+        {hasMusic && (
+          <div className="mb-2">
+            <audio ref={audioRef} src={post.music!.url} loop preload="metadata" />
+            <MusicSticker
+              className="music-sticker--row"
+              title={post.music!.title || 'Muzikë'}
+              artist={post.music!.artist}
+              playing={musicPlaying}
+              onClick={toggleMusic}
+            />
+          </div>
+        )}
         <div className="flex items-center mb-2">
           <div className="ig-post-actions">
             <button type="button" onClick={handleLike} className={`p-1 -ml-1 transition-opacity ${liked ? 'ig-liked' : 'text-[var(--text)] hover:opacity-60'}`} aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
@@ -422,7 +422,7 @@ export function PostCard(props: {
         {post.caption && (
           <p className="text-[14px] text-[var(--text)] leading-[18px]">
             <Link href={`/profili/${post.user?.username}`} className="font-semibold mr-1.5 hover:opacity-80 transition-opacity">
-              {post.user?.username}
+              {publicHandle(post.user?.username)}
             {post.user?.isVerified && <VerifiedBadge size={14} className="ml-1" />}
             </Link>
             {post.caption}

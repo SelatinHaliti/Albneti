@@ -6,12 +6,12 @@ type VerifiedBadgeProps = {
   title?: string;
 };
 
-/** Badge verifikimi blu – si Instagram Meta Verified */
+/** Shenjë verifikimi e kuqe, në ngjyrën e shqiponjës. */
 export function VerifiedBadge({ size = 16, className = '', title = 'Llogari e verifikuar' }: VerifiedBadgeProps) {
   return (
     <span className={`verified-badge inline-flex items-center ${className}`} title={title} aria-label={title}>
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-        <circle cx="12" cy="12" r="10" fill="#0095F6" />
+        <circle cx="12" cy="12" r="10" fill="#c8102e" />
         <path
           d="M9.5 12.2l1.8 1.8 3.4-3.6"
           stroke="#fff"

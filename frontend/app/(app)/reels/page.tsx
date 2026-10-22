@@ -9,6 +9,7 @@ import { useToastStore } from '@/store/useToastStore';
 import { IconHeart, IconComment, IconShare, IconBookmark, IconMore } from '@/components/Icons';
 import { MusicSticker } from '@/components/MusicSticker';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { publicHandle } from '@/lib/publicName';
 
 type Reel = {
   _id: string;
@@ -408,7 +409,7 @@ export default function ReelsPage() {
             />
           </Link>
           <Link href={`/profili/${currentReel.user?.username}`} className="text-white font-semibold text-[14px] hover:opacity-80">
-            {currentReel.user?.username}
+            {publicHandle(currentReel.user?.username)}
           </Link>
           {currentReel.user?._id !== user?.id && (
             <button

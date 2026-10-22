@@ -7,6 +7,7 @@ import { api } from '@/utils/api';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useAuthReady } from '@/hooks/useAuthReady';
 import { useSocket } from '@/components/SocketProvider';
+import { publicHandle } from '@/lib/publicName';
 
 type Conversation = {
   _id: string;
@@ -21,7 +22,7 @@ type Conversation = {
 function convTitle(c: Conversation, userId?: string) {
   if (c.type === 'group') return c.name || 'Grup';
   const other = c.participants?.find((p) => String(p._id) !== String(userId));
-  return other?.username || 'Bisedë';
+  return publicHandle(other?.username) || 'Bisedë';
 }
 
 function convAvatar(c: Conversation, userId?: string) {

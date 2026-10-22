@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
+import { publicHandle } from '@/lib/publicName';
 
 type User = { _id: string; username: string; avatar?: string; fullName?: string };
 
@@ -91,14 +92,14 @@ export default function NewMessagePage() {
         <button
           type="button"
           onClick={() => setMode('direct')}
-          className={`flex-1 py-2 rounded-xl text-[14px] font-semibold ${mode === 'direct' ? 'bg-[var(--ig-blue)] text-white' : 'border border-[var(--border)] text-[var(--text)]'}`}
+          className={`flex-1 py-2 rounded-xl text-[14px] font-semibold ${mode === 'direct' ? 'bg-[var(--primary)] text-white' : 'border border-[var(--border)] text-[var(--text)]'}`}
         >
           1:1
         </button>
         <button
           type="button"
           onClick={() => setMode('group')}
-          className={`flex-1 py-2 rounded-xl text-[14px] font-semibold ${mode === 'group' ? 'bg-[var(--ig-blue)] text-white' : 'border border-[var(--border)] text-[var(--text)]'}`}
+          className={`flex-1 py-2 rounded-xl text-[14px] font-semibold ${mode === 'group' ? 'bg-[var(--primary)] text-white' : 'border border-[var(--border)] text-[var(--text)]'}`}
         >
           Grup
         </button>
@@ -117,7 +118,7 @@ export default function NewMessagePage() {
             <div className="flex flex-wrap gap-2">
               {selected.map((u) => (
                 <span key={u._id} className="px-3 py-1 rounded-full bg-[var(--primary-soft)] text-[13px] font-medium">
-                  {u.username}
+                  {publicHandle(u.username)}
                   <button type="button" onClick={() => toggleSelect(u)} className="ml-1 opacity-60">×</button>
                 </span>
               ))}
@@ -127,7 +128,7 @@ export default function NewMessagePage() {
             <button
               type="button"
               onClick={createGroup}
-              className="w-full py-3 rounded-xl bg-[var(--ig-blue)] text-white font-semibold"
+              className="w-full py-3 rounded-xl bg-[var(--primary)] text-white font-semibold"
             >
               Krijo grupin ({selected.length + 1} anëtarë)
             </button>
@@ -153,7 +154,7 @@ export default function NewMessagePage() {
           >
             <img src={presetUser.avatar || ''} alt="" className="w-12 h-12 rounded-full object-cover" />
             <div>
-              <p className="font-semibold">{presetUser.username}</p>
+              <p className="font-semibold">{publicHandle(presetUser.username)}</p>
               {presetUser.fullName && <p className="text-sm text-[var(--text-muted)]">{presetUser.fullName}</p>}
             </div>
           </button>
@@ -169,17 +170,17 @@ export default function NewMessagePage() {
             onClick={() => mode === 'direct' ? startChat(u._id) : toggleSelect(u)}
             className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left ${
               mode === 'group' && selected.some((s) => s._id === u._id)
-                ? 'border-[var(--ig-blue)] bg-[var(--primary-soft)]'
+                ? 'border-[var(--primary)] bg-[var(--primary-soft)]'
                 : 'border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg)]'
             }`}
           >
             <img src={u.avatar || ''} alt="" className="w-12 h-12 rounded-full object-cover" />
             <div className="flex-1">
-              <p className="font-semibold">{u.username}</p>
+              <p className="font-semibold">{publicHandle(u.username)}</p>
               {u.fullName && <p className="text-sm text-[var(--text-muted)]">{u.fullName}</p>}
             </div>
             {mode === 'group' && selected.some((s) => s._id === u._id) && (
-              <span className="text-[var(--ig-blue)] font-bold">✓</span>
+              <span className="text-[var(--primary)] font-bold">✓</span>
             )}
           </button>
         ))}

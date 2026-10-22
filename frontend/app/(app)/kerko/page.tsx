@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { api } from '@/utils/api';
 import { IconSearch } from '@/components/Icons';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { publicHandle } from '@/lib/publicName';
 
 const RECENT_KEY = 'albnet_kerko_recent';
 const MAX_RECENT = 10;
@@ -188,10 +190,10 @@ export default function SearchPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-[var(--text)] truncate">
-                        {u.username}
-                        {u.isVerified ? <span className="ml-1 text-[var(--ig-blue)]" aria-label="Verifikuar">✓</span> : null}
+                        {publicHandle(u.username)}
+                        {u.isVerified ? <VerifiedBadge size={13} className="ml-1" /> : null}
                       </p>
-                      {u.fullName && (
+                      {u.fullName && !u.fullName.includes('@') && (
                         <p className="text-sm text-[var(--text-muted)] truncate">{u.fullName}</p>
                       )}
                     </div>
@@ -270,8 +272,8 @@ export default function SearchPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-[var(--text)] truncate">
-                        {u.username}
-                        {u.isVerified ? <span className="ml-1 text-[var(--ig-blue)]">✓</span> : null}
+                        {publicHandle(u.username)}
+                        {u.isVerified ? <VerifiedBadge size={13} className="ml-1" /> : null}
                       </p>
                       <p className="text-sm text-[var(--text-muted)] truncate">
                         {u.reason || u.fullName || 'Sugjeruar për ty'}

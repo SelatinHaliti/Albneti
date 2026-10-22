@@ -150,8 +150,7 @@ export default function ExplorePage() {
         </Link>
       </div>
 
-      {/* Tab pills */}
-      <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-hide pb-1">
+      <div className="feed-switch mb-4" style={{ position: 'static' }}>
         {[
           { key: 'postime', label: 'Postime' },
           { key: 'hashtag', label: 'Hashtag' },
@@ -160,11 +159,7 @@ export default function ExplorePage() {
             key={t.key}
             type="button"
             onClick={() => setActiveTab(t.key as 'postime' | 'hashtag')}
-            className={`px-5 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all ${
-              activeTab === t.key
-                ? 'bg-[var(--text)] text-[var(--bg)]'
-                : 'border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text)]'
-            }`}
+            className={activeTab === t.key ? 'is-on' : ''}
           >
             {t.label}
           </button>

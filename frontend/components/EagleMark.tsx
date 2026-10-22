@@ -28,6 +28,7 @@ export function EagleMark({
       aria-label={title}
     >
       <path fill={shield} d="M32 3 7.2 17v17C7.2 49 17.6 57.6 32 62 46.4 57.6 56.8 49 56.8 34V17L32 3z" />
+      <path d="M32 3 7.2 17v17C7.2 49 17.6 57.6 32 62 46.4 57.6 56.8 49 56.8 34V17L32 3z" fill="none" stroke="#c8102e" strokeWidth="1.35" />
       <path fill="#c8102e" d={EAGLE_LEFT} />
       <path fill="#c8102e" d={EAGLE_RIGHT} />
     </svg>

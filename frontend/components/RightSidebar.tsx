@@ -6,6 +6,8 @@ import { api } from '@/utils/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToastStore } from '@/store/useToastStore';
 import { AlbanianPulse } from '@/components/AlbanianPulse';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { publicHandle } from '@/lib/publicName';
 
 type SuggestedUser = {
   _id: string;
@@ -66,9 +68,9 @@ export function RightSidebar() {
         </Link>
         <div className="flex-1 min-w-0">
           <Link href={`/profili/${user.username}`} className="text-[14px] font-semibold text-[var(--text)] truncate block">
-            {user.username}
+            {publicHandle(user.username)}
           </Link>
-          <p className="text-[14px] text-[var(--text-muted)] truncate">{user.fullName || user.username}</p>
+          <p className="text-[14px] text-[var(--text-muted)] truncate">{user.fullName && !user.fullName.includes('@') ? user.fullName : publicHandle(user.username)}</p>
         </div>
         <Link href="/profili/redakto" className="text-[12px] font-semibold text-[var(--primary)]">
           Ndërro
@@ -96,8 +98,8 @@ export function RightSidebar() {
                   </Link>
                   <div className="flex-1 min-w-0">
                     <Link href={`/profili/${s.username}`} className="text-[14px] font-semibold text-[var(--text)] truncate block hover:opacity-80">
-                      {s.username}
-                      {s.isVerified ? <span className="ml-1 text-[var(--ig-blue)]" aria-label="Verifikuar">✓</span> : null}
+                      {publicHandle(s.username)}
+                      {s.isVerified ? <VerifiedBadge size={13} className="ml-1" /> : null}
                     </Link>
                     <p className="text-[12px] text-[var(--text-muted)] truncate">
                       {s.reason || s.fullName || 'Sugjeruar për ty'}

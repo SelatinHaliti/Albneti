@@ -7,6 +7,7 @@ import { api } from '@/utils/api';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useAuthReady } from '@/hooks/useAuthReady';
 import { useSocket, type SocialNotification } from '@/components/SocketProvider';
+import { publicHandle } from '@/lib/publicName';
 
 type Notification = SocialNotification & {
   post?: string | { _id: string };
@@ -327,7 +328,7 @@ export default function NotificationsPage() {
                     />
                     <div className="min-w-0">
                       <p className="text-[14px] text-[var(--text)]">
-                    <span className="font-semibold">{n.sender?.username}</span>
+                    <span className="font-semibold">{publicHandle(n.sender?.username)}</span>
                     <span className="text-[var(--text-muted)]"> {getActionLabel(n)}</span>
                   </p>
                   <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">{timeAgo(n.createdAt)}</p>

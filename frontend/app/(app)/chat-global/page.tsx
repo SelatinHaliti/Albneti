@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/utils/api';
 import { useSocket } from '@/components/SocketProvider';
 import { useAuthStore } from '@/store/useAuthStore';
+import { publicHandle } from '@/lib/publicName';
 
 type Sender = {
   _id: string;
@@ -357,7 +358,7 @@ export default function ChatGlobalPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
                           <Link href={`/profili/${msg.sender?.username}`} className="text-[13px] font-semibold text-[var(--text)] hover:underline">
-                            {msg.sender?.username}
+                            {publicHandle(msg.sender?.username)}
                           </Link>
                           <span className="text-[11px] text-[var(--text-muted)]">
                             {new Date(msg.createdAt).toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit' })}
