@@ -13,6 +13,11 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../utils/uploadMedia.j
 import { cancelStripeSubscription } from '../services/stripeService.js';
 
 const USER_LIST_FIELDS = 'username avatar fullName isVerified isPrivate';
+const USERNAME_RE = /^[a-zA-Z0-9._]{3,30}$/;
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function canViewFollowLists(viewerId, targetUser, isFollowing) {
   const isOwn = viewerId && viewerId === targetUser._id.toString();
@@ -126,9 +131,29 @@ export const getProfile = async (req, res) => {
  */
 export const updateProfile = async (req, res) => {
   try {
-    const { fullName, bio, website, location, isPrivate } = req.body;
+    const { fullName, bio, website, location, isPrivate, username } = req.body;
     const user = await User.findById(req.user.id).select('+avatarPublicId');
     if (!user) return res.status(404).json({ message: 'Përdoruesi nuk u gjet.' });
+
+    if (username !== undefined) {
+      const next = String(username || '').trim();
+      const unchanged = next.toLowerCase() === String(user.username || '').toLowerCase();
+      if (!unchanged) {
+        if (!USERNAME_RE.test(next)) {
+          return res.status(400).json({
+            message: 'Emri i përdoruesit duhet 3–30 karaktere: shkronja, numra, pikë ose _.',
+          });
+        }
+        const taken = await User.findOne({
+          _id: { $ne: user._id },
+          username: new RegExp(`^${escapeRegex(next)}$`, 'i'),
+        }).select('_id');
+        if (taken) {
+          return res.status(400).json({ message: 'Ky emër përdoruesi është zënë.' });
+        }
+        user.username = next;
+      }
+    }
 
     if (fullName !== undefined) user.fullName = String(fullName || '').trim().slice(0, 50);
     if (bio !== undefined) user.bio = String(bio || '').trim().slice(0, 150);
@@ -167,10 +192,13 @@ export const updateProfile = async (req, res) => {
     };
     res.json({ success: true, user: out });
   } catch (err) {
-    const msg = err.name === 'ValidationError' && err.message
-      ? err.message
-      : (err.message || 'Gabim gjatë ruajtjes së profilit.');
-    const status = err.name === 'ValidationError' ? 400 : 500;
+    const duplicate = err?.code === 11000;
+    const msg = duplicate
+      ? 'Ky emër përdoruesi është zënë.'
+      : err.name === 'ValidationError' && err.message
+        ? err.message
+        : (err.message || 'Gabim gjatë ruajtjes së profilit.');
+    const status = duplicate || err.name === 'ValidationError' ? 400 : 500;
     res.status(status).json({ message: msg });
   }
 };

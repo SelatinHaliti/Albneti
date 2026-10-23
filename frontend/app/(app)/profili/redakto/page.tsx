@@ -28,6 +28,7 @@ export default function EditProfilePage() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
   const logout = useAuthStore((s) => s.logout);
+  const [username, setUsername] = useState(user?.username ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
   const [website, setWebsite] = useState(user?.website ?? '');
@@ -51,6 +52,7 @@ export default function EditProfilePage() {
       router.replace('/kycu');
       return;
     }
+    setUsername(user.username ?? '');
     setFullName(user.fullName ?? '');
     setBio(user.bio ?? '');
     setWebsite(user.website ?? '');
@@ -79,6 +81,14 @@ export default function EditProfilePage() {
     setLoading(true);
     try {
       const formData = new FormData();
+      const nextUsername = username.trim();
+      const usernameUnchanged = nextUsername.toLowerCase() === (user?.username || '').toLowerCase();
+      if (!usernameUnchanged && !/^[a-zA-Z0-9._]{3,30}$/.test(nextUsername)) {
+        setError('Emri i përdoruesit duhet 3–30 karaktere: shkronja, numra, pikë ose _.');
+        setLoading(false);
+        return;
+      }
+      formData.append('username', nextUsername);
       formData.append('fullName', fullName.trim());
       formData.append('bio', bio.trim());
       formData.append('website', website.trim());
@@ -111,8 +121,9 @@ export default function EditProfilePage() {
       setSuccess(true);
       setAvatarPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      const savedUsername = res.user?.username || nextUsername;
       setTimeout(() => {
-        router.push(`/profili/${user?.username}`);
+        router.push(`/profili/${savedUsername}`);
       }, 800);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gabim gjatë ruajtjes.');
@@ -198,6 +209,21 @@ export default function EditProfilePage() {
             </button>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">JPEG, PNG, GIF ose WebP</p>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Emri i përdoruesit</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
+            minLength={3}
+            maxLength={30}
+            autoComplete="username"
+            placeholder="username"
+            className="w-full px-4 py-2.5 text-sm border border-[var(--border)] rounded-xl bg-[var(--bg)] text-[var(--text)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+          />
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">3–30 karaktere. Ky është @emri në profil.</p>
         </div>
 
         <div>
