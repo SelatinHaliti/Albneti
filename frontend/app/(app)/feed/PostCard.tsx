@@ -374,20 +374,8 @@ export function PostCard(props: {
       </div>
 
       {/* Actions & caption */}
-      <div className="px-3 pt-2 pb-3">
-        {hasMusic && (
-          <div className="mb-2">
-            <audio ref={audioRef} src={post.music!.url} loop preload="metadata" />
-            <MusicSticker
-              className="music-sticker--row"
-              title={post.music!.title || 'Muzikë'}
-              artist={post.music!.artist}
-              playing={musicPlaying}
-              onClick={toggleMusic}
-            />
-          </div>
-        )}
-        <div className="flex items-center mb-2">
+      <div className="px-3 pt-2.5 pb-3">
+        <div className="flex items-center mb-1">
           <div className="ig-post-actions">
             <button type="button" onClick={handleLike} className={`p-1 -ml-1 transition-opacity ${liked ? 'ig-liked' : 'text-[var(--text)] hover:opacity-60'}`} aria-label={liked ? 'Hiq pelqimin' : 'Pelqej'}>
               <IconHeart filled={liked} />
@@ -414,6 +402,18 @@ export function PostCard(props: {
             <IconBookmark filled={saved} />
           </button>
         </div>
+        {hasMusic && (
+          <div className="mb-1.5">
+            <audio ref={audioRef} src={post.music!.url} loop preload="metadata" />
+            <MusicSticker
+              className="music-sticker--row"
+              title={post.music!.title || 'Muzikë'}
+              artist={post.music!.artist}
+              playing={musicPlaying}
+              onClick={toggleMusic}
+            />
+          </div>
+        )}
         {likesCount > 0 && (
           <p className="text-[14px] font-semibold text-[var(--text)] mb-1">
             {likesCount === 1 ? '1 pelqim' : `${likesCount} pelqime`}
@@ -443,7 +443,7 @@ export function PostCard(props: {
         {post.hashtags && post.hashtags.length > 0 && (
           <p className="text-[13px] mt-1.5 flex flex-wrap gap-x-1">
             {post.hashtags.map((h) => (
-              <Link key={h} href={`/explore/hashtag/${h}`} className="ig-link font-normal hover:underline">
+              <Link key={h} href={`/explore/hashtag/${h}`} className="text-[var(--text-muted)] font-normal hover:underline">
                 #{h}
               </Link>
             ))}
