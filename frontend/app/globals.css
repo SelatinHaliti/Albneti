@@ -245,7 +245,7 @@ h1, h2, h3, .landing-wordmark, .albnet-wordmark {
 .story-ring {
   padding: 2px;
   border-radius: 50%;
-  background: var(--ig-gradient-ring);
+  background: #c8102e;
   flex-shrink: 0;
   width: 62px;
   height: 62px;
@@ -927,6 +927,13 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
   object-fit: cover;
   background: var(--border);
 }
+.feed-compose span {
+  flex: 1;
+  min-width: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  padding: 9px 14px;
+}
 .feed-compose:hover span {
   color: var(--text);
 }
@@ -941,8 +948,8 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
 }
 @media (min-width: 768px) {
   .ig-story-rail {
-    margin: 0 0 16px;
-    border-bottom: none;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
   }
 }
 
@@ -962,6 +969,12 @@ input:focus, textarea:focus, button:focus-visible { outline: none; }
     overflow-y: auto;
   }
 }
+.side-section {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 .ig-side-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -1724,7 +1737,7 @@ body.is-desktop-app .install-banner { display: none; }
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.2em;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.03em;
   color: var(--text);
 }
 .albnet-wordmark span {

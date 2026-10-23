@@ -26,7 +26,7 @@ export function AlbanianPulse() {
   }, [socket]);
 
   return (
-    <div className="mt-6">
+    <div className="side-section">
       <Link href="/chat-global" className="flex items-center justify-between gap-3 py-1.5 group">
         <span className="text-[14px] font-semibold text-[var(--text)] group-hover:opacity-70">Chat Global</span>
         <span className="text-[12px] text-[var(--text-muted)] flex items-center gap-1.5">
@@ -36,7 +36,7 @@ export function AlbanianPulse() {
       </Link>
 
       {hashtags.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-4">
           <p className="text-[14px] font-semibold text-[var(--text-muted)] mb-2">Në trend</p>
           <div>
             {hashtags.map((h) => (

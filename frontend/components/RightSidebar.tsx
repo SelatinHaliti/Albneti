@@ -78,7 +78,7 @@ export function RightSidebar() {
       </div>
 
       {suggestions.length > 0 && (
-        <div className="mt-6">
+        <div className="side-section">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[14px] font-semibold text-[var(--text-muted)]">Sugjerime për ty</span>
             <Link href="/kerko" className="text-[12px] font-semibold text-[var(--text)]">Shiko të gjitha</Link>
@@ -102,7 +102,7 @@ export function RightSidebar() {
                       {s.isVerified ? <VerifiedBadge size={13} className="ml-1" /> : null}
                     </Link>
                     <p className="text-[12px] text-[var(--text-muted)] truncate">
-                      {s.reason || s.fullName || 'Sugjeruar për ty'}
+                      {(s.reason && !s.reason.includes('@') && s.reason) || (s.fullName && !s.fullName.includes('@') && s.fullName) || 'Sugjeruar për ty'}
                     </p>
                   </div>
                   <button
@@ -122,7 +122,7 @@ export function RightSidebar() {
 
       <AlbanianPulse />
 
-      <div className="text-[12px] text-[var(--text-secondary)] leading-5 mt-8">
+      <div className="side-section text-[12px] text-[var(--text-secondary)] leading-5">
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           {[
             { label: 'Komuniteti', href: '/komuniteti' },

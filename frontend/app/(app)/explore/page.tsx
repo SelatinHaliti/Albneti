@@ -173,7 +173,7 @@ export default function ExplorePage() {
             <Link
               key={h.tag}
               href={`/explore/hashtag/${h.tag}`}
-              className="group px-4 py-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text)] text-[13px] font-medium hover:border-[var(--primary)] hover:bg-[var(--primary-soft)] transition-all shadow-[var(--shadow-sm)]"
+              className="group px-3 py-2 rounded-lg bg-transparent border border-[var(--border)] text-[var(--text)] text-[13px] font-medium hover:border-[var(--primary)] transition-colors"
             >
               <span className="text-[var(--primary)] group-hover:font-semibold">#{h.tag}</span>
               <span className="text-[var(--text-muted)] ml-1.5">({h.count})</span>
